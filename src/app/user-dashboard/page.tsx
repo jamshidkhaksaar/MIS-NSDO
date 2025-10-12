@@ -1,0 +1,539 @@
+"use client";
+
+import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import {
+  BENEFICIARY_GROUPS,
+  BENEFICIARY_TYPE_KEYS,
+  BENEFICIARY_TYPE_META,
+  useDashboardData,
+} from "@/context/DashboardDataContext";
+import type {
+  BeneficiaryBreakdown,
+  BeneficiaryTypeKey,
+  SectorKey,
+} from "@/context/DashboardDataContext";
+
+type BeneficiaryFormState = BeneficiaryBreakdown;
+
+type SectorFormState = {
+  provinces: string;
+  beneficiaries: BeneficiaryFormState;
+  projects: number;
+  start: string;
+  end: string;
+  fieldActivity: string;
+  staff: number;
+};
+
+const createEmptyBeneficiaries = (): BeneficiaryFormState => {
+  const breakdown: BeneficiaryFormState = {
+    direct: {} as Record<BeneficiaryTypeKey, number>,
+    indirect: {} as Record<BeneficiaryTypeKey, number>,
+  };
+
+  BENEFICIARY_TYPE_KEYS.forEach((key) => {
+    breakdown.direct[key] = 0;
+    breakdown.indirect[key] = 0;
+  });
+
+  return breakdown;
+};
+
+const cloneBeneficiaries = (source: BeneficiaryBreakdown | undefined): BeneficiaryFormState => {
+  const clone = createEmptyBeneficiaries();
+  if (!source) {
+    return clone;
+  }
+
+  BENEFICIARY_TYPE_KEYS.forEach((key) => {
+    clone.direct[key] = source.direct?.[key] ?? 0;
+    clone.indirect[key] = source.indirect?.[key] ?? 0;
+  });
+
+  return clone;
+};
+
+const EMPTY_FORM_STATE: SectorFormState = {
+  provinces: "",
+  beneficiaries: createEmptyBeneficiaries(),
+  projects: 0,
+  start: "",
+  end: "",
+  fieldActivity: "",
+  staff: 0,
+};
+
+export default function UserDashboard() {
+  const {
+    sectors,
+    reportingYears,
+    updateSector,
+    addReportingYear,
+    removeReportingYear,
+    complaints,
+    removeComplaint,
+  } = useDashboardData();
+
+  const sectorKeys = useMemo(
+    () => Object.keys(sectors) as SectorKey[],
+    [sectors]
+  );
+
+  const [selectedSector, setSelectedSector] = useState<SectorKey>(
+    () => sectorKeys[0] ?? "Humanitarian"
+  );
+  const [formState, setFormState] = useState<SectorFormState>(EMPTY_FORM_STATE);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [newYearInput, setNewYearInput] = useState("");
+
+  useEffect(() => {
+    if (!selectedSector || !sectors[selectedSector]) {
+      return;
+    }
+    const data = sectors[selectedSector];
+    setFormState({
+      provinces: data.provinces.join(", "),
+      beneficiaries: cloneBeneficiaries(data.beneficiaries),
+      projects: data.projects,
+      start: data.start,
+      end: data.end,
+      fieldActivity: data.fieldActivity,
+      staff: data.staff,
+    });
+  }, [selectedSector, sectors]);
+
+  const handleSectorChange = (event: ChangeEvent<HTMLSelectElement>) => {
+    setSelectedSector(event.target.value as SectorKey);
+    setSaveMessage(null);
+  };
+
+  const handleBeneficiaryChange = (
+    view: "direct" | "indirect",
+    category: BeneficiaryTypeKey,
+    value: number
+  ) => {
+    setFormState((prev) => ({
+      ...prev,
+      beneficiaries: {
+        ...prev.beneficiaries,
+        [view]: {
+          ...prev.beneficiaries[view],
+          [category]: Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0,
+        },
+      },
+    }));
+  };
+
+  const handleNumericFieldChange = (
+    field: "projects" | "staff",
+    value: number
+  ) => {
+    setFormState((prev) => ({
+      ...prev,
+      [field]: Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0,
+    }));
+  };
+
+  const handleTextFieldChange = (
+    field: "start" | "end" | "fieldActivity" | "provinces",
+    value: string
+  ) => {
+    setFormState((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!selectedSector) {
+      return;
+    }
+
+    setIsSaving(true);
+    const provinceList = formState.provinces
+      .split(",")
+      .map((province) => province.trim())
+      .filter(Boolean);
+
+    updateSector(selectedSector, {
+      provinces: provinceList,
+      beneficiaries: cloneBeneficiaries(formState.beneficiaries),
+      projects: formState.projects,
+      start: formState.start || sectors[selectedSector]?.start || "",
+      end: formState.end || sectors[selectedSector]?.end || "",
+      fieldActivity: formState.fieldActivity || sectors[selectedSector]?.fieldActivity || "",
+      staff: formState.staff,
+    });
+
+    setTimeout(() => {
+      setIsSaving(false);
+      setSaveMessage("Updates saved to the live dashboard.");
+    }, 250);
+  };
+
+  const handleAddYear = () => {
+    const parsed = Number(newYearInput);
+    if (!Number.isFinite(parsed)) {
+      setSaveMessage("Enter a valid year before adding.");
+      return;
+    }
+    addReportingYear(Math.floor(parsed));
+    setNewYearInput("");
+    setSaveMessage(`Year ${Math.floor(parsed)} added.`);
+  };
+
+  const handleRemoveYear = (year: number) => {
+    removeReportingYear(year);
+    setSaveMessage(`Year ${year} removed.`);
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-100">
+      <header className="border-b border-slate-200 bg-white">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-6">
+          <div>
+            <h1 className="text-2xl font-semibold text-slate-900">
+              Data Entry Workspace
+            </h1>
+            <p className="text-sm text-slate-500">
+              Manage sector metrics and reporting periods powering the public dashboard.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <Link
+              href="/"
+              className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-slate-400 hover:text-slate-900"
+            >
+              View Dashboard
+            </Link>
+            <Link
+              href="/admin"
+              className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-slate-400 hover:text-slate-900"
+            >
+              Admin
+            </Link>
+          </div>
+        </div>
+      </header>
+
+      <main className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-8">
+        <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <form className="space-y-8 p-6" onSubmit={handleSubmit}>
+            <div className="flex flex-wrap items-end justify-between gap-4 border-b border-slate-100 pb-6">
+              <div>
+                <h2 className="text-lg font-semibold text-slate-900">
+                  Sector Configuration
+                </h2>
+                <p className="text-sm text-slate-500">
+                  Pick a sector to tune its provincial coverage, targets, and beneficiaries.
+                </p>
+              </div>
+              <label className="flex min-w-[220px] flex-col gap-2 text-sm font-medium text-slate-700">
+                <span className="text-xs uppercase tracking-wide text-slate-500">Select Sector</span>
+                <select
+                  value={selectedSector}
+                  onChange={handleSectorChange}
+                  className="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300 focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                >
+                  {sectorKeys.map((sector) => (
+                    <option key={sector} value={sector}>
+                      {sector}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+              <div className="space-y-6">
+                <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4">
+                  <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+                    <span className="text-xs uppercase tracking-wide text-slate-500">
+                      Provinces Served
+                    </span>
+                    <textarea
+                      value={formState.provinces}
+                      onChange={(event) =>
+                        handleTextFieldChange("provinces", event.target.value)
+                      }
+                      rows={4}
+                      className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 transition hover:border-slate-300 focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                      placeholder="Comma-separated list, e.g. Kabul, Herat, Parwan"
+                    />
+                  </label>
+                  <p className="mt-2 text-xs text-slate-500">
+                    Entries are auto-sorted alphabetically on save. Duplicate names are removed.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+                    <span className="text-xs uppercase tracking-wide text-slate-500">
+                      Active Projects
+                    </span>
+                    <input
+                      type="number"
+                      min={0}
+                      value={formState.projects}
+                      onChange={(event) =>
+                        handleNumericFieldChange("projects", Number(event.target.value))
+                      }
+                      className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 transition hover:border-slate-300 focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                    />
+                  </label>
+                  <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+                    <span className="text-xs uppercase tracking-wide text-slate-500">
+                      Total Staff
+                    </span>
+                    <input
+                      type="number"
+                      min={0}
+                      value={formState.staff}
+                      onChange={(event) =>
+                        handleNumericFieldChange("staff", Number(event.target.value))
+                      }
+                      className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 transition hover:border-slate-300 focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                    />
+                  </label>
+                  <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+                    <span className="text-xs uppercase tracking-wide text-slate-500">
+                      Start Date
+                    </span>
+                    <input
+                      type="text"
+                      value={formState.start}
+                      onChange={(event) =>
+                        handleTextFieldChange("start", event.target.value)
+                      }
+                      className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 transition hover:border-slate-300 focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                      placeholder="e.g. 01 Jan 2024"
+                    />
+                  </label>
+                  <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+                    <span className="text-xs uppercase tracking-wide text-slate-500">
+                      End Date
+                    </span>
+                    <input
+                      type="text"
+                      value={formState.end}
+                      onChange={(event) =>
+                        handleTextFieldChange("end", event.target.value)
+                      }
+                      className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 transition hover:border-slate-300 focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                      placeholder="e.g. 31 Dec 2025"
+                    />
+                  </label>
+                </div>
+
+                <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
+                  <span className="text-xs uppercase tracking-wide text-slate-500">
+                    Current Focus / Field Activity
+                  </span>
+                  <textarea
+                    value={formState.fieldActivity}
+                    onChange={(event) =>
+                      handleTextFieldChange("fieldActivity", event.target.value)
+                    }
+                    rows={3}
+                    className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 transition hover:border-slate-300 focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                    placeholder="Brief description of priority activities"
+                  />
+                </label>
+              </div>
+
+              <div className="space-y-6">
+                <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4">
+                  <h3 className="text-sm font-semibold text-slate-800">
+                    Beneficiary Breakdown
+                  </h3>
+                  <p className="mb-4 text-xs text-slate-500">
+                    Capture direct and indirect beneficiary reach for each cohort.
+                  </p>
+                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                    {( ["direct", "indirect"] as const).map((view) => (
+                      <div key={view} className="space-y-4">
+                        <h4 className="text-sm font-semibold text-slate-800">
+                          {view === "direct" ? "Direct Beneficiaries" : "Indirect Beneficiaries"}
+                        </h4>
+                        {BENEFICIARY_GROUPS.map((group) => (
+                          <div
+                            key={`${view}-${group.key}`}
+                            className="rounded-lg border border-slate-200 bg-white px-3 py-3"
+                          >
+                            <span className="text-xs uppercase tracking-wide text-slate-500">
+                              {group.label}
+                            </span>
+                            <div className="mt-3 grid grid-cols-1 gap-3">
+                              {group.members.map((member) => {
+                                const key = member as BeneficiaryTypeKey;
+                                const labelParts = BENEFICIARY_TYPE_META[key].label.split("•");
+                                const memberLabel =
+                                  group.members.length > 1
+                                    ? labelParts[labelParts.length - 1]?.trim() ?? BENEFICIARY_TYPE_META[key].label
+                                    : BENEFICIARY_TYPE_META[key].label;
+                                return (
+                                  <label
+                                    key={`${view}-${member}`}
+                                    className="flex flex-col gap-2 text-sm font-medium text-slate-700"
+                                  >
+                                    <span>{memberLabel}</span>
+                                    <input
+                                      type="number"
+                                      min={0}
+                                      value={formState.beneficiaries[view][key] ?? 0}
+                                      onChange={(event) =>
+                                        handleBeneficiaryChange(view, key, Number(event.target.value))
+                                      }
+                                      className="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-1 text-sm text-slate-700 focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                                    />
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-slate-200 bg-white px-4 py-4">
+                  <h3 className="text-sm font-semibold text-slate-800">
+                    Reporting Years
+                  </h3>
+                  <p className="mb-3 text-xs text-slate-500">
+                    These values populate the year filter across the public dashboard.
+                  </p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {reportingYears.map((year) => (
+                      <div
+                        key={year}
+                        className="flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm font-medium text-slate-700"
+                      >
+                        <span>{year}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveYear(year)}
+                          className="rounded-full border border-transparent p-1 text-xs text-slate-400 transition hover:border-slate-300 hover:bg-white hover:text-slate-900"
+                          aria-label={`Remove year ${year}`}
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-4 flex items-center gap-3">
+                    <input
+                      type="number"
+                      placeholder="Add year"
+                      value={newYearInput}
+                      onChange={(event) => setNewYearInput(event.target.value)}
+                      className="w-32 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddYear}
+                      className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:bg-slate-300"
+                      disabled={!newYearInput.trim()}
+                    >
+                      Add Year
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between border-t border-slate-100 pt-6">
+              <div className="text-sm text-slate-500">
+                {saveMessage ? (
+                  <span className="font-medium text-emerald-600">{saveMessage}</span>
+                ) : (
+                  "Changes persist immediately for the current session."
+                )}
+              </div>
+              <div className="flex items-center gap-3">
+                <Link
+                  href="/"
+                  className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-slate-400 hover:text-slate-900"
+                >
+                  Cancel
+                </Link>
+                <button
+                  type="submit"
+                  disabled={isSaving}
+                  className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-500 disabled:bg-blue-300"
+                >
+                  {isSaving ? "Saving..." : "Save Changes"}
+                </button>
+              </div>
+            </div>
+          </form>
+        </section>
+
+        <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 px-6 py-4">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900">Complaint Inbox</h2>
+              <p className="text-sm text-slate-500">
+                Complaints submitted via the public form appear here for MEAL review.
+              </p>
+            </div>
+            <Link
+              href="/complaint-form"
+              className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-slate-400 hover:text-slate-900"
+            >
+              Open Complaint Form
+            </Link>
+          </div>
+
+          <div className="divide-y divide-slate-100">
+            {complaints.length ? (
+              complaints.map((complaint) => {
+                const submittedDate = new Date(complaint.submittedAt);
+                const formattedDate = Number.isNaN(submittedDate.getTime())
+                  ? complaint.submittedAt
+                  : submittedDate.toLocaleString();
+
+                return (
+                  <article
+                    key={complaint.id}
+                    className="grid gap-4 px-6 py-5 md:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]"
+                  >
+                    <div className="space-y-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                          <p className="text-sm font-semibold text-slate-900">{complaint.fullName}</p>
+                          <p className="text-xs text-slate-500">{complaint.email}{complaint.phone ? ` • ${complaint.phone}` : ""}</p>
+                        </div>
+                        <span className="text-xs uppercase tracking-wide text-slate-400">{formattedDate}</span>
+                      </div>
+                      <p className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 whitespace-pre-wrap">
+                        {complaint.message}
+                      </p>
+                    </div>
+                    <div className="flex items-start justify-end gap-3 text-sm">
+                      <button
+                        type="button"
+                        onClick={() => removeComplaint(complaint.id)}
+                        className="rounded-full border border-slate-300 bg-white px-4 py-2 font-semibold text-slate-600 transition hover:border-rose-300 hover:bg-rose-50 hover:text-rose-600"
+                      >
+                        Archive
+                      </button>
+                    </div>
+                  </article>
+                );
+              })
+            ) : (
+              <div className="px-6 py-8 text-sm text-slate-500">
+                No complaints submitted yet. New entries will appear here instantly.
+              </div>
+            )}
+          </div>
+        </section>
+      </main>
+    </div>
+  );
+}

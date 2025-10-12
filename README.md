@@ -1,8 +1,22 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Database Setup
+
+The dashboard now persists data in MySQL. Create a database (for example `nsdo_mis`) and run the SQL schema located at `database/schema.sql`:
+
+```bash
+mysql -u root -p nsdo_mis < database/schema.sql
+```
+
+Copy `.env.example` to `.env.local` and update the connection credentials (defaults are `root` / `root`).
+
+```bash
+cp .env.example .env.local
+```
+
 ## Getting Started
 
-First, run the development server:
+Install dependencies and run the development server:
 
 ```bash
 npm run dev
@@ -15,6 +29,12 @@ bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+To load example content locally, apply the optional sample data after the schema:
+
+```bash
+mysql -u root -p nsdo_mis < database/sample-data.sql
+```
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 

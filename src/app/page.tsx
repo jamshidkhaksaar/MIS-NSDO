@@ -4,13 +4,13 @@ import { ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from "
 import Link from "next/link";
 import AfghanistanMap from "@/ui/AfghanistanMap";
 import BeneficiaryDonut from "@/ui/BeneficiaryDonut";
+import { useDashboardData } from "@/context/DashboardDataContext";
 import {
   ALL_SECTOR_FIELD_ACTIVITY,
   ALL_SECTOR_KEY,
   BENEFICIARY_TYPE_KEYS,
   BENEFICIARY_TYPE_META,
-  useDashboardData,
-} from "@/context/DashboardDataContext";
+} from "@/lib/dashboard-data";
 import type {
   BeneficiaryBreakdown,
   SectorDetails,
@@ -63,10 +63,12 @@ const cloneBreakdown = (source: BeneficiaryBreakdown | undefined): BeneficiaryBr
 };
 
 export default function Home() {
-  const { sectors, reportingYears, branding } = useDashboardData();
+  const { sectors, reportingYears, branding, isLoading } = useDashboardData();
 
   const baseSectorKeys = useMemo(
-    () => Object.keys(sectors) as SectorKey[],
+    () =>
+      Object.keys(sectors)
+        .filter((key) => key !== ALL_SECTOR_KEY) as SectorKey[],
     [sectors]
   );
 
@@ -82,15 +84,23 @@ export default function Home() {
   const [beneficiaryView, setBeneficiaryView] =
     useState<"direct" | "indirect" | "total">("direct");
 
-  useEffect(() => {
-    if (!reportingYears.length) {
-      return;
-    }
+  const isBootstrapLoading = isLoading && baseSectorKeys.length === 0;
 
-    if (!reportingYears.includes(selectedYear)) {
+  useEffect(() => {
+    if (reportingYears.length && !reportingYears.includes(selectedYear)) {
       setSelectedYear(reportingYears[reportingYears.length - 1]!);
     }
   }, [reportingYears, selectedYear]);
+
+  useEffect(() => {
+    if (baseSectorKeys.length && selectedSector === ALL_SECTOR_KEY) {
+      return;
+    }
+
+    if (!baseSectorKeys.includes(selectedSector as SectorKey)) {
+      setSelectedSector(baseSectorKeys[0] ?? ALL_SECTOR_KEY);
+    }
+  }, [baseSectorKeys, selectedSector]);
 
   const sectorOrder: DashboardSectorKey[] = useMemo(
     () => [ALL_SECTOR_KEY, ...baseSectorKeys],
@@ -106,6 +116,29 @@ export default function Home() {
     sectorSnapshots: SectorSnapshotMap;
     sectorDetails: SectorDetailMap;
   } = useMemo(() => {
+    if (!baseSectorKeys.length) {
+      return {
+        allProvinces: [],
+        sectorSnapshots: {
+          [ALL_SECTOR_KEY]: {
+            provinces: [],
+            beneficiaries: createEmptyBreakdown(),
+          },
+        } as SectorSnapshotMap,
+        sectorDetails: {
+          [ALL_SECTOR_KEY]: {
+            provinces: [],
+            beneficiaries: createEmptyBreakdown(),
+            projects: 0,
+            start: DEFAULT_START_LABEL,
+            end: DEFAULT_END_LABEL,
+            fieldActivity: ALL_SECTOR_FIELD_ACTIVITY,
+            staff: 0,
+          },
+        } as SectorDetailMap,
+      };
+    }
+
     const provinceSet = new Set<string>();
     const aggregatedBeneficiaries = createEmptyBreakdown();
 
@@ -344,6 +377,14 @@ export default function Home() {
 
   const brandDisplayName = branding.companyName?.trim() || "Brand Placeholder";
   const brandLogo = branding.logoDataUrl;
+
+  if (isBootstrapLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 text-slate-600">
+        Loading dashboard data...
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-br from-slate-50 to-slate-100 text-slate-900">

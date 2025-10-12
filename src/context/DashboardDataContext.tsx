@@ -1,400 +1,237 @@
 "use client";
 
 import {
-  ReactNode,
   createContext,
   useCallback,
   useContext,
   useEffect,
   useMemo,
-  useRef,
   useState,
+  type ReactNode,
 } from "react";
 import {
   ALL_SECTOR_KEY,
   ALL_SECTOR_FIELD_ACTIVITY,
-  BENEFICIARY_TYPE_KEYS,
-  BENEFICIARY_TYPE_META,
-  BENEFICIARY_GROUPS,
-  INITIAL_REPORTING_YEARS,
-  INITIAL_SECTOR_STATE,
-  INITIAL_PROJECTS,
-  INITIAL_USERS,
+  DEFAULT_BRANDING,
+  DEFAULT_COMPLAINTS,
   PROJECT_SECTORS,
   RESPONSE_CLUSTERS,
   STANDARD_SECTOR_GROUPS,
-  DEFAULT_BRANDING,
-  DEFAULT_COMPLAINTS,
+  type DashboardProject,
+  type DashboardUser,
+  type DashboardUserRole,
+  type SectorDetails,
+  type SectorKey,
+  type SectorState,
+  type BrandingSettings,
+  type ComplaintRecord,
 } from "@/lib/dashboard-data";
-import type {
-  BeneficiaryBreakdown,
-  BeneficiaryTypeKey,
-  DashboardUser,
-  DashboardUserRole,
-  DashboardProject,
-  SectorDetails,
-  SectorKey,
-  SectorState,
-  ProjectSector,
-  BrandingSettings,
-  ComplaintRecord,
-} from "@/lib/dashboard-data";
+
+const DASHBOARD_STATE_ENDPOINT = "/api/dashboard/state";
+
+async function jsonFetch<T>(input: RequestInfo, init?: RequestInit): Promise<T> {
+  const response = await fetch(input, {
+    ...init,
+    headers: {
+      "Content-Type": "application/json",
+      ...(init?.headers ?? {}),
+    },
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    const message = await response.text();
+    throw new Error(message || "Request failed");
+  }
+
+  return response.json() as Promise<T>;
+}
 
 type DashboardContextValue = {
   sectors: SectorState;
   reportingYears: number[];
   users: DashboardUser[];
   projects: DashboardProject[];
-  updateSector: (sector: SectorKey, data: SectorDetails) => void;
-  addReportingYear: (year: number) => void;
-  removeReportingYear: (year: number) => void;
-  addUser: (user: { name: string; email: string; role: DashboardUserRole; organization?: string }) => void;
-  removeUser: (userId: string) => void;
-  addProject: (project: Omit<DashboardProject, "id">) => void;
-  updateProject: (projectId: string, updates: Partial<Omit<DashboardProject, "id">>) => void;
-  removeProject: (projectId: string) => void;
-  branding: BrandingSettings;
-  updateBranding: (updates: Partial<BrandingSettings>) => void;
   complaints: ComplaintRecord[];
-  addComplaint: (complaint: { fullName: string; email: string; phone?: string; message: string }) => void;
-  removeComplaint: (complaintId: string) => void;
+  branding: BrandingSettings;
+  refresh: () => Promise<void>;
+  updateSector: (sector: SectorKey, details: SectorDetails) => Promise<void>;
+  addReportingYear: (year: number) => Promise<void>;
+  removeReportingYear: (year: number) => Promise<void>;
+  addUser: (user: { name: string; email: string; role: DashboardUserRole; organization?: string }) => Promise<void>;
+  removeUser: (userId: string) => Promise<void>;
+  addProject: (project: Omit<DashboardProject, "id">) => Promise<void>;
+  updateProject: (projectId: string, updates: Omit<DashboardProject, "id">) => Promise<void>;
+  removeProject: (projectId: string) => Promise<void>;
+  updateBranding: (payload: Partial<BrandingSettings>) => Promise<void>;
+  addComplaint: (complaint: { fullName: string; email: string; phone?: string; message: string }) => Promise<void>;
+  removeComplaint: (complaintId: string) => Promise<void>;
+  isLoading: boolean;
 };
 
 const DashboardDataContext = createContext<DashboardContextValue | null>(null);
 
-const sanitizeBreakdown = (breakdown: BeneficiaryBreakdown | undefined): BeneficiaryBreakdown => {
-  const result: BeneficiaryBreakdown = {
-    direct: {} as Record<typeof BENEFICIARY_TYPE_KEYS[number], number>,
-    indirect: {} as Record<typeof BENEFICIARY_TYPE_KEYS[number], number>,
-  };
-
-  BENEFICIARY_TYPE_KEYS.forEach((key) => {
-    result.direct[key] = breakdown?.direct?.[key]
-      ? Math.max(0, Math.floor(breakdown.direct[key]!))
-      : 0;
-    result.indirect[key] = breakdown?.indirect?.[key]
-      ? Math.max(0, Math.floor(breakdown.indirect[key]!))
-      : 0;
-  });
-
-  return result;
-};
-
-const sanitizeStringList = (items: string[] | undefined): string[] =>
-  (items ?? [])
-    .map((item) => item.trim())
-    .filter(Boolean)
-    .filter((item, index, array) => array.indexOf(item) === index);
-
-const BRANDING_STORAGE_KEY = "nsdo-branding-settings";
-const COMPLAINTS_STORAGE_KEY = "nsdo-complaints";
-
 export function DashboardDataProvider({ children }: { children: ReactNode }) {
-  const [sectors, setSectors] = useState<SectorState>(INITIAL_SECTOR_STATE);
-  const [reportingYears, setReportingYears] = useState<number[]>(
-    Array.from(INITIAL_REPORTING_YEARS)
-  );
-  const [users, setUsers] = useState<DashboardUser[]>([...INITIAL_USERS]);
-  const [projects, setProjects] = useState<DashboardProject[]>([...INITIAL_PROJECTS]);
+  const [sectors, setSectors] = useState<SectorState>({});
+  const [reportingYears, setReportingYears] = useState<number[]>([]);
+  const [users, setUsers] = useState<DashboardUser[]>([]);
+  const [projects, setProjects] = useState<DashboardProject[]>([]);
+  const [complaints, setComplaints] = useState<ComplaintRecord[]>(DEFAULT_COMPLAINTS);
   const [branding, setBranding] = useState<BrandingSettings>(DEFAULT_BRANDING);
-  const isBrandingHydratedRef = useRef(false);
-  const [complaints, setComplaints] = useState<ComplaintRecord[]>([...DEFAULT_COMPLAINTS]);
-  const isComplaintsHydratedRef = useRef(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const updateSector = useCallback((sector: SectorKey, data: SectorDetails) => {
-    setSectors((prev) => ({
-      ...prev,
-      [sector]: {
-        ...data,
-        provinces: [...data.provinces].sort((a, b) => a.localeCompare(b)),
-        beneficiaries: sanitizeBreakdown(data.beneficiaries),
-      },
-    }));
-  }, []);
-
-  const addReportingYear = useCallback((year: number) => {
-    setReportingYears((prev) => {
-      if (!Number.isFinite(year)) return prev;
-      if (prev.includes(year)) return prev;
-      return [...prev, Math.floor(year)].sort((a, b) => a - b);
-    });
-  }, []);
-
-  const removeReportingYear = useCallback((year: number) => {
-    setReportingYears((prev) => prev.filter((item) => item !== year));
-  }, []);
-
-  const addUser = useCallback(
-    (user: { name: string; email: string; role: DashboardUserRole; organization?: string }) => {
-      setUsers((prev) => {
-        const trimmedEmail = user.email.trim().toLowerCase();
-        if (!trimmedEmail) {
-          return prev;
-        }
-
-        const id =
-          typeof crypto !== "undefined" && "randomUUID" in crypto
-            ? crypto.randomUUID()
-            : `user-${Date.now().toString(36)}-${Math.floor(Math.random() * 10000)}`;
-
-        const normalizedUser: DashboardUser = {
-          id,
-          name: user.name.trim() || "Unnamed User",
-          email: trimmedEmail,
-          role: user.role,
-          organization: user.organization?.trim() || undefined,
-        };
-
-        const existing = prev.findIndex(
-          (item) => item.email.toLowerCase() === normalizedUser.email
-        );
-
-        if (existing >= 0) {
-          const next = [...prev];
-          next[existing] = { ...next[existing], ...normalizedUser };
-          return next;
-        }
-
-        return [...prev, normalizedUser];
-      });
-    },
-    []
-  );
-
-  const removeUser = useCallback((userId: string) => {
-    setUsers((prev) => prev.filter((user) => user.id !== userId));
-  }, []);
-
-  const addProject = useCallback((project: Omit<DashboardProject, "id">) => {
-    setProjects((prev) => {
-      const id =
-        typeof crypto !== "undefined" && "randomUUID" in crypto
-          ? crypto.randomUUID()
-          : `project-${Date.now().toString(36)}-${Math.floor(Math.random() * 10000)}`;
-      const normalized: DashboardProject = {
-        id,
-        ...project,
-        name: project.name.trim() || "Untitled Project",
-        sector: project.sector,
-        clusters: sanitizeStringList(project.clusters),
-        standardSectors: sanitizeStringList(project.standardSectors),
-        goal: project.goal.trim(),
-        objectives: project.objectives.trim(),
-        majorAchievements: project.majorAchievements.trim(),
-        beneficiaries: sanitizeBreakdown(project.beneficiaries),
-        country: project.country.trim() || "Afghanistan",
-        provinces: sanitizeStringList(project.provinces),
-        districts: sanitizeStringList(project.districts),
-        communities: sanitizeStringList(project.communities),
-      };
-      return [...prev, normalized];
-    });
-  }, []);
-
-  const updateProject = useCallback(
-    (projectId: string, updates: Partial<Omit<DashboardProject, "id">>) => {
-      setProjects((prev) =>
-        prev.map((project) => {
-          if (project.id !== projectId) {
-            return project;
-          }
-          return {
-            ...project,
-            ...updates,
-            name: updates.name !== undefined ? updates.name.trim() || project.name : project.name,
-            goal: updates.goal !== undefined ? updates.goal.trim() : project.goal,
-            objectives:
-              updates.objectives !== undefined ? updates.objectives.trim() : project.objectives,
-            majorAchievements:
-              updates.majorAchievements !== undefined
-                ? updates.majorAchievements.trim()
-                : project.majorAchievements,
-            clusters:
-              updates.clusters !== undefined
-                ? sanitizeStringList(updates.clusters)
-                : project.clusters,
-            standardSectors:
-              updates.standardSectors !== undefined
-                ? sanitizeStringList(updates.standardSectors)
-                : project.standardSectors,
-            beneficiaries:
-              updates.beneficiaries !== undefined
-                ? sanitizeBreakdown(updates.beneficiaries)
-                : project.beneficiaries,
-            country:
-              updates.country !== undefined
-                ? (updates.country.trim() || project.country)
-                : project.country,
-            provinces:
-              updates.provinces !== undefined
-                ? sanitizeStringList(updates.provinces)
-                : project.provinces,
-            districts:
-              updates.districts !== undefined
-                ? sanitizeStringList(updates.districts)
-                : project.districts,
-            communities:
-              updates.communities !== undefined
-                ? sanitizeStringList(updates.communities)
-                : project.communities,
-          };
-        })
-      );
-    },
-    []
-  );
-
-  const removeProject = useCallback((projectId: string) => {
-    setProjects((prev) => prev.filter((project) => project.id !== projectId));
-  }, []);
-
-  const updateBranding = useCallback((updates: Partial<BrandingSettings>) => {
-    setBranding((prev) => ({
-      ...prev,
-      ...updates,
-    }));
-  }, []);
-
-  const addComplaint = useCallback(
-    (complaint: { fullName: string; email: string; phone?: string; message: string }) => {
-      setComplaints((prev) => {
-        const id =
-          typeof crypto !== "undefined" && "randomUUID" in crypto
-            ? crypto.randomUUID()
-            : `complaint-${Date.now().toString(36)}-${Math.floor(Math.random() * 10000)}`;
-        const trimmedName = complaint.fullName.trim();
-        const trimmedEmail = complaint.email.trim();
-        const trimmedPhone = complaint.phone?.trim();
-        const trimmedMessage = complaint.message.trim();
-
-        if (!trimmedName || !trimmedEmail || !trimmedMessage) {
-          return prev;
-        }
-
-        const record: ComplaintRecord = {
-          id,
-          fullName: trimmedName,
-          email: trimmedEmail,
-          phone: trimmedPhone || undefined,
-          message: trimmedMessage,
-          submittedAt: new Date().toISOString(),
-        };
-
-        return [record, ...prev];
-      });
-    },
-    []
-  );
-
-  const removeComplaint = useCallback((complaintId: string) => {
-    setComplaints((prev) => prev.filter((item) => item.id !== complaintId));
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === "undefined" || isBrandingHydratedRef.current) {
-      return;
-    }
-
+  const refresh = useCallback(async () => {
+    setIsLoading(true);
     try {
-      const stored = window.localStorage.getItem(BRANDING_STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored) as Partial<BrandingSettings>;
-        setBranding((prev) => ({
-          ...prev,
-          ...parsed,
-        }));
-      }
-    } catch {
-      // ignore malformed storage
+      const state = await jsonFetch<{
+        sectors: SectorState;
+        reportingYears: number[];
+        users: DashboardUser[];
+        projects: DashboardProject[];
+        branding: BrandingSettings;
+        complaints: ComplaintRecord[];
+      }>(DASHBOARD_STATE_ENDPOINT);
+
+      setSectors(state.sectors);
+      setReportingYears(state.reportingYears);
+      setUsers(state.users);
+      setProjects(state.projects);
+      setBranding(state.branding);
+      setComplaints(state.complaints);
+    } catch (error) {
+      console.error("Failed to refresh dashboard state", error);
     } finally {
-      isBrandingHydratedRef.current = true;
+      setIsLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    if (typeof window === "undefined" || !isBrandingHydratedRef.current) {
-      return;
-    }
+    refresh();
+  }, [refresh]);
 
-    try {
-      window.localStorage.setItem(BRANDING_STORAGE_KEY, JSON.stringify(branding));
-    } catch {
-      // ignore write errors
-    }
-  }, [branding]);
+  const updateSector = useCallback(async (sector: SectorKey, details: SectorDetails) => {
+    await jsonFetch(`/api/sectors/${encodeURIComponent(sector)}`, {
+      method: "PUT",
+      body: JSON.stringify(details),
+    });
+    await refresh();
+  }, [refresh]);
 
-  useEffect(() => {
-    if (typeof window === "undefined" || isComplaintsHydratedRef.current) {
-      return;
-    }
+  const addReportingYear = useCallback(async (year: number) => {
+    await jsonFetch("/api/reporting-years", {
+      method: "POST",
+      body: JSON.stringify({ year }),
+    });
+    await refresh();
+  }, [refresh]);
 
-    try {
-      const stored = window.localStorage.getItem(COMPLAINTS_STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored) as ComplaintRecord[];
-        if (Array.isArray(parsed)) {
-          setComplaints(parsed);
-        }
-      }
-    } catch {
-      // ignore malformed storage
-    } finally {
-      isComplaintsHydratedRef.current = true;
-    }
-  }, []);
+  const removeReportingYear = useCallback(async (year: number) => {
+    await jsonFetch(`/api/reporting-years/${year}`, {
+      method: "DELETE",
+    });
+    await refresh();
+  }, [refresh]);
 
-  useEffect(() => {
-    if (typeof window === "undefined" || !isComplaintsHydratedRef.current) {
-      return;
-    }
+  const addUser = useCallback(async (user: { name: string; email: string; role: DashboardUserRole; organization?: string }) => {
+    await jsonFetch("/api/users", {
+      method: "POST",
+      body: JSON.stringify(user),
+    });
+    await refresh();
+  }, [refresh]);
 
-    try {
-      window.localStorage.setItem(COMPLAINTS_STORAGE_KEY, JSON.stringify(complaints));
-    } catch {
-      // ignore write errors
-    }
-  }, [complaints]);
+  const removeUser = useCallback(async (userId: string) => {
+    await jsonFetch(`/api/users/${userId}`, { method: "DELETE" });
+    await refresh();
+  }, [refresh]);
 
-  const value = useMemo(
-    () => ({
-      sectors,
-      reportingYears,
-      users,
-      projects,
-      updateSector,
-      addReportingYear,
-      removeReportingYear,
-      addUser,
-      removeUser,
-      addProject,
-      updateProject,
-      removeProject,
-      branding,
-      updateBranding,
-      complaints,
-      addComplaint,
-      removeComplaint,
-    }),
-    [
-      sectors,
-      reportingYears,
-      users,
-      projects,
-      updateSector,
-      addReportingYear,
-      removeReportingYear,
-      addUser,
-      removeUser,
-      addProject,
-      updateProject,
-      removeProject,
-      branding,
-      updateBranding,
-      complaints,
-      addComplaint,
-      removeComplaint,
-    ]
-  );
+  const addProject = useCallback(async (project: Omit<DashboardProject, "id">) => {
+    await jsonFetch("/api/projects", {
+      method: "POST",
+      body: JSON.stringify(project),
+    });
+    await refresh();
+  }, [refresh]);
+
+  const updateProject = useCallback(async (projectId: string, updates: Omit<DashboardProject, "id">) => {
+    await jsonFetch(`/api/projects/${projectId}`, {
+      method: "PUT",
+      body: JSON.stringify(updates),
+    });
+    await refresh();
+  }, [refresh]);
+
+  const removeProject = useCallback(async (projectId: string) => {
+    await jsonFetch(`/api/projects/${projectId}`, {
+      method: "DELETE",
+    });
+    await refresh();
+  }, [refresh]);
+
+  const updateBranding = useCallback(async (payload: Partial<BrandingSettings>) => {
+    await jsonFetch("/api/branding", {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    });
+    await refresh();
+  }, [refresh]);
+
+  const addComplaint = useCallback(async (complaint: { fullName: string; email: string; phone?: string; message: string }) => {
+    await jsonFetch("/api/complaints", {
+      method: "POST",
+      body: JSON.stringify(complaint),
+    });
+    await refresh();
+  }, [refresh]);
+
+  const removeComplaint = useCallback(async (complaintId: string) => {
+    await jsonFetch(`/api/complaints/${complaintId}`, {
+      method: "DELETE",
+    });
+    await refresh();
+  }, [refresh]);
+
+  const value = useMemo<DashboardContextValue>(() => ({
+    sectors,
+    reportingYears,
+    users,
+    projects,
+    complaints,
+    branding,
+    refresh,
+    updateSector,
+    addReportingYear,
+    removeReportingYear,
+    addUser,
+    removeUser,
+    addProject,
+    updateProject,
+    removeProject,
+    updateBranding,
+    addComplaint,
+    removeComplaint,
+    isLoading,
+  }), [
+    sectors,
+    reportingYears,
+    users,
+    projects,
+    complaints,
+    branding,
+    refresh,
+    updateSector,
+    addReportingYear,
+    removeReportingYear,
+    addUser,
+    removeUser,
+    addProject,
+    updateProject,
+    removeProject,
+    updateBranding,
+    addComplaint,
+    removeComplaint,
+    isLoading,
+  ]);
 
   return (
     <DashboardDataContext.Provider value={value}>
@@ -420,16 +257,4 @@ export {
   PROJECT_SECTORS,
   RESPONSE_CLUSTERS,
   STANDARD_SECTOR_GROUPS,
-  DEFAULT_BRANDING,
-};
-export type {
-  SectorKey,
-  SectorDetails,
-  DashboardUser,
-  DashboardUserRole,
-  DashboardProject,
-  ProjectSector,
-  BeneficiaryBreakdown,
-  BeneficiaryTypeKey,
-  BrandingSettings,
 };

@@ -56,102 +56,7 @@ export type SectorDetails = {
   staff: number;
 };
 
-export type SectorState = Record<SectorKey, SectorDetails>;
-
-export const INITIAL_SECTOR_STATE: SectorState = {
-  Humanitarian: {
-    provinces: ["Kabul", "Takhar", "Badakhshan", "Herat"],
-    beneficiaries: {
-      direct: {
-        childrenGirls: 280,
-        childrenBoys: 260,
-        adultsWomen: 310,
-        adultsMen: 210,
-        households: 140,
-        idps: 90,
-        returnees: 65,
-        pwds: 55,
-      },
-      indirect: {
-        childrenGirls: 180,
-        childrenBoys: 170,
-        adultsWomen: 240,
-        adultsMen: 195,
-        households: 120,
-        idps: 75,
-        returnees: 48,
-        pwds: 36,
-      },
-    },
-    projects: 14,
-    start: "15 Feb 2024",
-    end: "30 Sep 2025",
-    fieldActivity: "Emergency response & relief kits",
-    staff: 62,
-  },
-  Advocacy: {
-    provinces: ["Parwan", "Kabul", "Baghlan"],
-    beneficiaries: {
-      direct: {
-        childrenGirls: 160,
-        childrenBoys: 150,
-        adultsWomen: 190,
-        adultsMen: 140,
-        households: 90,
-        idps: 50,
-        returnees: 44,
-        pwds: 28,
-      },
-      indirect: {
-        childrenGirls: 120,
-        childrenBoys: 115,
-        adultsWomen: 160,
-        adultsMen: 120,
-        households: 72,
-        idps: 42,
-        returnees: 30,
-        pwds: 22,
-      },
-    },
-    projects: 9,
-    start: "01 Mar 2024",
-    end: "31 Dec 2024",
-    fieldActivity: "Policy dialogues & community forums",
-    staff: 28,
-  },
-  Development: {
-    provinces: ["Kunduz", "Baghlan", "Parwan", "Badakhshan"],
-    beneficiaries: {
-      direct: {
-        childrenGirls: 210,
-        childrenBoys: 200,
-        adultsWomen: 250,
-        adultsMen: 220,
-        households: 120,
-        idps: 70,
-        returnees: 60,
-        pwds: 44,
-      },
-      indirect: {
-        childrenGirls: 150,
-        childrenBoys: 140,
-        adultsWomen: 190,
-        adultsMen: 170,
-        households: 110,
-        idps: 62,
-        returnees: 48,
-        pwds: 34,
-      },
-    },
-    projects: 11,
-    start: "10 Jan 2024",
-    end: "31 Dec 2025",
-    fieldActivity: "Infrastructure rehabilitation",
-    staff: 44,
-  },
-};
-
-export const INITIAL_REPORTING_YEARS = [2023, 2024, 2025] as const;
+export type SectorState = Record<string, SectorDetails>;
 
 export type DashboardUserRole = "Administrator" | "Editor" | "Viewer";
 
@@ -164,30 +69,6 @@ export type DashboardUser = {
 };
 
 export type DashboardUsers = DashboardUser[];
-
-export const INITIAL_USERS: DashboardUsers = [
-  {
-    id: "user-1",
-    name: "Jamila Farzad",
-    email: "jamila.farzad@example.org",
-    role: "Administrator",
-    organization: "NSDO HQ",
-  },
-  {
-    id: "user-2",
-    name: "Rahim Khan",
-    email: "rahim.khan@example.org",
-    role: "Editor",
-    organization: "Regional Office",
-  },
-  {
-    id: "user-3",
-    name: "Sara Barakzai",
-    email: "sara.barakzai@example.org",
-    role: "Viewer",
-    organization: "Partner Agency",
-  },
-];
 
 export const PROJECT_SECTORS = [
   "Agriculture",
@@ -285,8 +166,6 @@ export type DashboardProject = {
   id: string;
   name: string;
   sector: ProjectSector;
-  clusters: string[];
-  standardSectors: string[];
   beneficiaries: BeneficiaryBreakdown;
   country: string;
   provinces: string[];
@@ -295,97 +174,11 @@ export type DashboardProject = {
   goal: string;
   objectives: string;
   majorAchievements: string;
+  start: string;
+  end: string;
+  staff: number;
+  clusters: string[];
+  standardSectors: string[];
 };
 
 export type DashboardProjects = DashboardProject[];
-
-export const INITIAL_PROJECTS: DashboardProjects = [
-  {
-    id: "project-1",
-    name: "Community-Based Agricultural Support",
-    sector: "Agriculture",
-    clusters: [
-      "Food Security and Agriculture Cluster",
-      "WASH (Water, Sanitation and Hygiene) Cluster",
-    ],
-    standardSectors: [
-      "Food Security & Agriculture",
-      "Livelihoods & Economic Empowerment",
-      "Environment & Climate Resilience",
-    ],
-    beneficiaries: {
-      direct: {
-        childrenGirls: 320,
-        childrenBoys: 340,
-        adultsWomen: 460,
-        adultsMen: 380,
-        households: 220,
-        idps: 120,
-        returnees: 90,
-        pwds: 70,
-      },
-      indirect: {
-        childrenGirls: 280,
-        childrenBoys: 295,
-        adultsWomen: 420,
-        adultsMen: 360,
-        households: 240,
-        idps: 140,
-        returnees: 110,
-        pwds: 84,
-      },
-    },
-    country: "Afghanistan",
-    provinces: ["Kabul", "Takhar", "Herat"],
-    districts: ["Kabul City", "Rostaq", "Guzara"],
-    communities: ["Pole-e-Charkhi", "Dasht-e-Qala", "Karokh"],
-    goal: "Increase household food security through resilient agricultural practices.",
-    objectives:
-      "• Provide farmer field school training across 3 provinces.\n• Introduce drought-resilient seed kits and irrigation tools.\n• Establish producer cooperatives to connect farmers with local markets.",
-    majorAchievements:
-      "• 1,250 farmers trained on climate-smart techniques.\n• 18 agribusiness cooperatives formed with 45% women leadership.\n• Average crop yields increased by 27% in target districts.",
-  },
-  {
-    id: "project-2",
-    name: "Inclusive Education Access Initiative",
-    sector: "Education",
-    clusters: ["Education Cluster", "Protection Cluster"],
-    standardSectors: [
-      "Education",
-      "Education & Literacy",
-      "Disability Inclusion",
-      "Gender Equality",
-    ],
-    beneficiaries: {
-      direct: {
-        childrenGirls: 620,
-        childrenBoys: 590,
-        adultsWomen: 420,
-        adultsMen: 340,
-        households: 180,
-        idps: 150,
-        returnees: 110,
-        pwds: 95,
-      },
-      indirect: {
-        childrenGirls: 540,
-        childrenBoys: 520,
-        adultsWomen: 400,
-        adultsMen: 310,
-        households: 200,
-        idps: 170,
-        returnees: 130,
-        pwds: 100,
-      },
-    },
-    country: "Afghanistan",
-    provinces: ["Kunduz", "Baghlan"],
-    districts: ["Kunduz City", "Pul-e-Khumri"],
-    communities: ["Imam Sahib", "Nahr-e-Shahi"],
-    goal: "Broaden safe learning access for primary students in rural communities.",
-    objectives:
-      "• Rehabilitate 12 community classrooms and learning spaces.\n• Deploy accelerated learning curricula for out-of-school children.\n• Train teachers on inclusive education and safeguarding.",
-    majorAchievements:
-      "• 2,050 children re-enrolled in formal schooling pathways.\n• 164 teachers certified on inclusive pedagogy.\n• Child protection referral pathways established in all target schools.",
-  },
-];

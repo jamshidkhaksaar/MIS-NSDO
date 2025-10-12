@@ -2,6 +2,7 @@
 
 import { FormEvent, useCallback, useMemo, useState } from "react";
 import Link from "next/link";
+import { useDashboardData } from "@/context/DashboardDataContext";
 import {
   BENEFICIARY_GROUPS,
   BENEFICIARY_TYPE_KEYS,
@@ -9,8 +10,7 @@ import {
   PROJECT_SECTORS,
   RESPONSE_CLUSTERS,
   STANDARD_SECTOR_GROUPS,
-  useDashboardData,
-} from "@/context/DashboardDataContext";
+} from "@/lib/dashboard-data";
 import type {
   BeneficiaryBreakdown,
   BeneficiaryTypeKey,
@@ -82,7 +82,7 @@ function sortProjects(projects: DashboardProject[]) {
 }
 
 export default function ProjectsPage() {
-  const { projects, addProject, removeProject } = useDashboardData();
+  const { projects, addProject, removeProject, isLoading } = useDashboardData();
   const [formState, setFormState] = useState<ProjectFormState>(INITIAL_FORM_STATE);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -122,6 +122,7 @@ export default function ProjectsPage() {
   }, []);
 
   const preparedProjects = useMemo(() => sortProjects(projects), [projects]);
+  const isBootstrapLoading = isLoading && projects.length === 0;
   const formDirectTotal = useMemo(
     () =>
       BENEFICIARY_TYPE_KEYS.reduce(
@@ -140,7 +141,7 @@ export default function ProjectsPage() {
     [formState.beneficiaries.indirect]
   );
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
     setNotice(null);
@@ -194,24 +195,23 @@ export default function ProjectsPage() {
       return;
     }
 
-    setIsSubmitting(true);
-    addProject({
-      name: formState.name.trim(),
-      sector,
-      clusters: formState.clusters,
-      standardSectors: formState.standardSectors,
-      beneficiaries: cloneBeneficiaries(formState.beneficiaries),
-      country: formState.country.trim(),
-      provinces: formState.provinces,
-      districts: formState.districts,
-      communities: formState.communities,
-      goal: formState.goal.trim(),
-      objectives: formState.objectives.trim(),
-      majorAchievements: formState.majorAchievements.trim(),
-    });
+    try {
+      setIsSubmitting(true);
+      await addProject({
+        name: formState.name.trim(),
+        sector,
+        clusters: formState.clusters,
+        standardSectors: formState.standardSectors,
+        beneficiaries: cloneBeneficiaries(formState.beneficiaries),
+        country: formState.country.trim(),
+        provinces: formState.provinces,
+        districts: formState.districts,
+        communities: formState.communities,
+        goal: formState.goal.trim(),
+        objectives: formState.objectives.trim(),
+        majorAchievements: formState.majorAchievements.trim(),
+      });
 
-    setTimeout(() => {
-      setIsSubmitting(false);
       setNotice("Project recorded successfully.");
       setFormState((prev) => ({
         ...INITIAL_FORM_STATE,
@@ -219,11 +219,15 @@ export default function ProjectsPage() {
         beneficiaries: createEmptyBeneficiaries(),
       }));
       setLocationInputs({ province: "", district: "", community: "" });
-    }, 200);
+    } catch (submissionError) {
+      setError(submissionError instanceof Error ? submissionError.message : "Unable to save project.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleRemoveProject = (projectId: string) => {
-    removeProject(projectId);
+  const handleRemoveProject = async (projectId: string) => {
+    await removeProject(projectId);
     setNotice("Project removed.");
   };
 
@@ -306,6 +310,14 @@ export default function ProjectsPage() {
       [type]: prev[type].filter((item) => item !== value),
     }));
   };
+
+  if (isBootstrapLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-100 text-slate-500">
+        Loading project workspace...
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-100">

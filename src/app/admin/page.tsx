@@ -88,10 +88,10 @@ export default function AdminDashboard() {
     try {
       const dataUrl = await readFileAsDataUrl(file);
       if (type === "logo") {
-        updateBranding({ logoDataUrl: dataUrl });
+        await updateBranding({ logoDataUrl: dataUrl });
         logoInputRef.current?.blur();
       } else {
-        updateBranding({ faviconDataUrl: dataUrl });
+        await updateBranding({ faviconDataUrl: dataUrl });
         faviconInputRef.current?.blur();
       }
       setBrandNotice(`${type === "logo" ? "Logo" : "Favicon"} updated successfully.`);
@@ -104,16 +104,16 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleAssetReset = (type: "logo" | "favicon") => {
+  const handleAssetReset = async (type: "logo" | "favicon") => {
     setBrandError(null);
     setBrandNotice(null);
     if (type === "logo") {
-      updateBranding({ logoDataUrl: null });
+      await updateBranding({ logoDataUrl: null });
       if (logoInputRef.current) {
         logoInputRef.current.value = "";
       }
     } else {
-      updateBranding({ faviconDataUrl: null });
+      await updateBranding({ faviconDataUrl: null });
       if (faviconInputRef.current) {
         faviconInputRef.current.value = "";
       }
@@ -121,7 +121,7 @@ export default function AdminDashboard() {
     setBrandNotice(`${type === "logo" ? "Logo" : "Favicon"} reset.`);
   };
 
-  const handleCompanyNameSave = () => {
+  const handleCompanyNameSave = async () => {
     const trimmed = companyNameInput.trim();
     if (!trimmed) {
       setBrandNotice(null);
@@ -129,12 +129,12 @@ export default function AdminDashboard() {
       return;
     }
 
-    updateBranding({ companyName: trimmed });
+    await updateBranding({ companyName: trimmed });
     setBrandError(null);
     setBrandNotice("Company name updated.");
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
     setNotice(null);
@@ -152,26 +152,29 @@ export default function AdminDashboard() {
       return;
     }
 
-    setIsSubmitting(true);
-    addUser({
-      name: trimmedName,
-      email: trimmedEmail,
-      role: formState.role,
-      organization: formState.organization.trim() || undefined,
-    });
+    try {
+      setIsSubmitting(true);
+      await addUser({
+        name: trimmedName,
+        email: trimmedEmail,
+        role: formState.role,
+        organization: formState.organization.trim() || undefined,
+      });
 
-    setTimeout(() => {
-      setIsSubmitting(false);
       setFormState({
         ...DEFAULT_FORM_STATE,
         role: formState.role,
       });
       setNotice("User added or updated successfully.");
-    }, 200);
+    } catch (submissionError) {
+      setError(submissionError instanceof Error ? submissionError.message : "Unable to save user.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleRemoveUser = (id: string) => {
-    removeUser(id);
+  const handleRemoveUser = async (id: string) => {
+    await removeUser(id);
     setNotice("User removed from the workspace.");
   };
 

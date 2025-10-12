@@ -2,12 +2,13 @@
 
 import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useDashboardData } from "@/context/DashboardDataContext";
 import {
+  ALL_SECTOR_KEY,
   BENEFICIARY_GROUPS,
   BENEFICIARY_TYPE_KEYS,
   BENEFICIARY_TYPE_META,
-  useDashboardData,
-} from "@/context/DashboardDataContext";
+} from "@/lib/dashboard-data";
 import type {
   BeneficiaryBreakdown,
   BeneficiaryTypeKey,
@@ -73,10 +74,13 @@ export default function UserDashboard() {
     removeReportingYear,
     complaints,
     removeComplaint,
+    isLoading,
   } = useDashboardData();
 
   const sectorKeys = useMemo(
-    () => Object.keys(sectors) as SectorKey[],
+    () =>
+      Object.keys(sectors)
+        .filter((key) => key !== ALL_SECTOR_KEY) as SectorKey[],
     [sectors]
   );
 
@@ -189,6 +193,14 @@ export default function UserDashboard() {
     removeReportingYear(year);
     setSaveMessage(`Year ${year} removed.`);
   };
+
+  if (isLoading && !sectorKeys.length) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-100 text-slate-500">
+        Loading data-entry workspace...
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-100">
@@ -517,7 +529,9 @@ export default function UserDashboard() {
                     <div className="flex items-start justify-end gap-3 text-sm">
                       <button
                         type="button"
-                        onClick={() => removeComplaint(complaint.id)}
+                        onClick={async () => {
+                          await removeComplaint(complaint.id);
+                        }}
                         className="rounded-full border border-slate-300 bg-white px-4 py-2 font-semibold text-slate-600 transition hover:border-rose-300 hover:bg-rose-50 hover:text-rose-600"
                       >
                         Archive

@@ -14,7 +14,7 @@ export default function ComplaintFormPage() {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
     setNotice(null);
@@ -35,22 +35,25 @@ export default function ComplaintFormPage() {
       return;
     }
 
-    setIsSubmitting(true);
-    addComplaint({
-      fullName,
-      email,
-      phone,
-      message,
-    });
+    try {
+      setIsSubmitting(true);
+      await addComplaint({
+        fullName,
+        email,
+        phone,
+        message,
+      });
 
-    setTimeout(() => {
-      setIsSubmitting(false);
       setNotice("Your complaint has been logged. Thank you for sharing your feedback.");
       setFullName("");
       setEmail("");
       setPhone("");
       setMessage("");
-    }, 300);
+    } catch (submissionError) {
+      setError(submissionError instanceof Error ? submissionError.message : "Unable to submit complaint.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (

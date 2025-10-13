@@ -54,6 +54,8 @@ export type SectorDetails = {
   end: string;
   fieldActivity: string;
   staff: number;
+  description?: string;
+  clusters?: string[];
 };
 
 export type SectorState = Record<string, SectorDetails>;

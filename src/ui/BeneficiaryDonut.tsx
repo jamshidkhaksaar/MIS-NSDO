@@ -13,6 +13,7 @@ type BeneficiaryDonutProps = {
   className?: string;
   title?: string;
   subtitle?: string;
+  showLegend?: boolean;
 };
 
 const RADIUS = 80;
@@ -24,6 +25,7 @@ export function BeneficiaryDonut({
   className,
   title = "Beneficiaries",
   subtitle = "Distribution snapshot across primary cohorts.",
+  showLegend = true,
 }: BeneficiaryDonutProps) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const total = useMemo(() => data.reduce((sum, slice) => sum + slice.value, 0), [data]);
@@ -49,9 +51,9 @@ export function BeneficiaryDonut({
   return (
     <div className={`${className ?? ""} flex h-full flex-col justify-between`}>
       <div>
-        <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
+        <h2 className="text-lg font-semibold text-brand-strong">{title}</h2>
         {subtitle ? (
-          <p className="mt-1 text-sm text-slate-600">{subtitle}</p>
+          <p className="mt-1 text-sm text-brand-muted">{subtitle}</p>
         ) : null}
       </div>
 
@@ -103,7 +105,8 @@ export function BeneficiaryDonut({
             x={100}
             y={92}
             textAnchor="middle"
-            className="fill-slate-900 text-xl font-semibold"
+            className="text-xl font-semibold"
+            fill="var(--color-neutral-900)"
           >
             {total.toLocaleString()}
           </text>
@@ -111,32 +114,35 @@ export function BeneficiaryDonut({
             x={100}
             y={116}
             textAnchor="middle"
-            className="fill-slate-500 text-xs uppercase tracking-wide"
+            className="text-xs uppercase tracking-wide"
+            fill="var(--color-neutral-500)"
           >
             Total
           </text>
         </svg>
       </div>
 
-      <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-        {data.map((slice) => {
-          const percentage = ((slice.value / safeTotal) * 100).toFixed(1);
-          return (
-            <div key={slice.label} className="flex items-center gap-2">
-              <span
-                className="inline-flex h-3 w-3 rounded-full"
-                style={{ backgroundColor: slice.color }}
-              />
-              <div className="flex flex-col">
-                <span className="font-medium text-slate-900">{slice.label}</span>
-                <span className="text-xs text-slate-500">
-                  {slice.value.toLocaleString()} · {percentage}%
-                </span>
+      {showLegend ? (
+        <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+          {data.map((slice) => {
+            const percentage = ((slice.value / safeTotal) * 100).toFixed(1);
+            return (
+              <div key={slice.label} className="flex items-center gap-2">
+                <span
+                  className="inline-flex h-3 w-3 rounded-full"
+                  style={{ backgroundColor: slice.color }}
+                />
+                <div className="flex flex-col">
+                  <span className="font-medium text-brand-strong">{slice.label}</span>
+                  <span className="text-xs text-brand-soft">
+                    {slice.value.toLocaleString()} · {percentage}%
+                  </span>
+                </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      ) : null}
     </div>
   );
 }

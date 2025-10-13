@@ -24,6 +24,8 @@ type SectorFormState = {
   start: string;
   end: string;
   fieldActivity: string;
+  description: string;
+  clusters: string;
   staff: number;
 };
 
@@ -62,6 +64,8 @@ const EMPTY_FORM_STATE: SectorFormState = {
   start: "",
   end: "",
   fieldActivity: "",
+  description: "",
+  clusters: "",
   staff: 0,
 };
 
@@ -196,34 +200,34 @@ export default function UserDashboard() {
 
   if (isLoading && !sectorKeys.length) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-100 text-slate-500">
+      <div className="flex min-h-screen items-center justify-center bg-brand-tint text-brand-soft">
         Loading data-entry workspace...
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-100">
-      <header className="border-b border-slate-200 bg-white">
+    <div className="min-h-screen bg-brand-soft">
+      <header className="border-b border-brand bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-6">
           <div>
-            <h1 className="text-2xl font-semibold text-slate-900">
+            <h1 className="text-2xl font-semibold text-brand-strong">
               Data Entry Workspace
             </h1>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-brand-soft">
               Manage sector metrics and reporting periods powering the public dashboard.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <Link
               href="/"
-              className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-slate-400 hover:text-slate-900"
+              className="rounded-full px-4 py-2 text-sm font-medium chip-brand"
             >
               View Dashboard
             </Link>
             <Link
               href="/admin"
-              className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-slate-400 hover:text-slate-900"
+              className="rounded-full px-4 py-2 text-sm font-medium chip-brand"
             >
               Admin
             </Link>
@@ -232,23 +236,23 @@ export default function UserDashboard() {
       </header>
 
       <main className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-8">
-        <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <section className="rounded-2xl border border-brand bg-white shadow-brand-soft">
           <form className="space-y-8 p-6" onSubmit={handleSubmit}>
-            <div className="flex flex-wrap items-end justify-between gap-4 border-b border-slate-100 pb-6">
+            <div className="flex flex-wrap items-end justify-between gap-4 border-b border-brand pb-6">
               <div>
-                <h2 className="text-lg font-semibold text-slate-900">
+                <h2 className="text-lg font-semibold text-brand-strong">
                   Sector Configuration
                 </h2>
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-brand-soft">
                   Pick a sector to tune its provincial coverage, targets, and beneficiaries.
                 </p>
               </div>
-              <label className="flex min-w-[220px] flex-col gap-2 text-sm font-medium text-slate-700">
-                <span className="text-xs uppercase tracking-wide text-slate-500">Select Sector</span>
+              <label className="flex min-w-[220px] flex-col gap-2 text-sm font-medium text-brand-muted">
+                <span className="text-xs uppercase tracking-wide text-brand-soft">Select Sector</span>
                 <select
                   value={selectedSector}
                   onChange={handleSectorChange}
-                  className="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300 focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                  className="w-full rounded-lg input-brand px-4 py-2 text-sm font-medium text-brand-muted"
                 >
                   {sectorKeys.map((sector) => (
                     <option key={sector} value={sector}>
@@ -261,9 +265,9 @@ export default function UserDashboard() {
 
             <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
               <div className="space-y-6">
-                <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4">
-                  <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
-                    <span className="text-xs uppercase tracking-wide text-slate-500">
+                <div className="rounded-xl border border-brand bg-brand-soft px-4 py-4">
+                  <label className="flex flex-col gap-2 text-sm font-medium text-brand-muted">
+                    <span className="text-xs uppercase tracking-wide text-brand-soft">
                       Provinces Served
                     </span>
                     <textarea
@@ -272,18 +276,18 @@ export default function UserDashboard() {
                         handleTextFieldChange("provinces", event.target.value)
                       }
                       rows={4}
-                      className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 transition hover:border-slate-300 focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                      className="w-full rounded-lg input-brand px-4 py-2 text-sm text-brand-muted bg-white"
                       placeholder="Comma-separated list, e.g. Kabul, Herat, Parwan"
                     />
                   </label>
-                  <p className="mt-2 text-xs text-slate-500">
+                  <p className="mt-2 text-xs text-brand-soft">
                     Entries are auto-sorted alphabetically on save. Duplicate names are removed.
                   </p>
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
-                    <span className="text-xs uppercase tracking-wide text-slate-500">
+                  <label className="flex flex-col gap-2 text-sm font-medium text-brand-muted">
+                    <span className="text-xs uppercase tracking-wide text-brand-soft">
                       Active Projects
                     </span>
                     <input
@@ -293,11 +297,11 @@ export default function UserDashboard() {
                       onChange={(event) =>
                         handleNumericFieldChange("projects", Number(event.target.value))
                       }
-                      className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 transition hover:border-slate-300 focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                      className="w-full rounded-lg input-brand px-4 py-2 text-sm text-brand-muted bg-white"
                     />
                   </label>
-                  <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
-                    <span className="text-xs uppercase tracking-wide text-slate-500">
+                  <label className="flex flex-col gap-2 text-sm font-medium text-brand-muted">
+                    <span className="text-xs uppercase tracking-wide text-brand-soft">
                       Total Staff
                     </span>
                     <input
@@ -307,11 +311,11 @@ export default function UserDashboard() {
                       onChange={(event) =>
                         handleNumericFieldChange("staff", Number(event.target.value))
                       }
-                      className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 transition hover:border-slate-300 focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                      className="w-full rounded-lg input-brand px-4 py-2 text-sm text-brand-muted bg-white"
                     />
                   </label>
-                  <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
-                    <span className="text-xs uppercase tracking-wide text-slate-500">
+                  <label className="flex flex-col gap-2 text-sm font-medium text-brand-muted">
+                    <span className="text-xs uppercase tracking-wide text-brand-soft">
                       Start Date
                     </span>
                     <input
@@ -320,12 +324,12 @@ export default function UserDashboard() {
                       onChange={(event) =>
                         handleTextFieldChange("start", event.target.value)
                       }
-                      className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 transition hover:border-slate-300 focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                      className="w-full rounded-lg input-brand px-4 py-2 text-sm text-brand-muted bg-white"
                       placeholder="e.g. 01 Jan 2024"
                     />
                   </label>
-                  <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
-                    <span className="text-xs uppercase tracking-wide text-slate-500">
+                  <label className="flex flex-col gap-2 text-sm font-medium text-brand-muted">
+                    <span className="text-xs uppercase tracking-wide text-brand-soft">
                       End Date
                     </span>
                     <input
@@ -334,14 +338,14 @@ export default function UserDashboard() {
                       onChange={(event) =>
                         handleTextFieldChange("end", event.target.value)
                       }
-                      className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 transition hover:border-slate-300 focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                      className="w-full rounded-lg input-brand px-4 py-2 text-sm text-brand-muted bg-white"
                       placeholder="e.g. 31 Dec 2025"
                     />
                   </label>
                 </div>
 
-                <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
-                  <span className="text-xs uppercase tracking-wide text-slate-500">
+                <label className="flex flex-col gap-2 text-sm font-medium text-brand-muted">
+                  <span className="text-xs uppercase tracking-wide text-brand-soft">
                     Current Focus / Field Activity
                   </span>
                   <textarea
@@ -350,32 +354,32 @@ export default function UserDashboard() {
                       handleTextFieldChange("fieldActivity", event.target.value)
                     }
                     rows={3}
-                    className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 transition hover:border-slate-300 focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                    className="w-full rounded-lg input-brand px-4 py-2 text-sm text-brand-muted bg-white"
                     placeholder="Brief description of priority activities"
                   />
                 </label>
               </div>
 
               <div className="space-y-6">
-                <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-4">
-                  <h3 className="text-sm font-semibold text-slate-800">
+                <div className="rounded-xl border border-brand bg-brand-soft px-4 py-4">
+                  <h3 className="text-sm font-semibold text-brand-strong">
                     Beneficiary Breakdown
                   </h3>
-                  <p className="mb-4 text-xs text-slate-500">
+                  <p className="mb-4 text-xs text-brand-soft">
                     Capture direct and indirect beneficiary reach for each cohort.
                   </p>
                   <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                     {( ["direct", "indirect"] as const).map((view) => (
                       <div key={view} className="space-y-4">
-                        <h4 className="text-sm font-semibold text-slate-800">
+                        <h4 className="text-sm font-semibold text-brand-strong">
                           {view === "direct" ? "Direct Beneficiaries" : "Indirect Beneficiaries"}
                         </h4>
                         {BENEFICIARY_GROUPS.map((group) => (
                           <div
                             key={`${view}-${group.key}`}
-                            className="rounded-lg border border-slate-200 bg-white px-3 py-3"
+                            className="rounded-lg border border-brand bg-white px-3 py-3"
                           >
-                            <span className="text-xs uppercase tracking-wide text-slate-500">
+                            <span className="text-xs uppercase tracking-wide text-brand-soft">
                               {group.label}
                             </span>
                             <div className="mt-3 grid grid-cols-1 gap-3">
@@ -389,7 +393,7 @@ export default function UserDashboard() {
                                 return (
                                   <label
                                     key={`${view}-${member}`}
-                                    className="flex flex-col gap-2 text-sm font-medium text-slate-700"
+                                    className="flex flex-col gap-2 text-sm font-medium text-brand-muted"
                                   >
                                     <span>{memberLabel}</span>
                                     <input
@@ -399,7 +403,7 @@ export default function UserDashboard() {
                                       onChange={(event) =>
                                         handleBeneficiaryChange(view, key, Number(event.target.value))
                                       }
-                                      className="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-1 text-sm text-slate-700 focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                                      className="w-full rounded-md input-brand px-3 py-1 text-sm text-brand-muted"
                                     />
                                   </label>
                                 );
@@ -412,24 +416,24 @@ export default function UserDashboard() {
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-slate-200 bg-white px-4 py-4">
-                  <h3 className="text-sm font-semibold text-slate-800">
+                <div className="rounded-xl border border-brand bg-white px-4 py-4">
+                  <h3 className="text-sm font-semibold text-brand-strong">
                     Reporting Years
                   </h3>
-                  <p className="mb-3 text-xs text-slate-500">
+                  <p className="mb-3 text-xs text-brand-soft">
                     These values populate the year filter across the public dashboard.
                   </p>
                   <div className="flex flex-wrap items-center gap-2">
                     {reportingYears.map((year) => (
                       <div
                         key={year}
-                        className="flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm font-medium text-slate-700"
+                        className="flex items-center gap-2 rounded-full border border-brand bg-brand-soft px-3 py-1 text-sm font-medium text-brand-muted"
                       >
                         <span>{year}</span>
                         <button
                           type="button"
                           onClick={() => handleRemoveYear(year)}
-                          className="rounded-full border border-transparent p-1 text-xs text-slate-400 transition hover:border-slate-300 hover:bg-white hover:text-slate-900"
+                          className="rounded-full border border-transparent p-1 text-xs text-brand-soft transition hover:border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
                           aria-label={`Remove year ${year}`}
                         >
                           ✕
@@ -443,12 +447,12 @@ export default function UserDashboard() {
                       placeholder="Add year"
                       value={newYearInput}
                       onChange={(event) => setNewYearInput(event.target.value)}
-                      className="w-32 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                      className="w-32 rounded-lg input-brand px-3 py-2 text-sm text-brand-muted"
                     />
                     <button
                       type="button"
                       onClick={handleAddYear}
-                      className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 disabled:bg-slate-300"
+                      className="rounded-lg px-4 py-2 text-sm font-semibold text-white btn-brand disabled:opacity-70"
                       disabled={!newYearInput.trim()}
                     >
                       Add Year
@@ -458,8 +462,8 @@ export default function UserDashboard() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between border-t border-slate-100 pt-6">
-              <div className="text-sm text-slate-500">
+            <div className="flex items-center justify-between border-t border-brand pt-6">
+              <div className="text-sm text-brand-soft">
                 {saveMessage ? (
                   <span className="font-medium text-emerald-600">{saveMessage}</span>
                 ) : (
@@ -469,14 +473,14 @@ export default function UserDashboard() {
               <div className="flex items-center gap-3">
                 <Link
                   href="/"
-                  className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-slate-400 hover:text-slate-900"
+                  className="rounded-lg px-4 py-2 text-sm font-medium chip-brand"
                 >
                   Cancel
                 </Link>
                 <button
                   type="submit"
                   disabled={isSaving}
-                  className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-500 disabled:bg-blue-300"
+                  className="rounded-lg px-5 py-2 text-sm font-semibold text-white btn-brand disabled:opacity-70"
                 >
                   {isSaving ? "Saving..." : "Save Changes"}
                 </button>
@@ -485,23 +489,23 @@ export default function UserDashboard() {
           </form>
         </section>
 
-        <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 px-6 py-4">
+        <section className="rounded-2xl border border-brand bg-white shadow-brand-soft">
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-brand px-6 py-4">
             <div>
-              <h2 className="text-lg font-semibold text-slate-900">Complaint Inbox</h2>
-              <p className="text-sm text-slate-500">
+              <h2 className="text-lg font-semibold text-brand-strong">Complaint Inbox</h2>
+              <p className="text-sm text-brand-soft">
                 Complaints submitted via the public form appear here for MEAL review.
               </p>
             </div>
             <Link
               href="/complaint-form"
-              className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-slate-400 hover:text-slate-900"
+              className="rounded-full px-4 py-2 text-sm font-medium chip-brand"
             >
               Open Complaint Form
             </Link>
           </div>
 
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-emerald-50">
             {complaints.length ? (
               complaints.map((complaint) => {
                 const submittedDate = new Date(complaint.submittedAt);
@@ -517,12 +521,12 @@ export default function UserDashboard() {
                     <div className="space-y-3">
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <div>
-                          <p className="text-sm font-semibold text-slate-900">{complaint.fullName}</p>
-                          <p className="text-xs text-slate-500">{complaint.email}{complaint.phone ? ` • ${complaint.phone}` : ""}</p>
+                          <p className="text-sm font-semibold text-brand-strong">{complaint.fullName}</p>
+                          <p className="text-xs text-brand-soft">{complaint.email}{complaint.phone ? ` • ${complaint.phone}` : ""}</p>
                         </div>
-                        <span className="text-xs uppercase tracking-wide text-slate-400">{formattedDate}</span>
+                        <span className="text-xs uppercase tracking-wide text-brand-soft">{formattedDate}</span>
                       </div>
-                      <p className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 whitespace-pre-wrap">
+                      <p className="rounded-lg border border-brand bg-brand-soft px-4 py-3 text-sm text-brand-muted whitespace-pre-wrap">
                         {complaint.message}
                       </p>
                     </div>
@@ -532,7 +536,7 @@ export default function UserDashboard() {
                         onClick={async () => {
                           await removeComplaint(complaint.id);
                         }}
-                        className="rounded-full border border-slate-300 bg-white px-4 py-2 font-semibold text-slate-600 transition hover:border-rose-300 hover:bg-rose-50 hover:text-rose-600"
+                        className="rounded-full border border-brand-strong bg-white px-4 py-2 font-semibold text-brand-muted transition hover:border-rose-300 hover:bg-rose-50 hover:text-rose-600"
                       >
                         Archive
                       </button>
@@ -541,7 +545,7 @@ export default function UserDashboard() {
                 );
               })
             ) : (
-              <div className="px-6 py-8 text-sm text-slate-500">
+              <div className="px-6 py-8 text-sm text-brand-soft">
                 No complaints submitted yet. New entries will appear here instantly.
               </div>
             )}

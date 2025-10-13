@@ -66,12 +66,13 @@ const clampTranslate = (value: number, scale: number, dimension: number) => {
   return clamp(value, min, max);
 };
 
-const BASE_FILL = "#f8fafc";
-const HIGHLIGHT_FILL = "#e0f2fe";
-const HIGHLIGHT_STROKE = "#0ea5e9";
-const FOCUS_FILL = "#0284c7";
-const FOCUS_STROKE = "#0369a1";
-const DIM_STROKE = "#e2e8f0";
+const BASE_FILL = "#f1f8f2";
+const HIGHLIGHT_FILL = "#d9f0de";
+const HOVER_FILL = "#c3e8cc";
+const HIGHLIGHT_STROKE = "#52b947";
+const FOCUS_FILL = "#3ea93d";
+const FOCUS_STROKE = "#2f8230";
+const DIM_STROKE = "#c7dcc8";
 
 function collectCoordinates(feature: GeoFeature): Coordinate[] {
   const { geometry } = feature;
@@ -619,7 +620,7 @@ export function AfghanistanMap({
 
   if (!mapShapes.length || !renderBounds) {
     return (
-      <div className={composeClass("flex h-full items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-sm text-slate-600")}>
+      <div className={composeClass("flex h-full items-center justify-center rounded-lg border border-brand bg-brand-soft text-sm text-brand-muted")}>
         Loading Afghanistan map…
       </div>
     );
@@ -635,7 +636,7 @@ export function AfghanistanMap({
       : "";
 
   const containerClass = composeClass(
-    `relative flex h-full w-full items-center justify-center overflow-hidden overscroll-contain bg-slate-50 ${mapCursorClass}`
+    `relative flex h-full w-full items-center justify-center overflow-hidden overscroll-contain bg-brand-soft ${mapCursorClass}`
   );
 
   return (
@@ -656,13 +657,13 @@ export function AfghanistanMap({
         onDoubleClick={handleResetTransform}
       >
         <g transform={mapTransform}>
-          <rect width={MAP_WIDTH} height={MAP_HEIGHT} fill="#f8fafc" />
+          <rect width={MAP_WIDTH} height={MAP_HEIGHT} fill={BASE_FILL} />
           {mapShapes.map((shape) => {
             const isHovered = hoveredProvince === shape.name;
             const fill = shape.isFocused
               ? FOCUS_FILL
               : isHovered
-              ? "#bae6fd"
+              ? HOVER_FILL
               : shape.isHighlighted
               ? HIGHLIGHT_FILL
               : BASE_FILL;
@@ -690,7 +691,7 @@ export function AfghanistanMap({
                 tabIndex={0}
                 aria-pressed={shape.isFocused}
                 aria-label={`Focus on ${shape.name} province`}
-                className="cursor-pointer transition-transform duration-300 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50"
+                className="cursor-pointer transition-transform duration-300 ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3ea93d] focus-visible:ring-offset-2 focus-visible:ring-offset-[#f1f8f2]"
                 style={{
                   transformOrigin: "center",
                   transformBox: "fill-box",
@@ -725,7 +726,7 @@ export function AfghanistanMap({
                     y={shape.centroid[1]}
                     textAnchor="middle"
                     dominantBaseline="middle"
-                    fill={shape.isFocused || isHovered ? "#0f172a" : "#1f2937"}
+                    fill={shape.isFocused || isHovered ? "var(--color-neutral-900)" : "var(--color-neutral-700)"}
                     fontSize={labelFontSize}
                     fontWeight={shape.isFocused || isHovered ? 700 : 600}
                     letterSpacing="0.03em"

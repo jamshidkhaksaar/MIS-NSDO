@@ -313,40 +313,40 @@ export default function ProjectsPage() {
 
   if (isBootstrapLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-100 text-slate-500">
+      <div className="flex min-h-screen items-center justify-center bg-brand-tint text-brand-soft">
         Loading project workspace...
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-100">
-      <header className="border-b border-slate-200 bg-white">
+    <div className="min-h-screen bg-brand-soft">
+      <header className="border-b border-brand bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-6">
           <div>
-            <h1 className="text-2xl font-semibold text-slate-900">
+            <h1 className="text-2xl font-semibold text-brand-strong">
               Projects Registry
             </h1>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-brand-soft">
               Capture project details, beneficiary reach, goals, objectives, and achievements.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <Link
               href="/"
-              className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-slate-400 hover:text-slate-900"
+              className="rounded-full px-4 py-2 text-sm font-medium chip-brand"
             >
               Dashboard
             </Link>
             <Link
               href="/user-dashboard"
-              className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-slate-400 hover:text-slate-900"
+              className="rounded-full px-4 py-2 text-sm font-medium chip-brand"
             >
               Data Entry
             </Link>
             <Link
               href="/admin"
-              className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-slate-400 hover:text-slate-900"
+              className="rounded-full px-4 py-2 text-sm font-medium chip-brand"
             >
               Admin
             </Link>
@@ -355,21 +355,21 @@ export default function ProjectsPage() {
       </header>
 
       <main className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-8">
-        <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <section className="rounded-2xl border border-brand bg-white shadow-brand-soft">
           <form className="grid gap-8 p-6" onSubmit={handleSubmit}>
-            <div className="space-y-4 border-b border-slate-100 pb-6">
+            <div className="space-y-4 border-b border-brand pb-6">
               <div>
-                <h2 className="text-lg font-semibold text-slate-900">
+                <h2 className="text-lg font-semibold text-brand-strong">
                   Project Information
                 </h2>
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-brand-soft">
                   Provide the official project title, sector, reach, and strategic narrative.
                 </p>
               </div>
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <label className="flex flex-col gap-2 text-sm font-medium text-slate-700 md:col-span-2">
-                  <span className="text-xs uppercase tracking-wide text-slate-500">
+                <label className="flex flex-col gap-2 text-sm font-medium text-brand-muted md:col-span-2">
+                  <span className="text-xs uppercase tracking-wide text-brand-soft">
                     Proper project name (as per donor/partner contract)
                   </span>
                   <input
@@ -379,12 +379,12 @@ export default function ProjectsPage() {
                       setFormState((prev) => ({ ...prev, name: event.target.value }))
                     }
                     placeholder="e.g. Rural Livelihoods Enhancement Programme"
-                    className="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-700 transition hover:border-slate-300 focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                    className="w-full rounded-lg input-brand px-4 py-2 text-sm text-brand-muted"
                   />
                 </label>
 
-                <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
-                  <span className="text-xs uppercase tracking-wide text-slate-500">
+                <label className="flex flex-col gap-2 text-sm font-medium text-brand-muted">
+                  <span className="text-xs uppercase tracking-wide text-brand-soft">
                     Relevant sector
                   </span>
                   <select
@@ -395,7 +395,7 @@ export default function ProjectsPage() {
                         sectorChoice: event.target.value,
                       }))
                     }
-                    className="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-700 transition hover:border-slate-300 focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                    className="w-full rounded-lg input-brand px-4 py-2 text-sm text-brand-muted"
                   >
                     {PROJECT_SECTORS.map((sector) => (
                       <option key={sector} value={sector}>
@@ -407,8 +407,8 @@ export default function ProjectsPage() {
                 </label>
 
                 {formState.sectorChoice === "custom" ? (
-                  <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
-                    <span className="text-xs uppercase tracking-wide text-slate-500">
+                  <label className="flex flex-col gap-2 text-sm font-medium text-brand-muted">
+                    <span className="text-xs uppercase tracking-wide text-brand-soft">
                       Custom sector
                     </span>
                     <input
@@ -418,13 +418,13 @@ export default function ProjectsPage() {
                         setFormState((prev) => ({ ...prev, customSector: event.target.value }))
                       }
                       placeholder="e.g. Emergency Shelter"
-                      className="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-700 transition hover:border-slate-300 focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                      className="w-full rounded-lg input-brand px-4 py-2 text-sm text-brand-muted"
                     />
                   </label>
                 ) : null}
 
-                <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
-                  <span className="text-xs uppercase tracking-wide text-slate-500">
+                <label className="flex flex-col gap-2 text-sm font-medium text-brand-muted">
+                  <span className="text-xs uppercase tracking-wide text-brand-soft">
                     Country of implementation
                   </span>
                   <input
@@ -434,17 +434,17 @@ export default function ProjectsPage() {
                       setFormState((prev) => ({ ...prev, country: event.target.value }))
                     }
                     placeholder="e.g. Afghanistan"
-                    className="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-700 transition hover:border-slate-300 focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                    className="w-full rounded-lg input-brand px-4 py-2 text-sm text-brand-muted"
                   />
                 </label>
 
-                <div className="md:col-span-2 space-y-4 rounded-xl border border-slate-200 bg-white px-4 py-4">
+                <div className="md:col-span-2 space-y-4 rounded-xl border border-brand bg-white px-4 py-4">
                   <div className="space-y-3">
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <span className="text-xs uppercase tracking-wide text-slate-500">
+                      <span className="text-xs uppercase tracking-wide text-brand-soft">
                         Response clusters
                       </span>
-                      <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                      <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-soft">
                         {formState.clusters.length
                           ? `${formState.clusters.length} selected`
                           : "Select applicable clusters"}
@@ -459,10 +459,10 @@ export default function ProjectsPage() {
                             type="button"
                             onClick={() => handleClusterToggle(cluster)}
                             aria-pressed={isSelected}
-                            className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wide transition ${
+                            className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide transition ${
                               isSelected
-                                ? "border-slate-900 bg-slate-900 text-white shadow-sm"
-                                : "border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300 hover:bg-slate-100"
+                                ? "border-transparent toggle-pill toggle-pill-active"
+                                : "border border-brand bg-brand-soft text-brand-muted toggle-pill"
                             }`}
                           >
                             {cluster}
@@ -472,14 +472,14 @@ export default function ProjectsPage() {
                     </div>
                   </div>
 
-                  <div className="h-px bg-slate-100" />
+                  <div className="h-px bg-brand-tint" />
 
                   <div className="space-y-4">
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <span className="text-xs uppercase tracking-wide text-slate-500">
+                      <span className="text-xs uppercase tracking-wide text-brand-soft">
                         Standard sector alignment
                       </span>
-                      <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                      <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-soft">
                         {formState.standardSectors.length
                           ? `${formState.standardSectors.length} selected`
                           : "Highlight relevant sectors"}
@@ -488,7 +488,7 @@ export default function ProjectsPage() {
                     <div className="space-y-3">
                       {STANDARD_SECTOR_GROUPS.map((group) => (
                         <div key={group.label} className="space-y-2">
-                          <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                          <p className="text-[11px] font-semibold uppercase tracking-wide text-brand-soft">
                             {group.label}
                           </p>
                           <div className="flex flex-wrap gap-2">
@@ -500,10 +500,10 @@ export default function ProjectsPage() {
                                   type="button"
                                   onClick={() => handleStandardSectorToggle(sectorLabel)}
                                   aria-pressed={isPicked}
-                                  className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wide transition ${
+                                  className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide transition ${
                                     isPicked
-                                      ? "border-blue-600 bg-blue-600 text-white shadow-sm"
-                                      : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-100"
+                                      ? "border-transparent toggle-pill toggle-pill-active"
+                                      : "border border-brand bg-white text-brand-muted toggle-pill"
                                   }`}
                                 >
                                   {sectorLabel}
@@ -540,9 +540,9 @@ export default function ProjectsPage() {
                 {locationConfigs.map((config) => (
                   <div
                     key={config.type}
-                    className="flex flex-col gap-2 text-sm font-medium text-slate-700"
+                    className="flex flex-col gap-2 text-sm font-medium text-brand-muted"
                   >
-                    <span className="text-xs uppercase tracking-wide text-slate-500">
+                    <span className="text-xs uppercase tracking-wide text-brand-soft">
                       {config.label}
                     </span>
                     <div className="flex items-center gap-2">
@@ -556,12 +556,12 @@ export default function ProjectsPage() {
                           }))
                         }
                         placeholder={config.placeholder}
-                        className="flex-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 transition hover:border-slate-300 focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                        className="flex-1 rounded-lg input-brand px-3 py-2 text-sm text-brand-muted"
                       />
                       <button
                         type="button"
                         onClick={() => handleLocationAdd(config.type)}
-                        className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600 transition hover:border-slate-400 hover:text-slate-900"
+                        className="rounded-lg px-3 py-2 text-xs font-semibold uppercase tracking-wide chip-brand"
                       >
                         Add
                       </button>
@@ -571,13 +571,13 @@ export default function ProjectsPage() {
                         formState[config.type].map((value) => (
                           <span
                             key={`${config.type}-${value}`}
-                            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700"
+                            className="inline-flex items-center gap-2 rounded-full border border-brand bg-brand-soft px-3 py-1 text-xs font-medium text-brand-muted"
                           >
                             {value}
                             <button
                               type="button"
                               onClick={() => handleLocationRemove(config.type, value)}
-                              className="text-slate-400 transition hover:text-rose-500"
+                              className="text-brand-soft transition hover:text-rose-500"
                               aria-label={`Remove ${value}`}
                             >
                               ✕
@@ -585,7 +585,7 @@ export default function ProjectsPage() {
                           </span>
                         ))
                       ) : (
-                        <span className="text-xs font-normal text-slate-400">
+                        <span className="text-xs font-normal text-brand-soft">
                           No entries yet
                         </span>
                       )}
@@ -596,8 +596,8 @@ export default function ProjectsPage() {
             </div>
 
             <div className="grid grid-cols-1 gap-4">
-              <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
-                <span className="text-xs uppercase tracking-wide text-slate-500">
+              <label className="flex flex-col gap-2 text-sm font-medium text-brand-muted">
+                <span className="text-xs uppercase tracking-wide text-brand-soft">
                   Project goal
                 </span>
                 <textarea
@@ -607,12 +607,12 @@ export default function ProjectsPage() {
                   }
                   rows={3}
                   placeholder="High-level goal outlining the intended change."
-                  className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 transition hover:border-slate-300 focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                  className="w-full rounded-lg input-brand px-4 py-3 text-sm text-brand-muted bg-white"
                 />
               </label>
 
-              <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
-                <span className="text-xs uppercase tracking-wide text-slate-500">
+              <label className="flex flex-col gap-2 text-sm font-medium text-brand-muted">
+                <span className="text-xs uppercase tracking-wide text-brand-soft">
                   Objectives
                 </span>
                 <textarea
@@ -622,12 +622,12 @@ export default function ProjectsPage() {
                   }
                   rows={4}
                   placeholder="List key objectives. Use bullet points or sentences."
-                  className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 transition hover:border-slate-300 focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                  className="w-full rounded-lg input-brand px-4 py-3 text-sm text-brand-muted bg-white"
                 />
               </label>
 
-              <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
-                <span className="text-xs uppercase tracking-wide text-slate-500">
+              <label className="flex flex-col gap-2 text-sm font-medium text-brand-muted">
+                <span className="text-xs uppercase tracking-wide text-brand-soft">
                   Major achievements
                 </span>
                 <textarea
@@ -637,30 +637,30 @@ export default function ProjectsPage() {
                   }
                   rows={4}
                   placeholder="Summarise achievements or significant milestones."
-                  className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 transition hover:border-slate-300 focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                  className="w-full rounded-lg input-brand px-4 py-3 text-sm text-brand-muted bg-white"
                 />
               </label>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-5">
-              <h3 className="text-sm font-semibold text-slate-800">
+            <div className="rounded-2xl border border-brand bg-brand-soft px-4 py-5">
+              <h3 className="text-sm font-semibold text-brand-strong">
                 Beneficiary Details
               </h3>
-              <p className="mt-1 text-xs text-slate-500">
+              <p className="mt-1 text-xs text-brand-soft">
                 Record direct and indirect reach by beneficiary type. Totals above update automatically.
               </p>
               <div className="mt-4 grid grid-cols-1 gap-6 md:grid-cols-2">
                 {( ["direct", "indirect"] as const).map((view) => (
                   <div key={`project-${view}`} className="space-y-4">
-                    <h4 className="text-sm font-semibold text-slate-800">
+                    <h4 className="text-sm font-semibold text-brand-strong">
                       {view === "direct" ? "Direct Beneficiaries" : "Indirect Beneficiaries"}
                     </h4>
                     {BENEFICIARY_GROUPS.map((group) => (
                       <div
                         key={`project-${view}-${group.key}`}
-                        className="rounded-lg border border-slate-200 bg-white px-3 py-3"
+                        className="rounded-lg border border-brand bg-white px-3 py-3"
                       >
-                        <span className="text-xs uppercase tracking-wide text-slate-500">
+                        <span className="text-xs uppercase tracking-wide text-brand-soft">
                           {group.label}
                         </span>
                         <div className="mt-3 grid grid-cols-1 gap-3">
@@ -674,7 +674,7 @@ export default function ProjectsPage() {
                             return (
                               <label
                                 key={`project-${view}-${member}`}
-                                className="flex flex-col gap-2 text-sm font-medium text-slate-700"
+                                className="flex flex-col gap-2 text-sm font-medium text-brand-muted"
                               >
                                 <span>{memberLabel}</span>
                                 <input
@@ -684,7 +684,7 @@ export default function ProjectsPage() {
                                   onChange={(event) =>
                                     handleBeneficiaryChange(view, key, Number(event.target.value))
                                   }
-                                  className="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-1 text-sm text-slate-700 focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                                  className="w-full rounded-md input-brand px-3 py-1 text-sm text-brand-muted"
                                 />
                               </label>
                             );
@@ -714,7 +714,7 @@ export default function ProjectsPage() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-500 disabled:bg-blue-300"
+                className="rounded-lg px-5 py-2 text-sm font-semibold text-white btn-brand disabled:opacity-70"
               >
                 {isSubmitting ? "Saving..." : "Save Project"}
               </button>
@@ -722,14 +722,14 @@ export default function ProjectsPage() {
           </form>
         </section>
 
-        <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <div className="border-b border-slate-100 px-6 py-4">
-            <h2 className="text-lg font-semibold text-slate-900">Recorded Projects</h2>
-            <p className="text-sm text-slate-500">
+        <section className="rounded-2xl border border-brand bg-white shadow-brand-soft">
+          <div className="border-b border-brand px-6 py-4">
+            <h2 className="text-lg font-semibold text-brand-strong">Recorded Projects</h2>
+            <p className="text-sm text-brand-soft">
               Review existing entries, including sector alignment and beneficiary reach.
             </p>
           </div>
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-emerald-50">
             {preparedProjects.length ? (
               preparedProjects.map((project) => {
                 const directTotal = BENEFICIARY_TYPE_KEYS.reduce(
@@ -753,7 +753,7 @@ export default function ProjectsPage() {
                     className="grid gap-4 px-6 py-5 md:grid-cols-[1.2fr_1fr]"
                   >
                     <div>
-                      <h3 className="text-base font-semibold text-slate-900">
+                      <h3 className="text-base font-semibold text-brand-strong">
                         {project.name}
                       </h3>
                       <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-blue-600">
@@ -778,7 +778,7 @@ export default function ProjectsPage() {
                               {project.standardSectors.map((sectorLabel) => (
                                 <span
                                   key={sectorLabel}
-                                  className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-600"
+                                  className="rounded-full border border-brand bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-brand-muted"
                                 >
                                   {sectorLabel}
                                 </span>
@@ -788,47 +788,47 @@ export default function ProjectsPage() {
                         </div>
                       ) : null}
 
-                    <div className="mt-4 space-y-3 text-sm text-slate-600">
+                    <div className="mt-4 space-y-3 text-sm text-brand-muted">
                       <div>
-                        <span className="font-semibold text-slate-700">Goal:</span>{" "}
+                        <span className="font-semibold text-brand-muted">Goal:</span>{" "}
                         {project.goal}
                       </div>
                         <div>
-                          <span className="font-semibold text-slate-700">Objectives:</span>
-                          <pre className="mt-1 whitespace-pre-wrap rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                          <span className="font-semibold text-brand-muted">Objectives:</span>
+                          <pre className="mt-1 whitespace-pre-wrap rounded-lg bg-brand-soft px-3 py-2 text-sm text-brand-muted">
                             {project.objectives}
                           </pre>
                         </div>
                       <div>
-                        <span className="font-semibold text-slate-700">Major achievements:</span>
-                        <pre className="mt-1 whitespace-pre-wrap rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                        <span className="font-semibold text-brand-muted">Major achievements:</span>
+                        <pre className="mt-1 whitespace-pre-wrap rounded-lg bg-brand-soft px-3 py-2 text-sm text-brand-muted">
                           {project.majorAchievements}
                         </pre>
                       </div>
-                      <div className="grid grid-cols-1 gap-2 text-xs uppercase tracking-wide text-slate-500 md:grid-cols-2">
+                      <div className="grid grid-cols-1 gap-2 text-xs uppercase tracking-wide text-brand-soft md:grid-cols-2">
                         <div>
-                          <span className="font-semibold text-slate-600">Country:</span>
-                          <p className="mt-1 text-sm normal-case text-slate-700">{project.country}</p>
+                          <span className="font-semibold text-brand-muted">Country:</span>
+                          <p className="mt-1 text-sm normal-case text-brand-muted">{project.country}</p>
                         </div>
                         <div>
-                          <span className="font-semibold text-slate-600">Provinces:</span>
-                          <p className="mt-1 text-sm normal-case text-slate-700">
+                          <span className="font-semibold text-brand-muted">Provinces:</span>
+                          <p className="mt-1 text-sm normal-case text-brand-muted">
                             {project.provinces.length
                               ? project.provinces.join(", ")
                               : "—"}
                           </p>
                         </div>
                         <div>
-                          <span className="font-semibold text-slate-600">Districts:</span>
-                          <p className="mt-1 text-sm normal-case text-slate-700">
+                          <span className="font-semibold text-brand-muted">Districts:</span>
+                          <p className="mt-1 text-sm normal-case text-brand-muted">
                             {project.districts.length
                               ? project.districts.join(", ")
                               : "—"}
                           </p>
                         </div>
                         <div>
-                          <span className="font-semibold text-slate-600">Communities:</span>
-                          <p className="mt-1 text-sm normal-case text-slate-700">
+                          <span className="font-semibold text-brand-muted">Communities:</span>
+                          <p className="mt-1 text-sm normal-case text-brand-muted">
                             {project.communities.length
                               ? project.communities.join(", ")
                               : "—"}
@@ -837,29 +837,29 @@ export default function ProjectsPage() {
                       </div>
                     </div>
                   </div>
-                    <div className="flex flex-col justify-between gap-4 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+                    <div className="flex flex-col justify-between gap-4 rounded-xl border border-brand bg-brand-soft p-4 text-sm text-brand-muted">
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
-                          <span className="text-slate-500">Direct beneficiaries</span>
-                          <span className="text-base font-semibold text-slate-900">
+                          <span className="text-brand-soft">Direct beneficiaries</span>
+                          <span className="text-base font-semibold text-brand-strong">
                             {directTotal.toLocaleString()}
                           </span>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-slate-500">Indirect beneficiaries</span>
-                          <span className="text-base font-semibold text-slate-900">
+                          <span className="text-brand-soft">Indirect beneficiaries</span>
+                          <span className="text-base font-semibold text-brand-strong">
                             {indirectTotal.toLocaleString()}
                           </span>
                         </div>
                       </div>
-                      <div className="space-y-2 rounded-lg border border-slate-200 bg-white px-3 py-3 text-xs uppercase tracking-wide text-slate-500">
+                      <div className="space-y-2 rounded-lg border border-brand bg-white px-3 py-3 text-xs uppercase tracking-wide text-brand-soft">
                         {projectRows.map((row) => (
                           <div key={`${project.id}-${row.key}`} className="grid grid-cols-[1fr_auto_auto] items-center gap-3 text-[11px]">
-                            <span className="truncate text-slate-600">{row.label}</span>
-                            <span className="text-right font-semibold text-slate-900">
+                            <span className="truncate text-brand-muted">{row.label}</span>
+                            <span className="text-right font-semibold text-brand-strong">
                               D: {row.direct.toLocaleString()}
                             </span>
-                            <span className="text-right font-semibold text-slate-900">
+                            <span className="text-right font-semibold text-brand-strong">
                               I: {row.indirect.toLocaleString()}
                             </span>
                           </div>
@@ -877,7 +877,7 @@ export default function ProjectsPage() {
                 );
               })
             ) : (
-              <div className="px-6 py-8 text-sm text-slate-500">
+              <div className="px-6 py-8 text-sm text-brand-soft">
                 No projects recorded yet. Use the form above to add your first project.
               </div>
             )}

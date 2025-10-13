@@ -179,27 +179,27 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100">
-      <header className="border-b border-slate-200 bg-white">
+    <div className="min-h-screen bg-brand-soft">
+      <header className="border-b border-brand bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-6">
           <div>
-            <h1 className="text-2xl font-semibold text-slate-900">
+            <h1 className="text-2xl font-semibold text-brand-strong">
               Admin Dashboard
             </h1>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-brand-soft">
               Manage user access and roles for the MIS dashboard.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <Link
               href="/"
-              className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-slate-400 hover:text-slate-900"
+              className="rounded-full px-4 py-2 text-sm font-medium chip-brand"
             >
               Public Dashboard
             </Link>
             <Link
               href="/user-dashboard"
-              className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-slate-400 hover:text-slate-900"
+              className="rounded-full px-4 py-2 text-sm font-medium chip-brand"
             >
               Data Entry
             </Link>
@@ -209,14 +209,14 @@ export default function AdminDashboard() {
 
       <main className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-8">
         <section className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-          <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div className="border-b border-slate-100 px-6 py-4">
-              <h2 className="text-lg font-semibold text-slate-900">Active Users</h2>
-              <p className="text-sm text-slate-500">
+          <div className="rounded-2xl border border-brand bg-white shadow-brand-soft">
+            <div className="border-b border-brand px-6 py-4">
+              <h2 className="text-lg font-semibold text-brand-strong">Active Users</h2>
+              <p className="text-sm text-brand-soft">
                 Review access levels and remove accounts that are no longer required.
               </p>
             </div>
-            <div className="divide-y divide-slate-100">
+            <div className="divide-y divide-emerald-50">
               {sortedUsers.length ? (
                 sortedUsers.map((user) => (
                   <div
@@ -224,9 +224,9 @@ export default function AdminDashboard() {
                     className="flex flex-wrap items-center justify-between gap-4 px-6 py-4"
                   >
                     <div>
-                      <p className="text-sm font-semibold text-slate-900">{user.name}</p>
-                      <p className="text-sm text-slate-500">{user.email}</p>
-                      <p className="text-xs uppercase tracking-wide text-slate-400 mt-1">
+                      <p className="text-sm font-semibold text-brand-strong">{user.name}</p>
+                      <p className="text-sm text-brand-soft">{user.email}</p>
+                      <p className="text-xs uppercase tracking-wide text-brand-soft mt-1">
                         {user.role}
                         {user.organization ? ` • ${user.organization}` : ""}
                       </p>
@@ -241,23 +241,23 @@ export default function AdminDashboard() {
                   </div>
                 ))
               ) : (
-                <div className="px-6 py-8 text-sm text-slate-500">
+                <div className="px-6 py-8 text-sm text-brand-soft">
                   No users found. Add a user using the form on the right.
                 </div>
               )}
             </div>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div className="border-b border-slate-100 px-6 py-4">
-              <h2 className="text-lg font-semibold text-slate-900">Add New User</h2>
-              <p className="text-sm text-slate-500">
+          <div className="rounded-2xl border border-brand bg-white shadow-brand-soft">
+            <div className="border-b border-brand px-6 py-4">
+              <h2 className="text-lg font-semibold text-brand-strong">Add New User</h2>
+              <p className="text-sm text-brand-soft">
                 Provide user details and assign a role to grant access.
               </p>
             </div>
             <form className="space-y-5 px-6 py-6" onSubmit={handleSubmit}>
-              <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
-                <span className="text-xs uppercase tracking-wide text-slate-500">Full Name</span>
+              <label className="flex flex-col gap-2 text-sm font-medium text-brand-muted">
+                <span className="text-xs uppercase tracking-wide text-brand-soft">Full Name</span>
                 <input
                   type="text"
                   value={formState.name}
@@ -265,12 +265,12 @@ export default function AdminDashboard() {
                     setFormState((prev) => ({ ...prev, name: event.target.value }))
                   }
                   placeholder="e.g. Mariam Qasemi"
-                  className="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-700 transition hover:border-slate-300 focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                  className="w-full rounded-lg input-brand px-4 py-2 text-sm text-brand-muted"
                 />
               </label>
 
-              <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
-                <span className="text-xs uppercase tracking-wide text-slate-500">Email Address</span>
+              <label className="flex flex-col gap-2 text-sm font-medium text-brand-muted">
+                <span className="text-xs uppercase tracking-wide text-brand-soft">Email Address</span>
                 <input
                   type="email"
                   value={formState.email}
@@ -278,18 +278,18 @@ export default function AdminDashboard() {
                     setFormState((prev) => ({ ...prev, email: event.target.value }))
                   }
                   placeholder="name@example.org"
-                  className="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-700 transition hover:border-slate-300 focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                  className="w-full rounded-lg input-brand px-4 py-2 text-sm text-brand-muted"
                 />
               </label>
 
-              <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
-                <span className="text-xs uppercase tracking-wide text-slate-500">Role</span>
+              <label className="flex flex-col gap-2 text-sm font-medium text-brand-muted">
+                <span className="text-xs uppercase tracking-wide text-brand-soft">Role</span>
                 <select
                   value={formState.role}
                   onChange={(event) =>
                     setFormState((prev) => ({ ...prev, role: event.target.value as DashboardUserRole }))
                   }
-                  className="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-700 transition hover:border-slate-300 focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                  className="w-full rounded-lg input-brand px-4 py-2 text-sm text-brand-muted"
                 >
                   {ROLE_OPTIONS.map((role) => (
                     <option key={role} value={role}>
@@ -299,8 +299,8 @@ export default function AdminDashboard() {
                 </select>
               </label>
 
-              <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
-                <span className="text-xs uppercase tracking-wide text-slate-500">Organization (optional)</span>
+              <label className="flex flex-col gap-2 text-sm font-medium text-brand-muted">
+                <span className="text-xs uppercase tracking-wide text-brand-soft">Organization (optional)</span>
                 <input
                   type="text"
                   value={formState.organization}
@@ -308,7 +308,7 @@ export default function AdminDashboard() {
                     setFormState((prev) => ({ ...prev, organization: event.target.value }))
                   }
                   placeholder="NSDO HQ"
-                  className="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-700 transition hover:border-slate-300 focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                  className="w-full rounded-lg input-brand px-4 py-2 text-sm text-brand-muted"
                 />
               </label>
 
@@ -329,7 +329,7 @@ export default function AdminDashboard() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-500 disabled:bg-blue-300"
+                  className="rounded-lg px-5 py-2 text-sm font-semibold text-white btn-brand disabled:opacity-70"
                 >
                   {isSubmitting ? "Saving..." : "Save User"}
                 </button>
@@ -339,30 +339,30 @@ export default function AdminDashboard() {
         </section>
 
         <section className="grid grid-cols-1 gap-6 pb-2 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-          <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div className="border-b border-slate-100 px-6 py-4">
-              <h2 className="text-lg font-semibold text-slate-900">Branding Assets</h2>
-              <p className="text-sm text-slate-500">
+          <div className="rounded-2xl border border-brand bg-white shadow-brand-soft">
+            <div className="border-b border-brand px-6 py-4">
+              <h2 className="text-lg font-semibold text-brand-strong">Branding Assets</h2>
+              <p className="text-sm text-brand-soft">
                 Upload your organisation&rsquo;s favicon and logo to personalise the dashboard experience.
               </p>
             </div>
             <div className="space-y-6 px-6 py-6">
               <div className="space-y-2">
-                <label className="flex flex-col gap-2 text-sm font-medium text-slate-700">
-                  <span className="text-xs uppercase tracking-wide text-slate-500">Company / brand name</span>
+                <label className="flex flex-col gap-2 text-sm font-medium text-brand-muted">
+                  <span className="text-xs uppercase tracking-wide text-brand-soft">Company / brand name</span>
                   <input
                     type="text"
                     value={companyNameInput}
                     onChange={(event) => setCompanyNameInput(event.target.value)}
                     placeholder="e.g. NSDO"
-                    className="w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-700 transition hover:border-slate-300 focus:border-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-200"
+                    className="w-full rounded-lg input-brand px-4 py-2 text-sm text-brand-muted"
                   />
                 </label>
                 <div className="flex justify-end">
                   <button
                     type="button"
                     onClick={handleCompanyNameSave}
-                    className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600 transition hover:border-slate-400 hover:text-slate-900"
+                    className="rounded-lg px-4 py-2 text-xs font-semibold uppercase tracking-wide chip-brand"
                   >
                     Save Name
                   </button>
@@ -372,17 +372,17 @@ export default function AdminDashboard() {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Logo</span>
+                    <span className="text-xs font-semibold uppercase tracking-wide text-brand-soft">Logo</span>
                     <button
                       type="button"
                       onClick={() => handleAssetReset("logo")}
-                      className="text-xs font-semibold uppercase tracking-wide text-slate-400 transition hover:text-rose-500"
+                      className="text-xs font-semibold uppercase tracking-wide text-brand-soft transition hover:text-rose-500"
                     >
                       Clear
                     </button>
                   </div>
-                  <div className="flex items-center gap-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-4">
-                    <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-xl border border-slate-200 bg-white">
+                  <div className="flex items-center gap-4 rounded-xl border border-brand bg-brand-soft px-4 py-4">
+                    <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-xl border border-brand bg-white">
                       {branding.logoDataUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
@@ -391,14 +391,14 @@ export default function AdminDashboard() {
                           className="h-full w-full object-cover"
                         />
                       ) : (
-                        <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                        <span className="text-xs font-semibold uppercase tracking-wide text-brand-soft">
                           No logo
                         </span>
                       )}
                     </div>
-                    <div className="flex flex-1 flex-col gap-2 text-xs text-slate-500">
+                    <div className="flex flex-1 flex-col gap-2 text-xs text-brand-soft">
                       <span>Recommended: transparent PNG at least 128×128 px.</span>
-                      <label className="inline-flex w-fit cursor-pointer items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 font-semibold uppercase tracking-wide text-slate-600 transition hover:border-slate-400 hover:text-slate-900">
+                      <label className="inline-flex w-fit cursor-pointer items-center gap-2 rounded-full px-4 py-2 font-semibold uppercase tracking-wide chip-brand">
                         Upload Logo
                         <input
                           ref={logoInputRef}
@@ -414,17 +414,17 @@ export default function AdminDashboard() {
 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">Favicon</span>
+                    <span className="text-xs font-semibold uppercase tracking-wide text-brand-soft">Favicon</span>
                     <button
                       type="button"
                       onClick={() => handleAssetReset("favicon")}
-                      className="text-xs font-semibold uppercase tracking-wide text-slate-400 transition hover:text-rose-500"
+                      className="text-xs font-semibold uppercase tracking-wide text-brand-soft transition hover:text-rose-500"
                     >
                       Clear
                     </button>
                   </div>
-                  <div className="flex items-center gap-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-4">
-                    <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-white">
+                  <div className="flex items-center gap-4 rounded-xl border border-brand bg-brand-soft px-4 py-4">
+                    <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-lg border border-brand bg-white">
                       {branding.faviconDataUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
@@ -433,14 +433,14 @@ export default function AdminDashboard() {
                           className="h-full w-full object-cover"
                         />
                       ) : (
-                        <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                        <span className="text-[10px] font-semibold uppercase tracking-wide text-brand-soft">
                           No icon
                         </span>
                       )}
                     </div>
-                    <div className="flex flex-1 flex-col gap-2 text-xs text-slate-500">
+                    <div className="flex flex-1 flex-col gap-2 text-xs text-brand-soft">
                       <span>Recommended square image (32×32 or 64×64).</span>
-                      <label className="inline-flex w-fit cursor-pointer items-center gap-2 rounded-full border border-slate-300 bg-white px-4 py-2 font-semibold uppercase tracking-wide text-slate-600 transition hover:border-slate-400 hover:text-slate-900">
+                      <label className="inline-flex w-fit cursor-pointer items-center gap-2 rounded-full px-4 py-2 font-semibold uppercase tracking-wide chip-brand">
                         Upload Favicon
                         <input
                           ref={faviconInputRef}
@@ -470,20 +470,20 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div className="border-b border-slate-100 px-6 py-4">
-              <h2 className="text-lg font-semibold text-slate-900">Live Preview</h2>
-              <p className="text-sm text-slate-500">
+          <div className="rounded-2xl border border-brand bg-white shadow-brand-soft">
+            <div className="border-b border-brand px-6 py-4">
+              <h2 className="text-lg font-semibold text-brand-strong">Live Preview</h2>
+              <p className="text-sm text-brand-soft">
                 Changes are stored in your browser and applied instantly across the dashboard.
               </p>
             </div>
             <div className="space-y-6 px-6 py-6">
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                <p className="text-xs uppercase tracking-wide text-slate-500">Navigation preview</p>
+              <div className="rounded-xl border border-brand bg-brand-soft p-4">
+                <p className="text-xs uppercase tracking-wide text-brand-soft">Navigation preview</p>
                 <div className="mt-3 flex items-center gap-3">
                   <div className="flex h-12 items-center">
                     {branding.logoDataUrl ? (
-                      <div className="flex h-12 items-center rounded-md border border-slate-200 bg-white px-3 py-2">
+                      <div className="flex h-12 items-center rounded-md border border-brand bg-white px-3 py-2">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                           src={branding.logoDataUrl}
@@ -492,28 +492,28 @@ export default function AdminDashboard() {
                         />
                       </div>
                     ) : (
-                      <div className="flex h-12 min-w-[56px] items-center justify-center rounded-md border border-slate-200 bg-slate-100 px-4">
-                        <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Logo</span>
+                      <div className="flex h-12 min-w-[56px] items-center justify-center rounded-md border border-brand bg-brand-tint px-4">
+                        <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-soft">Logo</span>
                       </div>
                     )}
                   </div>
-                  <span className="text-sm font-semibold tracking-tight text-slate-700">
+                  <span className="text-sm font-semibold tracking-tight text-brand-muted">
                     {companyNameInput || "Brand Placeholder"}
                   </span>
                 </div>
               </div>
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                <p className="text-xs uppercase tracking-wide text-slate-500">Favicon preview</p>
+              <div className="rounded-xl border border-brand bg-brand-soft p-4">
+                <p className="text-xs uppercase tracking-wide text-brand-soft">Favicon preview</p>
                 <div className="mt-3 flex items-center gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-white">
+                  <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-lg border border-brand bg-white">
                     {branding.faviconDataUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={branding.faviconDataUrl} alt="Favicon preview" className="h-full w-full object-cover" />
                     ) : (
-                      <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Icon</span>
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-brand-soft">Icon</span>
                     )}
                   </div>
-                  <div className="text-xs text-slate-500">
+                  <div className="text-xs text-brand-soft">
                     <p>Your favicon updates the browser tab icon after upload.</p>
                     <p>
                       For best results provide a square image. Transparent PNGs or ICO files work well across browsers.

@@ -2,6 +2,22 @@
 
 :root {
   color-scheme: light;
+  --color-primary-500: #63c24b;
+  --color-primary-600: #3ea93d;
+  --color-primary-700: #2f8230;
+  --color-neutral-900: #1c2522;
+  --color-neutral-700: #475249;
+  --color-neutral-500: #68756c;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f1f8f2;
+  --color-surface-tint: #e7f3e8;
+  --color-border: #c7dcc8;
+  --color-border-strong: #92bb94;
+  --color-accent-amber: #f7a81a;
+  --color-accent-red: #dd4458;
+  --color-accent-blue: #469dd6;
+  --color-accent-purple: #8653a6;
+  --color-accent-gold: #f4d64d;
 }
 
 html,
@@ -11,9 +27,194 @@ body {
 
 body {
   margin: 0;
-  background-color: #ffffff;
-  color: #0f172a;
+  background: linear-gradient(135deg, var(--color-surface-muted), #f6fbf7 60%, #fdfdfd);
+  color: var(--color-neutral-900);
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.bg-brand-surface {
+  background-color: var(--color-surface);
+}
+
+.bg-brand-soft {
+  background: var(--color-surface-muted);
+}
+
+.bg-brand-tint {
+  background: var(--color-surface-tint);
+}
+
+.border-brand {
+  border-color: var(--color-border);
+}
+
+.border-brand-strong {
+  border-color: var(--color-border-strong);
+}
+
+.text-brand-primary {
+  color: var(--color-primary-600);
+}
+
+.text-brand-strong {
+  color: var(--color-neutral-900);
+}
+
+.text-brand-muted {
+  color: var(--color-neutral-700);
+}
+
+.text-brand-soft {
+  color: var(--color-neutral-500);
+}
+
+.badge-accent-gold {
+  background-color: rgba(244, 214, 77, 0.16);
+  color: #9f7d00;
+}
+
+.badge-accent-amber {
+  background-color: rgba(247, 168, 26, 0.16);
+  color: #9a6400;
+}
+
+.badge-accent-blue {
+  background-color: rgba(70, 157, 214, 0.16);
+  color: #1f6a9d;
+}
+
+.badge-accent-purple {
+  background-color: rgba(134, 83, 166, 0.16);
+  color: #5d3185;
+}
+
+.badge-accent-red {
+  background-color: rgba(221, 68, 88, 0.16);
+  color: #a11f33;
+}
+
+.btn-brand {
+  background: linear-gradient(135deg, var(--color-primary-600), var(--color-primary-500));
+  color: #ffffff;
+  box-shadow: 0 12px 24px -18px rgba(63, 169, 61, 0.65);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.btn-brand:hover {
+  background: linear-gradient(135deg, var(--color-primary-700), var(--color-primary-600));
+  box-shadow: 0 18px 30px -18px rgba(47, 130, 48, 0.55);
+}
+
+.btn-brand:active {
+  transform: translateY(1px);
+}
+
+.btn-brand:disabled {
+  background: linear-gradient(135deg, rgba(99, 194, 75, 0.7), rgba(62, 169, 61, 0.7));
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.btn-outline-brand {
+  background: rgba(99, 194, 75, 0.09);
+  color: var(--color-primary-600);
+  border: 1px solid rgba(99, 194, 75, 0.3);
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.btn-outline-brand:hover {
+  background: rgba(99, 194, 75, 0.16);
+  border-color: rgba(62, 169, 61, 0.55);
+  color: var(--color-primary-700);
+}
+
+.chip-brand {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-neutral-700);
+  transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.chip-brand:hover,
+.chip-brand:focus-visible {
+  border-color: var(--color-border-strong);
+  color: var(--color-primary-600);
+}
+
+.chip-brand-soft {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-muted);
+  color: var(--color-neutral-700);
+  transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.chip-brand-soft:hover,
+.chip-brand-soft:focus-visible {
+  border-color: var(--color-border-strong);
+  background: var(--color-surface-tint);
+  color: var(--color-primary-600);
+}
+
+.menu-item-brand {
+  color: var(--color-neutral-700);
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.menu-item-brand:hover,
+.menu-item-brand:focus-visible {
+  background: var(--color-surface-muted);
+  color: var(--color-primary-600);
+}
+
+.input-brand {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-muted);
+  color: var(--color-neutral-700);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.input-brand:hover {
+  border-color: var(--color-border-strong);
+}
+
+.input-brand:focus {
+  border-color: var(--color-primary-600);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(99, 194, 75, 0.2);
+  background: var(--color-surface);
+}
+
+.toggle-pill {
+  color: var(--color-neutral-700);
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.toggle-pill:hover,
+.toggle-pill:focus-visible {
+  background: var(--color-surface-tint);
+  color: var(--color-primary-600);
+}
+
+.toggle-pill-active {
+  background: linear-gradient(135deg, var(--color-primary-600), var(--color-primary-500));
+  color: #ffffff;
+  box-shadow: 0 14px 26px -18px rgba(63, 169, 61, 0.55);
+}
+
+.link-brand {
+  color: var(--color-neutral-700);
+  transition: color 0.2s ease;
+}
+
+.link-brand:hover,
+.link-brand:focus-visible {
+  color: var(--color-primary-600);
+}
+
+.shadow-brand-soft {
+  box-shadow: 0 20px 48px -32px rgba(55, 138, 54, 0.45), 0 6px 18px -10px rgba(55, 138, 54, 0.22);
 }
 
 /* Custom animations for the sector overview */

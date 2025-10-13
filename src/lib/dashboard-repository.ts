@@ -48,6 +48,7 @@ type UserRow = RowDataPacket & {
   email: string;
   role: DashboardUserRole;
   organization: string | null;
+  password_hash?: string | null;
 };
 
 type BrandingRow = RowDataPacket & {
@@ -404,11 +405,18 @@ export async function insertUser(payload: {
   email: string;
   role: DashboardUserRole;
   organization?: string;
+  passwordHash?: string | null;
 }): Promise<void> {
   await withConnection(async (connection) => {
     await connection.execute(
-      "INSERT INTO users (name, email, role, organization) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE name = VALUES(name), role = VALUES(role), organization = VALUES(organization)",
-      [payload.name.trim(), payload.email.trim().toLowerCase(), payload.role, payload.organization?.trim() ?? null]
+      "INSERT INTO users (name, email, role, organization, password_hash) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE name = VALUES(name), role = VALUES(role), organization = VALUES(organization), password_hash = VALUES(password_hash)",
+      [
+        payload.name.trim(),
+        payload.email.trim().toLowerCase(),
+        payload.role,
+        payload.organization?.trim() ?? null,
+        payload.passwordHash ?? null,
+      ]
     );
   });
 }

@@ -36,6 +36,17 @@ To load example content locally, apply the optional sample data after the schema
 mysql -u root -p nsdo_mis < database/sample-data.sql
 ```
 
+## Administrative Utilities
+
+Create or update an administrator without touching the seed data by running:
+
+```bash
+DB_HOST=... DB_USER=... DB_PASSWORD=... DB_NAME=... \
+npm run create-admin-user -- --name "Fatima Ahmadi" --email fatima.ahmadi@nsdo.org.af --organization "NSDO HQ"
+```
+
+If you omit the flags it will upsert a default `Administrator <it@nsdo.org.af>` user in the “NSDO IT Unit” organization with password `Kabul@321$` (stored as a bcrypt hash). Provide `--password` to override. The script uses `ON DUPLICATE KEY UPDATE`, so re-running it with the same email safely updates the existing record.
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.

@@ -17,6 +17,7 @@ import type {
   SectorKey,
 } from "@/context/DashboardDataContext";
 import { AUTH_STORAGE_KEY } from "@/lib/auth";
+import Loading from "./loading";
 
 type DashboardSectorKey = SectorKey | typeof ALL_SECTOR_KEY;
 
@@ -506,11 +507,7 @@ export default function Home() {
   const brandLogo = branding.logoDataUrl;
 
   if (isBootstrapLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-brand-soft text-brand-muted">
-        Loading dashboard data...
-      </div>
-    );
+    return <Loading />;
   }
 
   return (

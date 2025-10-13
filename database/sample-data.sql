@@ -53,7 +53,8 @@ INSERT INTO beneficiary_stats (sector_id, type_key, direct, indirect) VALUES
 INSERT INTO users (name, email, role, organization) VALUES
   ('Jamila Farzad', 'jamila.farzad@example.org', 'Administrator', 'NSDO HQ'),
   ('Rahim Khan', 'rahim.khan@example.org', 'Editor', 'Regional Office'),
-  ('Sara Barakzai', 'sara.barakzai@example.org', 'Viewer', 'Partner Agency')
+  ('Sara Barakzai', 'sara.barakzai@example.org', 'Viewer', 'Partner Agency'),
+  ('Mohammad Dawood', 'm.dawood@nsdo.org.af', 'Administrator', 'NSDO IT Unit')
 ON DUPLICATE KEY UPDATE name = VALUES(name), role = VALUES(role), organization = VALUES(organization);
 
 INSERT INTO projects (id, name, sector_key, goal, objectives, major_achievements, country, start_date, end_date, staff)

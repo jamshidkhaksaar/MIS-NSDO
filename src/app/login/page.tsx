@@ -4,14 +4,20 @@ import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useDashboardData } from "@/context/DashboardDataContext";
+import Loading from "./loading";
 import { AUTH_STORAGE_KEY } from "@/lib/auth";
 
 export default function LoginPage() {
-  const { branding } = useDashboardData();
+  const { branding, isLoading } = useDashboardData();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
+
+  if (isLoading) {
+    return <Loading />;
+  }
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -20,10 +26,14 @@ export default function LoginPage() {
       return;
     }
 
+    setIsSubmitting(true);
     if (typeof window !== "undefined") {
       window.localStorage.setItem(AUTH_STORAGE_KEY, "true");
     }
-    router.push("/");
+
+    window.setTimeout(() => {
+      router.push("/");
+    }, 150);
   };
 
   const brandName = branding.companyName?.trim() || "Brand";
@@ -67,13 +77,28 @@ export default function LoginPage() {
       </header>
 
       <main className="mx-auto flex w-full max-w-md flex-1 items-center justify-center px-6 py-12">
-        <section className="w-full rounded-2xl border border-brand bg-white p-8 shadow-brand-soft">
+        <section className="relative w-full rounded-2xl border border-brand bg-white p-8 shadow-brand-soft">
+          {isSubmitting ? (
+            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 rounded-2xl bg-white/80 backdrop-blur">
+              <div className="flex h-12 w-12 items-center justify-center">
+                <div
+                  className="h-12 w-12 animate-spin rounded-full border-4 border-brand border-l-transparent border-t-transparent"
+                  aria-hidden
+                />
+              </div>
+              <p className="text-sm font-semibold text-brand-muted">Signing you in...</p>
+            </div>
+          ) : null}
           <h2 className="text-xl font-semibold text-brand-strong">Log in</h2>
           <p className="mt-1 text-sm text-brand-soft">
             Sign in with your MIS credentials. Contact the administrator if you need access.
           </p>
 
-          <form className="mt-6 space-y-5" onSubmit={handleSubmit}>
+          <form
+            className="mt-6 space-y-5"
+            onSubmit={handleSubmit}
+            aria-busy={isSubmitting}
+          >
             <label className="flex flex-col gap-2 text-sm font-medium text-brand-muted">
               <span className="text-xs uppercase tracking-wide text-brand-soft">Email address</span>
               <input
@@ -82,6 +107,7 @@ export default function LoginPage() {
                 onChange={(event) => setEmail(event.target.value)}
                 placeholder="name@example.org"
                 className="rounded-lg input-brand px-4 py-2 text-sm text-brand-muted"
+                disabled={isSubmitting}
               />
             </label>
 
@@ -93,6 +119,7 @@ export default function LoginPage() {
                 onChange={(event) => setPassword(event.target.value)}
                 placeholder="••••••••"
                 className="rounded-lg input-brand px-4 py-2 text-sm text-brand-muted"
+                disabled={isSubmitting}
               />
             </label>
 
@@ -105,8 +132,9 @@ export default function LoginPage() {
             <button
               type="submit"
               className="inline-flex h-11 w-full items-center justify-center rounded-full text-sm font-semibold text-white btn-brand"
+              disabled={isSubmitting}
             >
-              Sign In
+              {isSubmitting ? "Redirecting..." : "Sign In"}
             </button>
           </form>
 

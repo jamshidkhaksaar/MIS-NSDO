@@ -4,6 +4,31 @@ INSERT INTO reporting_years (year) VALUES (2023) ON DUPLICATE KEY UPDATE year = 
 INSERT INTO reporting_years (year) VALUES (2024) ON DUPLICATE KEY UPDATE year = VALUES(year);
 INSERT INTO reporting_years (year) VALUES (2025) ON DUPLICATE KEY UPDATE year = VALUES(year);
 
+INSERT INTO cluster_catalog (name, description) VALUES
+  ('Protection Cluster', 'Protection coordination and safeguarding activities.'),
+  ('Emergency Shelter and Non-Food Items (ES/NFI) Cluster', 'Shelter support and essential household supplies.'),
+  ('Health Cluster', 'Medical response and health system strengthening.'),
+  ('Nutrition Cluster', 'Nutrition programming for vulnerable populations.'),
+  ('Food Security and Agriculture Cluster', 'Agricultural livelihoods and food security actions.'),
+  ('WASH (Water, Sanitation and Hygiene) Cluster', 'Water, sanitation, and hygiene interventions.'),
+  ('Education Cluster', 'Education coordination and learning continuity.'),
+  ('Livelihoods Cluster', 'Income generation and livelihoods support.')
+ON DUPLICATE KEY UPDATE description = VALUES(description);
+
+INSERT INTO sector_catalog (name, description) VALUES
+  ('Agriculture & Rural Development', 'Agricultural productivity and rural resilience.'),
+  ('Education & Literacy', 'Formal and informal education support.'),
+  ('Health Systems Strengthening', 'Primary and secondary health system capacity.'),
+  ('WASH (Water, Sanitation, Hygiene)', 'Safe water access, sanitation, and hygiene programming.'),
+  ('Protection (including GBV, Child Protection, Legal Aid)', 'Protection services and safeguards.'),
+  ('Food Security & Agriculture', 'Food security programming and agricultural inputs.'),
+  ('Livelihoods & Economic Empowerment', 'Income generation and skills development.'),
+  ('Environment & Climate Resilience', 'Climate adaptation and environmental protection.'),
+  ('Disaster Risk Reduction (DRR)', 'Preparedness and risk reduction programming.'),
+  ('Returnee & IDP Support', 'Assistance for displaced populations.'),
+  ('Vocational Training (TVET)', 'Skills training and workforce development.')
+ON DUPLICATE KEY UPDATE description = VALUES(description);
+
 INSERT INTO sectors (id, sector_key, display_name, projects, start_date, end_date, field_activity, staff)
 VALUES
   (1, 'Humanitarian', 'Humanitarian', 14, '2024-02-15', '2025-09-30', 'Emergency response & relief kits', 62),

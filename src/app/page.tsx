@@ -2,6 +2,7 @@
 
 import { ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import AfghanistanMap from "@/ui/AfghanistanMap";
 import BeneficiaryDonut from "@/ui/BeneficiaryDonut";
 import { useDashboardData } from "@/context/DashboardDataContext";
@@ -16,7 +17,6 @@ import type {
   SectorDetails,
   SectorKey,
 } from "@/context/DashboardDataContext";
-import { AUTH_STORAGE_KEY } from "@/lib/auth";
 import Loading from "./loading";
 
 type DashboardSectorKey = SectorKey | typeof ALL_SECTOR_KEY;
@@ -66,6 +66,7 @@ const cloneBreakdown = (source: BeneficiaryBreakdown | undefined): BeneficiaryBr
 
 export default function Home() {
   const { sectors, reportingYears, branding, isLoading, projects } = useDashboardData();
+  const router = useRouter();
 
   const baseSectorKeys = useMemo(
     () =>
@@ -106,16 +107,27 @@ export default function Home() {
   }, [baseSectorKeys, selectedSector]);
 
   useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
+    let isMounted = true;
 
-    const syncAuthState = () => {
-      const storedValue = window.localStorage.getItem(AUTH_STORAGE_KEY);
-      setIsAuthenticated(storedValue === "true");
+    const checkSession = async () => {
+      try {
+        const response = await fetch("/api/auth/session", { cache: "no-store" });
+        if (!isMounted) {
+          return;
+        }
+        setIsAuthenticated(response.ok);
+      } catch {
+        if (isMounted) {
+          setIsAuthenticated(false);
+        }
+      }
     };
 
-    syncAuthState();
+    checkSession();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -303,12 +315,17 @@ export default function Home() {
     [setFocusedProvince]
   );
 
-  const handleSignOut = useCallback(() => {
-    if (typeof window !== "undefined") {
-      window.localStorage.removeItem(AUTH_STORAGE_KEY);
+  const handleSignOut = useCallback(async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch {
+      // Ignored -- fallback to client-side navigation regardless of network status.
+    } finally {
+      setIsAuthenticated(false);
+      router.push("/login");
+      router.refresh();
     }
-    setIsAuthenticated(false);
-  }, []);
+  }, [router]);
 
   const activeSnapshot = sectorSnapshots[selectedSector] ?? {
     provinces: [],
@@ -609,10 +626,10 @@ export default function Home() {
                   ) : null}
                 </div>
                 <Link
-                  href="/user-dashboard"
+                  href="/complaints"
                   className="inline-flex h-11 items-center justify-center whitespace-nowrap rounded-full px-5 text-sm font-semibold chip-brand"
                 >
-                  Data Entry
+                  Complaints
                 </Link>
                 <Link
                   href="/admin"
@@ -631,7 +648,9 @@ export default function Home() {
             {isAuthenticated ? (
               <button
                 type="button"
-                onClick={handleSignOut}
+                onClick={() => {
+                  void handleSignOut();
+                }}
                 className="inline-flex h-11 items-center justify-center whitespace-nowrap rounded-full px-6 text-sm font-semibold text-white shadow-brand-soft transition btn-brand"
               >
                 Log Out

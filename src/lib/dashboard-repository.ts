@@ -105,6 +105,38 @@ type ProjectSectorLabelRow = RowDataPacket & {
   sector_label: string;
 };
 
+type ClusterCatalogRow = RowDataPacket & {
+  id: number;
+  name: string;
+  description: string | null;
+};
+
+type SectorCatalogRow = RowDataPacket & {
+  id: number;
+  name: string;
+  description: string | null;
+};
+
+type UserWithPasswordRow = RowDataPacket & {
+  id: number;
+  name: string;
+  email: string;
+  role: DashboardUserRole;
+  organization: string | null;
+  password_hash: string | null;
+};
+
+type SessionWithUserRow = RowDataPacket & {
+  id: number;
+  user_id: number;
+  token_hash: string;
+  expires_at: Date;
+  name: string;
+  email: string;
+  role: DashboardUserRole;
+  organization: string | null;
+};
+
 type DashboardState = {
   sectors: Record<string, SectorDetails>;
   reportingYears: number[];
@@ -133,6 +165,8 @@ type DashboardState = {
     faviconDataUrl: string | null;
   };
   complaints: ComplaintRecord[];
+  clusterCatalog: Array<{ id: string; name: string; description?: string }>;
+  sectorCatalog: Array<{ id: string; name: string; description?: string }>;
 };
 
 function formatDate(value: Date | null): string {
@@ -369,6 +403,105 @@ export async function fetchDashboardState(): Promise<DashboardState> {
       };
     });
 
+    const aggregateAllSectors = (() => {
+      if (!projects.length) {
+        return {
+          provinces: [] as string[],
+          beneficiaries: createEmptyBreakdown(),
+          projects: 0,
+          staff: 0,
+          start: "",
+          end: "",
+        };
+      }
+
+      const provinceSet = new Set<string>();
+      const beneficiaryTotals = createEmptyBreakdown();
+      let staffTotal = 0;
+      let earliestStartValue = Number.POSITIVE_INFINITY;
+      let earliestStartLabel = "";
+      let latestEndValue = Number.NEGATIVE_INFINITY;
+      let latestEndLabel = "";
+
+      projects.forEach((project) => {
+        project.provinces.forEach((province) => provinceSet.add(province));
+
+        BENEFICIARY_TYPE_KEYS.forEach((key) => {
+          beneficiaryTotals.direct[key] += project.beneficiaries.direct?.[key] ?? 0;
+          beneficiaryTotals.indirect[key] += project.beneficiaries.indirect?.[key] ?? 0;
+        });
+
+        if (Number.isFinite(project.staff)) {
+          staffTotal += project.staff;
+        }
+
+        const startTime = project.start ? Date.parse(project.start) : Number.NaN;
+        if (!Number.isNaN(startTime) && startTime < earliestStartValue) {
+          earliestStartValue = startTime;
+          earliestStartLabel = project.start;
+        }
+
+        const endTime = project.end ? Date.parse(project.end) : Number.NaN;
+        if (!Number.isNaN(endTime) && endTime > latestEndValue) {
+          latestEndValue = endTime;
+          latestEndLabel = project.end;
+        }
+      });
+
+      return {
+        provinces: Array.from(provinceSet).sort((a, b) => a.localeCompare(b)),
+        beneficiaries: beneficiaryTotals,
+        projects: projects.length,
+        staff: staffTotal,
+        start: Number.isFinite(earliestStartValue) ? earliestStartLabel : "",
+        end: Number.isFinite(latestEndValue) ? latestEndLabel : "",
+      };
+    })();
+
+    const existingAllSector = sectors[ALL_SECTOR_KEY] ?? {
+      provinces: [] as string[],
+      beneficiaries: createEmptyBreakdown(),
+      projects: 0,
+      start: "",
+      end: "",
+      fieldActivity: ALL_SECTOR_FIELD_ACTIVITY,
+      staff: 0,
+    };
+
+    sectors[ALL_SECTOR_KEY] = {
+      ...existingAllSector,
+      provinces: aggregateAllSectors.provinces.length
+        ? aggregateAllSectors.provinces
+        : existingAllSector.provinces,
+      beneficiaries: aggregateAllSectors.projects
+        ? aggregateAllSectors.beneficiaries
+        : existingAllSector.beneficiaries,
+      projects: aggregateAllSectors.projects || existingAllSector.projects,
+      start: aggregateAllSectors.start || existingAllSector.start,
+      end: aggregateAllSectors.end || existingAllSector.end,
+      staff: aggregateAllSectors.projects ? aggregateAllSectors.staff : existingAllSector.staff,
+    };
+
+    const [clusterCatalogRows] = await connection.query<ClusterCatalogRow[]>(
+      "SELECT id, name, description FROM cluster_catalog ORDER BY name ASC"
+    );
+
+    const clusterCatalog = clusterCatalogRows.map((row) => ({
+      id: row.id.toString(),
+      name: row.name,
+      description: row.description ?? undefined,
+    }));
+
+    const [sectorCatalogRows] = await connection.query<SectorCatalogRow[]>(
+      "SELECT id, name, description FROM sector_catalog ORDER BY name ASC"
+    );
+
+    const sectorCatalog = sectorCatalogRows.map((row) => ({
+      id: row.id.toString(),
+      name: row.name,
+      description: row.description ?? undefined,
+    }));
+
     return {
       sectors,
       reportingYears,
@@ -376,6 +509,8 @@ export async function fetchDashboardState(): Promise<DashboardState> {
       projects,
       branding,
       complaints,
+      clusterCatalog,
+      sectorCatalog,
     };
   });
 }
@@ -409,7 +544,7 @@ export async function insertUser(payload: {
 }): Promise<void> {
   await withConnection(async (connection) => {
     await connection.execute(
-      "INSERT INTO users (name, email, role, organization, password_hash) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE name = VALUES(name), role = VALUES(role), organization = VALUES(organization), password_hash = VALUES(password_hash)",
+      "INSERT INTO users (name, email, role, organization, password_hash) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE name = VALUES(name), role = VALUES(role), organization = VALUES(organization), password_hash = COALESCE(VALUES(password_hash), password_hash)",
       [
         payload.name.trim(),
         payload.email.trim().toLowerCase(),
@@ -497,6 +632,46 @@ export async function upsertSectorDetails(sectorKey: string, details: SectorDeta
   });
 }
 
+function sanitizeNameList(values: string[]): string[] {
+  return Array.from(
+    new Set(
+      values
+        .map((value) => value.trim())
+        .filter((value) => value.length)
+    )
+  );
+}
+
+async function ensureCatalogEntries(
+  connection: mysql.PoolConnection,
+  table: "cluster_catalog" | "sector_catalog",
+  names: string[]
+): Promise<void> {
+  if (!names.length) {
+    return;
+  }
+
+  const [rows] = await connection.query<RowDataPacket[]>(
+    `SELECT name FROM ${table} WHERE name IN (?)`,
+    [names]
+  );
+
+  const found = new Set(rows.map((row) => row.name as string));
+  const missing = names.filter((name) => !found.has(name));
+  if (missing.length) {
+    const label = table === "cluster_catalog" ? "clusters" : "sectors";
+    throw new Error(
+      `Unknown ${label}: ${missing.join(", ")}. Register them before linking to a project.`
+    );
+  }
+}
+
+export type CatalogEntry = {
+  id: string;
+  name: string;
+  description?: string;
+};
+
 export async function insertProject(payload: {
   name: string;
   sectorKey: string;
@@ -517,6 +692,15 @@ export async function insertProject(payload: {
   return withConnection(async (connection) => {
     await connection.beginTransaction();
     try {
+      const provinces = sanitizeNameList(payload.provinces);
+      const districts = sanitizeNameList(payload.districts);
+      const communities = sanitizeNameList(payload.communities);
+      const clusters = sanitizeNameList(payload.clusters);
+      const standardSectors = sanitizeNameList(payload.standardSectors);
+
+      await ensureCatalogEntries(connection, "cluster_catalog", clusters);
+      await ensureCatalogEntries(connection, "sector_catalog", standardSectors);
+
       const [result] = await connection.execute(
         "INSERT INTO projects (name, sector_key, goal, objectives, major_achievements, country, start_date, end_date, staff) VALUES (?, ?, ?, ?, ?, ?, NULLIF(?, ''), NULLIF(?, ''), ?)",
         [
@@ -535,13 +719,13 @@ export async function insertProject(payload: {
       const projectId = (result as mysql.ResultSetHeader).insertId;
 
       const geoValues: Array<[number, "province" | "district" | "community", string]> = [];
-      payload.provinces.forEach((province) => {
+      provinces.forEach((province) => {
         geoValues.push([projectId, "province", province]);
       });
-      payload.districts.forEach((district) => {
+      districts.forEach((district) => {
         geoValues.push([projectId, "district", district]);
       });
-      payload.communities.forEach((community) => {
+      communities.forEach((community) => {
         geoValues.push([projectId, "community", community]);
       });
 
@@ -563,17 +747,17 @@ export async function insertProject(payload: {
         [beneficiaryValues]
       );
 
-      if (payload.clusters.length) {
+      if (clusters.length) {
         await connection.query(
           "INSERT INTO project_clusters (project_id, cluster) VALUES ?",
-          [payload.clusters.map((cluster) => [projectId, cluster])]
+          [clusters.map((cluster) => [projectId, cluster])]
         );
       }
 
-      if (payload.standardSectors.length) {
+      if (standardSectors.length) {
         await connection.query(
           "INSERT INTO project_standard_sectors (project_id, sector_label) VALUES ?",
-          [payload.standardSectors.map((sector) => [projectId, sector])]
+          [standardSectors.map((sector) => [projectId, sector])]
         );
       }
 
@@ -607,6 +791,15 @@ export async function updateProject(projectId: string, payload: {
   await withConnection(async (connection) => {
     await connection.beginTransaction();
     try {
+      const provinces = sanitizeNameList(payload.provinces);
+      const districts = sanitizeNameList(payload.districts);
+      const communities = sanitizeNameList(payload.communities);
+      const clusters = sanitizeNameList(payload.clusters);
+      const standardSectors = sanitizeNameList(payload.standardSectors);
+
+      await ensureCatalogEntries(connection, "cluster_catalog", clusters);
+      await ensureCatalogEntries(connection, "sector_catalog", standardSectors);
+
       await connection.execute(
         "UPDATE projects SET name = ?, sector_key = ?, goal = ?, objectives = ?, major_achievements = ?, country = ?, start_date = NULLIF(?, ''), end_date = NULLIF(?, ''), staff = ? WHERE id = ?",
         [
@@ -625,9 +818,9 @@ export async function updateProject(projectId: string, payload: {
 
       await connection.execute("DELETE FROM project_geography WHERE project_id = ?", [id]);
       const geoValues: Array<[number, "province" | "district" | "community", string]> = [];
-      payload.provinces.forEach((province) => geoValues.push([id, "province", province]));
-      payload.districts.forEach((district) => geoValues.push([id, "district", district]));
-      payload.communities.forEach((community) => geoValues.push([id, "community", community]));
+      provinces.forEach((province) => geoValues.push([id, "province", province]));
+      districts.forEach((district) => geoValues.push([id, "district", district]));
+      communities.forEach((community) => geoValues.push([id, "community", community]));
       if (geoValues.length) {
         await connection.query(
           "INSERT INTO project_geography (project_id, level, name) VALUES ?",
@@ -648,18 +841,18 @@ export async function updateProject(projectId: string, payload: {
       );
 
       await connection.execute("DELETE FROM project_clusters WHERE project_id = ?", [id]);
-      if (payload.clusters.length) {
+      if (clusters.length) {
         await connection.query(
           "INSERT INTO project_clusters (project_id, cluster) VALUES ?",
-          [payload.clusters.map((cluster) => [id, cluster])]
+          [clusters.map((cluster) => [id, cluster])]
         );
       }
 
       await connection.execute("DELETE FROM project_standard_sectors WHERE project_id = ?", [id]);
-      if (payload.standardSectors.length) {
+      if (standardSectors.length) {
         await connection.query(
           "INSERT INTO project_standard_sectors (project_id, sector_label) VALUES ?",
-          [payload.standardSectors.map((sector) => [id, sector])]
+          [standardSectors.map((sector) => [id, sector])]
         );
       }
 
@@ -674,6 +867,203 @@ export async function updateProject(projectId: string, payload: {
 export async function deleteProject(projectId: string): Promise<void> {
   await withConnection(async (connection) => {
     await connection.execute("DELETE FROM projects WHERE id = ?", [projectId]);
+  });
+}
+
+export async function fetchClusterCatalog(): Promise<CatalogEntry[]> {
+  return withConnection(async (connection) => {
+    const [rows] = await connection.query<ClusterCatalogRow[]>(
+      "SELECT id, name, description FROM cluster_catalog ORDER BY name ASC"
+    );
+    return rows.map((row) => ({
+      id: row.id.toString(),
+      name: row.name,
+      description: row.description ?? undefined,
+    }));
+  });
+}
+
+export async function fetchSectorCatalog(): Promise<CatalogEntry[]> {
+  return withConnection(async (connection) => {
+    const [rows] = await connection.query<SectorCatalogRow[]>(
+      "SELECT id, name, description FROM sector_catalog ORDER BY name ASC"
+    );
+    return rows.map((row) => ({
+      id: row.id.toString(),
+      name: row.name,
+      description: row.description ?? undefined,
+    }));
+  });
+}
+
+export async function insertClusterCatalogEntry(payload: {
+  name: string;
+  description?: string;
+}): Promise<CatalogEntry> {
+  const name = payload.name.trim();
+  if (!name) {
+    throw new Error("Cluster name is required.");
+  }
+  const description = payload.description?.trim() ?? null;
+
+  return withConnection(async (connection) => {
+    const [result] = await connection.execute(
+      "INSERT INTO cluster_catalog (name, description) VALUES (?, ?) ON DUPLICATE KEY UPDATE description = VALUES(description), id = LAST_INSERT_ID(id)",
+      [name, description]
+    );
+    const id = (result as mysql.ResultSetHeader).insertId;
+    const [rows] = await connection.query<ClusterCatalogRow[]>(
+      "SELECT id, name, description FROM cluster_catalog WHERE id = ?",
+      [id]
+    );
+    const record = rows[0];
+    return {
+      id: record.id.toString(),
+      name: record.name,
+      description: record.description ?? undefined,
+    };
+  });
+}
+
+export async function insertSectorCatalogEntry(payload: {
+  name: string;
+  description?: string;
+}): Promise<CatalogEntry> {
+  const name = payload.name.trim();
+  if (!name) {
+    throw new Error("Sector name is required.");
+  }
+  const description = payload.description?.trim() ?? null;
+
+  return withConnection(async (connection) => {
+    const [result] = await connection.execute(
+      "INSERT INTO sector_catalog (name, description) VALUES (?, ?) ON DUPLICATE KEY UPDATE description = VALUES(description), id = LAST_INSERT_ID(id)",
+      [name, description]
+    );
+    const id = (result as mysql.ResultSetHeader).insertId;
+    const [rows] = await connection.query<SectorCatalogRow[]>(
+      "SELECT id, name, description FROM sector_catalog WHERE id = ?",
+      [id]
+    );
+    const record = rows[0];
+    return {
+      id: record.id.toString(),
+      name: record.name,
+      description: record.description ?? undefined,
+    };
+  });
+}
+
+export type AuthUserRecord = {
+  id: number;
+  name: string;
+  email: string;
+  role: DashboardUserRole;
+  organization?: string;
+  passwordHash: string | null;
+};
+
+export type SessionLookupResult = {
+  sessionId: string;
+  expiresAt: Date;
+  user: {
+    id: number;
+    name: string;
+    email: string;
+    role: DashboardUserRole;
+    organization?: string;
+  };
+};
+
+export async function findUserByEmail(email: string): Promise<AuthUserRecord | null> {
+  const normalizedEmail = email.trim().toLowerCase();
+  if (!normalizedEmail) {
+    return null;
+  }
+
+  return withConnection(async (connection) => {
+    const [rows] = await connection.query<UserWithPasswordRow[]>(
+      "SELECT id, name, email, role, organization, password_hash FROM users WHERE email = ? LIMIT 1",
+      [normalizedEmail]
+    );
+
+    if (!rows.length) {
+      return null;
+    }
+
+    const row = rows[0];
+    return {
+      id: row.id,
+      name: row.name,
+      email: row.email,
+      role: row.role,
+      organization: row.organization ?? undefined,
+      passwordHash: row.password_hash ?? null,
+    };
+  });
+}
+
+export async function createUserSessionRecord(
+  userId: number,
+  tokenHash: string,
+  expiresAt: Date
+): Promise<void> {
+  await withConnection(async (connection) => {
+    await connection.execute("DELETE FROM user_sessions WHERE expires_at < NOW()");
+    await connection.execute(
+      "INSERT INTO user_sessions (user_id, token_hash, expires_at) VALUES (?, ?, ?)",
+      [userId, tokenHash, expiresAt]
+    );
+  });
+}
+
+export async function findSessionByTokenHash(tokenHash: string): Promise<SessionLookupResult | null> {
+  return withConnection(async (connection) => {
+    const [rows] = await connection.query<SessionWithUserRow[]>(
+      `SELECT
+         s.id,
+         s.user_id,
+         s.token_hash,
+         s.expires_at,
+         u.name,
+         u.email,
+         u.role,
+         u.organization
+       FROM user_sessions s
+       INNER JOIN users u ON u.id = s.user_id
+       WHERE s.token_hash = ? AND s.expires_at > NOW()
+       LIMIT 1`,
+      [tokenHash]
+    );
+
+    if (!rows.length) {
+      return null;
+    }
+
+    const session = rows[0];
+    return {
+      sessionId: session.id.toString(),
+      expiresAt: session.expires_at,
+      user: {
+        id: session.user_id,
+        name: session.name,
+        email: session.email,
+        role: session.role,
+        organization: session.organization ?? undefined,
+      },
+    };
+  });
+}
+
+export async function deleteSessionByTokenHash(tokenHash: string): Promise<void> {
+  await withConnection(async (connection) => {
+    await connection.execute("DELETE FROM user_sessions WHERE token_hash = ?", [tokenHash]);
+  });
+}
+
+export async function purgeExpiredSessions(): Promise<void> {
+  await withConnection(async (connection) => {
+    await connection.execute("DELETE FROM user_sessions WHERE expires_at <= NOW()");
   });
 }
 

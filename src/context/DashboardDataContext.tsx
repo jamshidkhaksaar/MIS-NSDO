@@ -14,9 +14,6 @@ import {
   ALL_SECTOR_FIELD_ACTIVITY,
   DEFAULT_BRANDING,
   DEFAULT_COMPLAINTS,
-  PROJECT_SECTORS,
-  RESPONSE_CLUSTERS,
-  STANDARD_SECTOR_GROUPS,
   type DashboardProject,
   type DashboardUser,
   type DashboardUserRole,
@@ -25,26 +22,50 @@ import {
   type SectorState,
   type BrandingSettings,
   type ComplaintRecord,
+  type CatalogEntry,
 } from "@/lib/dashboard-data";
+import { usePathname } from "next/navigation";
 
 const DASHBOARD_STATE_ENDPOINT = "/api/dashboard/state";
 
+type JsonFetchError = Error & { status?: number };
+
 async function jsonFetch<T>(input: RequestInfo, init?: RequestInit): Promise<T> {
-  const response = await fetch(input, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...(init?.headers ?? {}),
-    },
-    cache: "no-store",
-  });
+  let response: Response;
+  try {
+    response = await fetch(input, {
+      ...init,
+      headers: {
+        "Content-Type": "application/json",
+        ...(init?.headers ?? {}),
+      },
+      cache: "no-store",
+      credentials: "include",
+    });
+  } catch (fetchError) {
+    const error: JsonFetchError = new Error((fetchError as Error).message || "Network request failed");
+    error.status = 0;
+    throw error;
+  }
 
   if (!response.ok) {
     const message = await response.text();
-    throw new Error(message || "Request failed");
+    const error: JsonFetchError = new Error(message || "Request failed");
+    error.status = response.status;
+    throw error;
   }
 
   return response.json() as Promise<T>;
+}
+
+function mergeCatalogEntry(list: CatalogEntry[], entry: CatalogEntry): CatalogEntry[] {
+  const existingIndex = list.findIndex((item) => item.id === entry.id);
+  if (existingIndex !== -1) {
+    const next = [...list];
+    next[existingIndex] = entry;
+    return next.sort((a, b) => a.name.localeCompare(b.name));
+  }
+  return [...list, entry].sort((a, b) => a.name.localeCompare(b.name));
 }
 
 type DashboardContextValue = {
@@ -54,11 +75,13 @@ type DashboardContextValue = {
   projects: DashboardProject[];
   complaints: ComplaintRecord[];
   branding: BrandingSettings;
+  clusterCatalog: CatalogEntry[];
+  sectorCatalog: CatalogEntry[];
   refresh: () => Promise<void>;
   updateSector: (sector: SectorKey, details: SectorDetails) => Promise<void>;
   addReportingYear: (year: number) => Promise<void>;
   removeReportingYear: (year: number) => Promise<void>;
-  addUser: (user: { name: string; email: string; role: DashboardUserRole; organization?: string }) => Promise<void>;
+  addUser: (user: { name: string; email: string; role: DashboardUserRole; organization?: string; password?: string }) => Promise<void>;
   removeUser: (userId: string) => Promise<void>;
   addProject: (project: Omit<DashboardProject, "id">) => Promise<void>;
   updateProject: (projectId: string, updates: Omit<DashboardProject, "id">) => Promise<void>;
@@ -66,6 +89,8 @@ type DashboardContextValue = {
   updateBranding: (payload: Partial<BrandingSettings>) => Promise<void>;
   addComplaint: (complaint: { fullName: string; email: string; phone?: string; message: string }) => Promise<void>;
   removeComplaint: (complaintId: string) => Promise<void>;
+  registerCluster: (input: { name: string; description?: string }) => Promise<CatalogEntry>;
+  registerSector: (input: { name: string; description?: string }) => Promise<CatalogEntry>;
   isLoading: boolean;
 };
 
@@ -78,7 +103,11 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
   const [projects, setProjects] = useState<DashboardProject[]>([]);
   const [complaints, setComplaints] = useState<ComplaintRecord[]>(DEFAULT_COMPLAINTS);
   const [branding, setBranding] = useState<BrandingSettings>(DEFAULT_BRANDING);
+  const [clusterCatalog, setClusterCatalog] = useState<CatalogEntry[]>([]);
+  const [sectorCatalog, setSectorCatalog] = useState<CatalogEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const pathname = usePathname();
+  const isPublicRoute = pathname === "/login";
 
   const refresh = useCallback(async () => {
     setIsLoading(true);
@@ -90,6 +119,8 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
         projects: DashboardProject[];
         branding: BrandingSettings;
         complaints: ComplaintRecord[];
+        clusterCatalog: CatalogEntry[];
+        sectorCatalog: CatalogEntry[];
       }>(DASHBOARD_STATE_ENDPOINT);
 
       setSectors(state.sectors);
@@ -98,16 +129,44 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
       setProjects(state.projects);
       setBranding(state.branding);
       setComplaints(state.complaints);
+      setClusterCatalog(state.clusterCatalog);
+      setSectorCatalog(state.sectorCatalog);
     } catch (error) {
-      console.error("Failed to refresh dashboard state", error);
+      const status = (error as JsonFetchError)?.status;
+      if (status === 401) {
+        setSectors({});
+        setReportingYears([]);
+        setUsers([]);
+        setProjects([]);
+        setBranding(DEFAULT_BRANDING);
+        setComplaints(DEFAULT_COMPLAINTS);
+        setClusterCatalog([]);
+        setSectorCatalog([]);
+      } else if (status === 0) {
+        console.warn("Network request to", DASHBOARD_STATE_ENDPOINT, "failed. Retaining existing state.");
+      } else {
+        console.error("Failed to refresh dashboard state", error);
+      }
     } finally {
       setIsLoading(false);
     }
   }, []);
 
   useEffect(() => {
+    if (isPublicRoute) {
+      setSectors({});
+      setReportingYears([]);
+      setUsers([]);
+      setProjects([]);
+      setComplaints(DEFAULT_COMPLAINTS);
+      setBranding(DEFAULT_BRANDING);
+      setClusterCatalog([]);
+      setSectorCatalog([]);
+      setIsLoading(false);
+      return;
+    }
     refresh();
-  }, [refresh]);
+  }, [refresh, isPublicRoute]);
 
   const updateSector = useCallback(async (sector: SectorKey, details: SectorDetails) => {
     await jsonFetch(`/api/sectors/${encodeURIComponent(sector)}`, {
@@ -132,7 +191,7 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
     await refresh();
   }, [refresh]);
 
-  const addUser = useCallback(async (user: { name: string; email: string; role: DashboardUserRole; organization?: string }) => {
+  const addUser = useCallback(async (user: { name: string; email: string; role: DashboardUserRole; organization?: string; password?: string }) => {
     await jsonFetch("/api/users", {
       method: "POST",
       body: JSON.stringify(user),
@@ -144,6 +203,24 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
     await jsonFetch(`/api/users/${userId}`, { method: "DELETE" });
     await refresh();
   }, [refresh]);
+
+  const registerCluster = useCallback(async (input: { name: string; description?: string }) => {
+    const entry = await jsonFetch<CatalogEntry>("/api/catalog/clusters", {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+    setClusterCatalog((previous) => mergeCatalogEntry(previous, entry));
+    return entry;
+  }, []);
+
+  const registerSector = useCallback(async (input: { name: string; description?: string }) => {
+    const entry = await jsonFetch<CatalogEntry>("/api/catalog/sectors", {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+    setSectorCatalog((previous) => mergeCatalogEntry(previous, entry));
+    return entry;
+  }, []);
 
   const addProject = useCallback(async (project: Omit<DashboardProject, "id">) => {
     await jsonFetch("/api/projects", {
@@ -198,6 +275,8 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
     projects,
     complaints,
     branding,
+    clusterCatalog,
+    sectorCatalog,
     refresh,
     updateSector,
     addReportingYear,
@@ -210,6 +289,8 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
     updateBranding,
     addComplaint,
     removeComplaint,
+    registerCluster,
+    registerSector,
     isLoading,
   }), [
     sectors,
@@ -218,6 +299,8 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
     projects,
     complaints,
     branding,
+    clusterCatalog,
+    sectorCatalog,
     refresh,
     updateSector,
     addReportingYear,
@@ -230,6 +313,8 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
     updateBranding,
     addComplaint,
     removeComplaint,
+    registerCluster,
+    registerSector,
     isLoading,
   ]);
 
@@ -248,13 +333,4 @@ export function useDashboardData() {
   return context;
 }
 
-export {
-  ALL_SECTOR_KEY,
-  ALL_SECTOR_FIELD_ACTIVITY,
-  BENEFICIARY_TYPE_KEYS,
-  BENEFICIARY_TYPE_META,
-  BENEFICIARY_GROUPS,
-  PROJECT_SECTORS,
-  RESPONSE_CLUSTERS,
-  STANDARD_SECTOR_GROUPS,
-};
+export { ALL_SECTOR_KEY, ALL_SECTOR_FIELD_ACTIVITY, BENEFICIARY_TYPE_KEYS, BENEFICIARY_TYPE_META, BENEFICIARY_GROUPS };

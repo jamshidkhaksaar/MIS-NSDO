@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useDashboardData } from "@/context/DashboardDataContext";
 import Loading from "./loading";
-import { AUTH_STORAGE_KEY } from "@/lib/auth";
 
 export default function LoginPage() {
   const { branding, isLoading } = useDashboardData();
@@ -19,21 +18,40 @@ export default function LoginPage() {
     return <Loading />;
   }
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setError(null);
+
     if (!email.trim() || !password.trim()) {
       setError("Enter your email and password to continue.");
       return;
     }
 
-    setIsSubmitting(true);
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(AUTH_STORAGE_KEY, "true");
-    }
+    try {
+      setIsSubmitting(true);
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({ email: email.trim(), password }),
+      });
 
-    window.setTimeout(() => {
+      if (!response.ok) {
+        const body = await response.json().catch(() => null);
+        const message = body?.message ?? "Unable to sign in. Check your credentials.";
+        setError(message);
+        return;
+      }
+
       router.push("/");
-    }, 150);
+      router.refresh();
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : "Unexpected error while signing in.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const brandName = branding.companyName?.trim() || "Brand";
@@ -139,7 +157,7 @@ export default function LoginPage() {
           </form>
 
           <p className="mt-6 text-xs text-brand-soft">
-            This login screen sets a local session flag for prototype access. Integrate with your identity provider to enable production authentication.
+            Secure cookies maintain your MIS session. Contact the administrator if you encounter issues signing in.
           </p>
         </section>
       </main>

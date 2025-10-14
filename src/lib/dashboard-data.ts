@@ -72,6 +72,12 @@ export type DashboardUser = {
 
 export type DashboardUsers = DashboardUser[];
 
+export type CatalogEntry = {
+  id: string;
+  name: string;
+  description?: string;
+};
+
 export const PROJECT_SECTORS = [
   "Agriculture",
   "Education",

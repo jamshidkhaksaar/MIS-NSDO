@@ -9,11 +9,32 @@ import type { DashboardUserRole } from "@/context/DashboardDataContext";
 
 const ROLE_OPTIONS: DashboardUserRole[] = ["Administrator", "Editor", "Viewer"];
 
+const PASSWORD_MIN_LENGTH = 12;
+const PASSWORD_POLICY_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).+$/;
+
+function createSecurePassword(length = 16): string {
+  const charset = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz0123456789!@#$%^&*()-_=+";
+  const buffer = new Uint32Array(length);
+  if (typeof window !== "undefined" && window.crypto?.getRandomValues) {
+    window.crypto.getRandomValues(buffer);
+  } else {
+    for (let index = 0; index < length; index += 1) {
+      buffer[index] = Math.floor(Math.random() * charset.length);
+    }
+  }
+  return Array.from(buffer, (value) => charset[value % charset.length]).join("");
+}
+
+function meetsPasswordPolicy(password: string): boolean {
+  return password.length >= PASSWORD_MIN_LENGTH && PASSWORD_POLICY_REGEX.test(password);
+}
+
 type UserFormState = {
   name: string;
   email: string;
   role: DashboardUserRole;
   organization: string;
+  password: string;
 };
 
 const DEFAULT_FORM_STATE: UserFormState = {
@@ -21,6 +42,7 @@ const DEFAULT_FORM_STATE: UserFormState = {
   email: "",
   role: "Viewer",
   organization: "",
+  password: "",
 };
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -34,6 +56,9 @@ export default function AdminDashboard() {
   const [brandError, setBrandError] = useState<string | null>(null);
   const [brandNotice, setBrandNotice] = useState<string | null>(null);
   const [companyNameInput, setCompanyNameInput] = useState<string>(branding.companyName);
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [passwordCopied, setPasswordCopied] = useState(false);
+  const [lastIssuedPassword, setLastIssuedPassword] = useState<string | null>(null);
   const logoInputRef = useRef<HTMLInputElement | null>(null);
   const faviconInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -121,6 +146,41 @@ export default function AdminDashboard() {
     setBrandNotice(`${type === "logo" ? "Logo" : "Favicon"} reset.`);
   };
 
+  const handleGeneratePassword = () => {
+    const password = createSecurePassword();
+    setFormState((prev) => ({ ...prev, password }));
+    setIsPasswordVisible(true);
+    setPasswordCopied(false);
+    setLastIssuedPassword(null);
+    setNotice("Strong password generated. Share securely with the user once saved.");
+    setError(null);
+  };
+
+  const copyPasswordToClipboard = async (value: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      setPasswordCopied(true);
+      window.setTimeout(() => setPasswordCopied(false), 2000);
+    } catch (clipboardError) {
+      console.error("Failed to copy password", clipboardError);
+      setPasswordCopied(false);
+    }
+  };
+
+  const handleCopyCurrentPassword = () => {
+    if (!formState.password) {
+      return;
+    }
+    void copyPasswordToClipboard(formState.password);
+  };
+
+  const handleCopyIssuedPassword = () => {
+    if (!lastIssuedPassword) {
+      return;
+    }
+    void copyPasswordToClipboard(lastIssuedPassword);
+  };
+
   const handleCompanyNameSave = async () => {
     const trimmed = companyNameInput.trim();
     if (!trimmed) {
@@ -141,6 +201,10 @@ export default function AdminDashboard() {
 
     const trimmedName = formState.name.trim();
     const trimmedEmail = formState.email.trim().toLowerCase();
+    const trimmedPassword = formState.password.trim();
+    const existingUser = users.find(
+      (user) => user.email.toLowerCase() === trimmedEmail
+    );
 
     if (!trimmedName) {
       setError("Please provide the user's full name.");
@@ -152,6 +216,16 @@ export default function AdminDashboard() {
       return;
     }
 
+    if (!existingUser && !trimmedPassword) {
+      setError("Generate or enter a secure password for new users.");
+      return;
+    }
+
+    if (trimmedPassword && !meetsPasswordPolicy(trimmedPassword)) {
+      setError("Passwords must be at least 12 characters and include upper, lower, number, and symbol.");
+      return;
+    }
+
     try {
       setIsSubmitting(true);
       await addUser({
@@ -159,13 +233,17 @@ export default function AdminDashboard() {
         email: trimmedEmail,
         role: formState.role,
         organization: formState.organization.trim() || undefined,
+        password: trimmedPassword || undefined,
       });
 
       setFormState({
         ...DEFAULT_FORM_STATE,
         role: formState.role,
       });
-      setNotice("User added or updated successfully.");
+      setLastIssuedPassword(trimmedPassword || null);
+      setIsPasswordVisible(false);
+      setPasswordCopied(false);
+      setNotice(existingUser ? "User updated successfully." : "User created successfully.");
     } catch (submissionError) {
       setError(submissionError instanceof Error ? submissionError.message : "Unable to save user.");
     } finally {
@@ -196,12 +274,6 @@ export default function AdminDashboard() {
               className="rounded-full px-4 py-2 text-sm font-medium chip-brand"
             >
               Public Dashboard
-            </Link>
-            <Link
-              href="/user-dashboard"
-              className="rounded-full px-4 py-2 text-sm font-medium chip-brand"
-            >
-              Data Entry
             </Link>
           </div>
         </div>
@@ -312,6 +384,51 @@ export default function AdminDashboard() {
                 />
               </label>
 
+              <div className="space-y-2 text-sm font-medium text-brand-muted">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-xs uppercase tracking-wide text-brand-soft">
+                    Temporary password
+                  </span>
+                  <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wide">
+                    <button
+                      type="button"
+                      onClick={handleGeneratePassword}
+                      className="rounded-full border border-brand bg-white px-3 py-1 text-brand-muted transition hover:bg-brand-soft"
+                    >
+                      Generate strong password
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleCopyCurrentPassword}
+                      disabled={!formState.password}
+                      className="rounded-full border border-brand bg-brand-soft px-3 py-1 text-brand-muted transition disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {passwordCopied ? "Copied" : "Copy"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsPasswordVisible((previous) => !previous)}
+                      className="rounded-full border border-brand bg-white px-3 py-1 text-brand-muted transition hover:bg-brand-soft"
+                    >
+                      {isPasswordVisible ? "Hide" : "Show"}
+                    </button>
+                  </div>
+                </div>
+                <input
+                  type={isPasswordVisible ? "text" : "password"}
+                  value={formState.password}
+                  onChange={(event) => {
+                    setFormState((prev) => ({ ...prev, password: event.target.value }));
+                    setPasswordCopied(false);
+                  }}
+                  placeholder="Auto-generate or enter a secure password"
+                  className="w-full rounded-lg input-brand px-4 py-2 text-sm text-brand-muted"
+                />
+                <p className="text-xs font-normal text-brand-soft">
+                  Passwords must be at least {PASSWORD_MIN_LENGTH} characters and include uppercase, lowercase, number, and symbol. Leave blank to keep the current password when editing.
+                </p>
+              </div>
+
               <div className="space-y-3 text-sm">
                 {error ? (
                   <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-rose-700">
@@ -322,6 +439,21 @@ export default function AdminDashboard() {
                   <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-emerald-700">
                     {notice}
                   </div>
+                ) : null}
+                {lastIssuedPassword ? (
+                  <div className="flex items-start justify-between gap-3 rounded-lg border border-brand bg-white px-3 py-2 text-xs text-brand-muted">
+                    <div>
+                      <p className="font-semibold">Issued password</p>
+                      <p className="mt-1 break-all font-mono text-sm">{lastIssuedPassword}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleCopyIssuedPassword}
+                      className="rounded-full border border-brand bg-brand-soft px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-brand-muted transition hover:bg-brand-tint"
+                    >
+                      {passwordCopied ? "Copied" : "Copy"}
+                    </button>
+              </div>
                 ) : null}
               </div>
 

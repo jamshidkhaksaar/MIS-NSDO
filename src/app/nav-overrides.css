@@ -1,0 +1,39 @@
+/* Overrides for navigation highlight contrast */
+
+.border-brand-primary {
+  border-color: #2f8230 !important;
+}
+
+.hover\:border-brand-primary:hover {
+  border-color: #2f8230 !important;
+}
+
+.bg-brand-primary {
+  background: linear-gradient(135deg, #2f8230, #3ea93d) !important;
+  color: #ffffff !important;
+}
+
+.hover\:bg-brand-primary:hover {
+  background: linear-gradient(135deg, #2f8230, #3ea93d) !important;
+  color: #ffffff !important;
+}
+
+.from-brand-primary {
+  --tw-gradient-from: #2f8230 var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgb(47 130 48 / 0) var(--tw-gradient-to-position) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+
+.hover\:from-brand-primary:hover {
+  --tw-gradient-from: #2f8230 var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgb(47 130 48 / 0) var(--tw-gradient-to-position) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+
+a.px-4.py-3.border-brand-primary {
+  color: #12391a !important;
+}
+
+a.px-4.py-3.border-brand-primary svg {
+  color: #12391a !important;
+}

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./nav-overrides.css";
 import { DashboardDataProvider } from "@/context/DashboardDataContext";
 import BrandingHead from "@/ui/BrandingHead";
 

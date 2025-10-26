@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 /* eslint-disable @typescript-eslint/no-require-imports */
 
-const mysql = require("mysql2/promise");
+const fs = require("node:fs");
+const path = require("node:path");
+const Database = require("better-sqlite3");
 const bcrypt = require("bcryptjs");
 
 const DEFAULT_PASSWORD = "Kabul@321$";
@@ -83,30 +85,38 @@ async function main() {
     process.exit(1);
   }
 
-  const { DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME } = process.env;
-
-  if (!DB_HOST || !DB_USER || !DB_NAME) {
-    console.error(
-      "Database connection details are missing. Ensure DB_HOST, DB_USER, DB_PASSWORD, and DB_NAME environment variables are set."
-    );
-    process.exit(1);
+  const dbPathSetting = typeof process.env.DB_SQLITE_PATH === "string" && process.env.DB_SQLITE_PATH.trim().length
+    ? process.env.DB_SQLITE_PATH.trim()
+    : "./database/dev.db";
+  const dbPath = path.isAbsolute(dbPathSetting)
+    ? dbPathSetting
+    : path.resolve(process.cwd(), dbPathSetting);
+  const dbDirectory = path.dirname(dbPath);
+  if (!fs.existsSync(dbDirectory)) {
+    fs.mkdirSync(dbDirectory, { recursive: true });
   }
 
-  const connection = await mysql.createConnection({
-    host: DB_HOST,
-    port: DB_PORT ? Number(DB_PORT) : 3306,
-    user: DB_USER,
-    password: DB_PASSWORD ?? undefined,
-    database: DB_NAME,
-  });
+  const database = new Database(dbPath);
+  database.pragma("foreign_keys = ON");
 
   try {
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
 
-    await connection.execute(
-      "INSERT INTO users (name, email, role, organization, password_hash) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE name = VALUES(name), role = VALUES(role), organization = VALUES(organization), password_hash = VALUES(password_hash)",
-      [name, email, role, organization, passwordHash]
-    );
+    const existing = database
+      .prepare("SELECT id, password_hash FROM users WHERE email = ? LIMIT 1")
+      .get(email);
+
+    if (existing) {
+      database
+        .prepare(
+          "UPDATE users SET name = ?, role = ?, organization = ?, password_hash = ?, updated_at = datetime('now') WHERE id = ?"
+        )
+        .run(name, role, organization, passwordHash, existing.id);
+    } else {
+      database
+        .prepare("INSERT INTO users (name, email, role, organization, password_hash) VALUES (?, ?, ?, ?, ?)")
+        .run(name, email, role, organization, passwordHash);
+    }
 
     console.log(
       `User ${name} <${email}> stored successfully with role "${role}".${
@@ -120,7 +130,7 @@ async function main() {
     console.error("Failed to store user record:", error.message);
     process.exitCode = 1;
   } finally {
-    await connection.end();
+    database.close();
   }
 }
 

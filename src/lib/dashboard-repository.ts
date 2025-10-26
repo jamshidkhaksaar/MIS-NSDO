@@ -1,5 +1,3 @@
-import { RowDataPacket } from "mysql2";
-import mysql from "mysql2/promise";
 import {
   ALL_SECTOR_FIELD_ACTIVITY,
   ALL_SECTOR_KEY,
@@ -10,39 +8,80 @@ import {
   SectorKey,
   DashboardUser,
   DashboardUserRole,
-  ProjectSector,
+  type DashboardProject,
+  type ProjectSector,
+  PROJECT_DOCUMENT_CATEGORIES,
+  PROJECT_PHASES,
+  type ProjectDocumentRecord,
+  type ProjectPhaseRecord,
+  type ProjectDocumentCategory,
+  type ProjectPhaseKey,
+  type ProjectPhaseStatus,
+  type BaselineSurveyRecord,
+  type BaselineSurveyStatus,
+  type BaselineSurveyTool,
+  type EnumeratorRecord,
+  type DataCollectionTaskRecord,
+  type DataCollectionTaskStatus,
+  type BaselineReportRecord,
+  type FieldVisitReportRecord,
+  type MonthlyNarrativeRecord,
+  type MonthlyNarrativeStatus,
+  type MonitoringDashboardData,
+  type EvaluationDashboardData,
+  type FindingsDashboardData,
+  type FindingsByDepartment,
+  type PdmDashboardData,
+  type KnowledgeHubData,
+  type ComplaintRecord,
+  type ComplaintSummaryMetrics,
+  type ComplaintResponseRecord,
+  type CrmAwarenessRecord,
+  type EvaluationRecord,
+  type EvaluationType,
+  type StoryRecord,
+  type StoryType,
+  type FindingRecord,
+  type FindingType,
+  type FindingSeverity,
+  type FindingStatus,
+  type DistributionRecord,
+  type PdmSurveyRecord,
+  type PdmReportRecord,
+  type LessonRecord,
+  type KnowledgeResourceRecord,
+  type UserAccessAssignmentRecord,
+  type IntegrationRecord,
+  type ComplaintStatus,
 } from "@/lib/dashboard-data";
 import { withConnection } from "@/lib/db";
-import type { ComplaintRecord } from "@/lib/dashboard-data";
 
-type SectorRow = RowDataPacket & {
+type SectorRow = {
   id: number;
   sector_key: string;
   display_name: string;
-  start_date: Date | null;
-  end_date: Date | null;
+  start_date: string | null;
+  end_date: string | null;
   field_activity: string | null;
   projects: number;
   staff: number;
-  created_at: Date;
-  updated_at: Date;
 };
 
-type BeneficiaryRow = RowDataPacket & {
+type BeneficiaryRow = {
   sector_id: number;
   type_key: string;
   direct: number;
   indirect: number;
 };
 
-type ProvinceRow = RowDataPacket & {
+type ProvinceRow = {
   sector_id: number;
   province: string;
 };
 
-type ReportingYearRow = RowDataPacket & { year: number };
+type ReportingYearRow = { year: number };
 
-type UserRow = RowDataPacket & {
+type UserRow = {
   id: number;
   name: string;
   email: string;
@@ -51,73 +90,293 @@ type UserRow = RowDataPacket & {
   password_hash?: string | null;
 };
 
-type BrandingRow = RowDataPacket & {
+type BrandingRow = {
   company_name: string;
   logo_data: Buffer | null;
   logo_mime: string | null;
   favicon_data: Buffer | null;
   favicon_mime: string | null;
-  updated_at: Date;
 };
 
-type ComplaintRow = RowDataPacket & {
+type ComplaintRow = {
   id: number;
   full_name: string;
   email: string;
   phone: string | null;
   message: string;
-  submitted_at: Date;
+  submitted_at: string;
 };
 
-type ProjectRow = RowDataPacket & {
+type ComplaintMetadataRow = {
+  complaint_id: number;
+  status: string;
+  assigned_officer: string | null;
+  province: string | null;
+  district: string | null;
+  project_id: number | null;
+  is_anonymous: number;
+  auto_assigned_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+type ComplaintResponseRow = {
   id: number;
-  name: string;
-  sector_key: string;
+  complaint_id: number;
+  responder: string | null;
+  response: string;
+  created_at: string;
+};
+
+type ProjectRow = {
+  id: number;
+  code: string;
+  title: string;
+  donor: string | null;
+  sector: string | null;
+  country: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  budget: number | null;
+  focal_point: string | null;
   goal: string | null;
   objectives: string | null;
   major_achievements: string | null;
-  country: string;
-  start_date: Date | null;
-  end_date: Date | null;
-  staff: number;
+  staff: number | null;
+  created_at: string;
+  updated_at: string;
 };
 
-type ProjectGeoRow = RowDataPacket & {
-  project_id: number;
-  level: "province" | "district" | "community";
-  name: string;
-};
+type ProjectProvinceRow = { project_id: number; province: string };
+type ProjectDistrictRow = { project_id: number; district: string };
+type ProjectCommunityRow = { project_id: number; community: string };
+type ProjectClusterRow = { project_id: number; cluster: string };
+type ProjectStandardSectorRow = { project_id: number; standard_sector: string };
 
-type ProjectBeneficiaryRow = RowDataPacket & {
+type ProjectBeneficiaryRow = {
   project_id: number;
   type_key: string;
   direct: number;
   indirect: number;
 };
 
-type ProjectClusterRow = RowDataPacket & {
+type ProjectDocumentRow = {
+  id: number;
   project_id: number;
-  cluster: string;
+  category: string;
+  title: string;
+  file_url: string | null;
+  uploaded_at: string;
 };
 
-type ProjectSectorLabelRow = RowDataPacket & {
+type ProjectPhaseRow = {
+  id: number;
   project_id: number;
-  sector_label: string;
+  phase: string;
+  status: string;
+  notes: string | null;
+  updated_at: string;
 };
 
-type ClusterCatalogRow = RowDataPacket & {
+type BaselineSurveyRow = {
+  id: number;
+  project_id: number;
+  title: string;
+  tool: string | null;
+  status: string;
+  questionnaire_url: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+type EnumeratorRow = {
+  id: number;
+  full_name: string;
+  email: string | null;
+  phone: string | null;
+  province: string | null;
+};
+
+type BaselineAssignmentRow = {
+  baseline_survey_id: number;
+  enumerator_id: number;
+};
+
+type DataCollectionTaskRow = {
+  id: number;
+  baseline_survey_id: number | null;
+  status: string;
+  completed_at: string | null;
+  notes: string | null;
+};
+
+type BaselineReportRow = {
+  id: number;
+  baseline_survey_id: number;
+  report_url: string | null;
+  shared_with_program: number;
+  shared_at: string | null;
+  created_at: string;
+};
+
+type FieldVisitReportRow = {
+  id: number;
+  project_id: number;
+  visit_date: string;
+  location: string | null;
+  positive_findings: string | null;
+  negative_findings: string | null;
+  photo_url: string | null;
+  gps_coordinates: string | null;
+  officer: string | null;
+  created_at: string;
+};
+
+type MonthlyReportRow = {
+  id: number;
+  project_id: number;
+  report_month: string;
+  summary: string | null;
+  gaps: string | null;
+  recommendations: string | null;
+  status: string;
+  reviewer: string | null;
+  feedback: string | null;
+  submitted_at: string | null;
+  updated_at: string;
+};
+
+type EvaluationRow = {
+  id: number;
+  project_id: number | null;
+  evaluator_name: string | null;
+  evaluation_type: string;
+  report_url: string | null;
+  findings_summary: string | null;
+  completed_at: string | null;
+  created_at: string;
+};
+
+type StoryRow = {
+  id: number;
+  project_id: number | null;
+  story_type: string;
+  title: string;
+  quote: string | null;
+  summary: string | null;
+  photo_url: string | null;
+  spotlight_order: number | null;
+  created_at: string;
+};
+
+type CrmAwarenessRow = {
+  id: number;
+  project_id: number | null;
+  district: string | null;
+  awareness_date: string | null;
+  notes: string | null;
+  created_at: string;
+};
+
+type FindingRow = {
+  id: number;
+  project_id: number | null;
+  finding_type: string;
+  category: string | null;
+  severity: string;
+  department: string | null;
+  status: string;
+  description: string | null;
+  evidence_url: string | null;
+  reminder_due_at: string | null;
+  last_reminded_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+type DistributionRow = {
+  id: number;
+  project_id: number | null;
+  assistance_type: string;
+  distribution_date: string | null;
+  location: string | null;
+  target_beneficiaries: number | null;
+  notes: string | null;
+  created_at: string;
+};
+
+type PdmSurveyRow = {
+  id: number;
+  project_id: number | null;
+  tool: string | null;
+  quality_score: number | null;
+  quantity_score: number | null;
+  satisfaction_score: number | null;
+  protection_score: number | null;
+  completed_at: string | null;
+  created_at: string;
+};
+
+type PdmReportRow = {
+  id: number;
+  project_id: number | null;
+  report_date: string | null;
+  summary: string | null;
+  recommendations: string | null;
+  feedback_to_program: string | null;
+  created_at: string;
+};
+
+type LessonRow = {
+  id: number;
+  project_id: number | null;
+  source: string | null;
+  lesson: string;
+  department: string | null;
+  theme: string | null;
+  captured_at: string | null;
+  created_at: string;
+};
+
+type KnowledgeResourceRow = {
+  id: number;
+  title: string;
+  category: string | null;
+  theme: string | null;
+  description: string | null;
+  file_url: string | null;
+  created_at: string;
+};
+
+type UserAccessAssignmentRow = {
+  id: number;
+  user_id: number;
+  project_id: number | null;
+  province: string | null;
+  role: string | null;
+};
+
+type IntegrationRow = {
+  id: number;
+  name: string;
+  config: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+type ClusterCatalogRow = {
   id: number;
   name: string;
   description: string | null;
 };
 
-type SectorCatalogRow = RowDataPacket & {
+type SectorCatalogRow = {
   id: number;
   name: string;
   description: string | null;
 };
 
-type UserWithPasswordRow = RowDataPacket & {
+type UserWithPasswordRow = {
   id: number;
   name: string;
   email: string;
@@ -126,11 +385,11 @@ type UserWithPasswordRow = RowDataPacket & {
   password_hash: string | null;
 };
 
-type SessionWithUserRow = RowDataPacket & {
+type SessionWithUserRow = {
   id: number;
   user_id: number;
   token_hash: string;
-  expires_at: Date;
+  expires_at: string;
   name: string;
   email: string;
   role: DashboardUserRole;
@@ -141,39 +400,37 @@ type DashboardState = {
   sectors: Record<string, SectorDetails>;
   reportingYears: number[];
   users: DashboardUser[];
-  projects: Array<{
-    id: string;
-    name: string;
-    sector: ProjectSector;
-    country: string;
-    provinces: string[];
-    districts: string[];
-    communities: string[];
-    goal: string;
-    objectives: string;
-    majorAchievements: string;
-    beneficiaries: BeneficiaryBreakdown;
-    clusters: string[];
-    standardSectors: string[];
-    staff: number;
-    start: string;
-    end: string;
-  }>;
+  projects: DashboardProject[];
+  projectDocuments: ProjectDocumentRecord[];
+  projectPhases: ProjectPhaseRecord[];
   branding: {
     companyName: string;
     logoDataUrl: string | null;
     faviconDataUrl: string | null;
   };
   complaints: ComplaintRecord[];
+  complaintMetrics: ComplaintSummaryMetrics;
+  crmAwareness: CrmAwarenessRecord[];
+  monitoring: MonitoringDashboardData;
+  evaluation: EvaluationDashboardData;
+  findings: FindingsDashboardData;
+  pdm: PdmDashboardData;
+  knowledgeHub: KnowledgeHubData;
+  userAccessAssignments: UserAccessAssignmentRecord[];
+  integrations: IntegrationRecord[];
   clusterCatalog: Array<{ id: string; name: string; description?: string }>;
   sectorCatalog: Array<{ id: string; name: string; description?: string }>;
 };
 
-function formatDate(value: Date | null): string {
+function formatDate(value: string | null): string {
   if (!value) {
     return "";
   }
-  return value.toISOString().split("T")[0] ?? "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+  return date.toISOString().split("T")[0] ?? "";
 }
 
 function createEmptyBreakdown(): BeneficiaryBreakdown {
@@ -184,6 +441,177 @@ function createEmptyBreakdown(): BeneficiaryBreakdown {
     indirect[key] = 0;
   });
   return { direct, indirect };
+}
+
+function cloneBreakdownData(source: BeneficiaryBreakdown | undefined): BeneficiaryBreakdown {
+  const clone = createEmptyBreakdown();
+  if (!source) {
+    return clone;
+  }
+  BENEFICIARY_TYPE_KEYS.forEach((key) => {
+    clone.direct[key] = source.direct?.[key] ?? 0;
+    clone.indirect[key] = source.indirect?.[key] ?? 0;
+  });
+  return clone;
+}
+
+const PROJECT_PHASE_STATUS_VALUES: ProjectPhaseStatus[] = ["not_started", "in_progress", "completed"];
+const BASELINE_SURVEY_STATUS_VALUES: BaselineSurveyStatus[] = ["draft", "in_progress", "completed", "archived"];
+const BASELINE_SURVEY_TOOL_VALUES: BaselineSurveyTool[] = ["kobo", "manual", "other"];
+const DATA_COLLECTION_STATUS_VALUES: DataCollectionTaskStatus[] = ["pending", "in_progress", "completed"];
+const MONTHLY_STATUS_VALUES: MonthlyNarrativeStatus[] = ["draft", "submitted", "approved", "feedback"];
+const EVALUATION_TYPE_VALUES: EvaluationType[] = ["baseline", "midterm", "endline", "special"];
+const STORY_TYPE_VALUES: StoryType[] = ["case", "success", "impact"];
+const COMPLAINT_STATUS_VALUES: ComplaintStatus[] = ["open", "in_review", "resolved"];
+const FINDING_TYPE_VALUES: FindingType[] = ["negative", "positive"];
+const FINDING_SEVERITY_VALUES: FindingSeverity[] = ["minor", "major", "critical"];
+const FINDING_STATUS_VALUES: FindingStatus[] = ["pending", "in_progress", "solved"];
+
+const DOCUMENT_CATEGORY_LOOKUP = new Map<string, ProjectDocumentCategory>(
+  PROJECT_DOCUMENT_CATEGORIES.map((category) => [category.toLowerCase(), category])
+);
+const PROJECT_DOCUMENT_CATEGORY_SET = new Set<ProjectDocumentCategory>(PROJECT_DOCUMENT_CATEGORIES);
+const PROJECT_PHASE_KEY_SET = new Set<ProjectPhaseKey>(PROJECT_PHASES);
+const PROJECT_PHASE_STATUS_SET = new Set<ProjectPhaseStatus>(PROJECT_PHASE_STATUS_VALUES);
+const BASELINE_SURVEY_STATUS_SET = new Set<BaselineSurveyStatus>(BASELINE_SURVEY_STATUS_VALUES);
+const BASELINE_SURVEY_TOOL_SET = new Set<BaselineSurveyTool>(BASELINE_SURVEY_TOOL_VALUES);
+const DATA_COLLECTION_STATUS_SET = new Set<DataCollectionTaskStatus>(DATA_COLLECTION_STATUS_VALUES);
+const MONTHLY_STATUS_SET = new Set<MonthlyNarrativeStatus>(MONTHLY_STATUS_VALUES);
+const EVALUATION_TYPE_SET = new Set<EvaluationType>(EVALUATION_TYPE_VALUES);
+const STORY_TYPE_SET = new Set<StoryType>(STORY_TYPE_VALUES);
+const COMPLAINT_STATUS_SET = new Set<ComplaintStatus>(COMPLAINT_STATUS_VALUES);
+const FINDING_TYPE_SET = new Set<FindingType>(FINDING_TYPE_VALUES);
+const FINDING_SEVERITY_SET = new Set<FindingSeverity>(FINDING_SEVERITY_VALUES);
+const FINDING_STATUS_SET = new Set<FindingStatus>(FINDING_STATUS_VALUES);
+
+function mapDocumentCategory(value: string): ProjectDocumentCategory {
+  const normalized = value?.trim();
+  if (!normalized) {
+    return "other";
+  }
+  const match = DOCUMENT_CATEGORY_LOOKUP.get(normalized.toLowerCase());
+  if (match) {
+    return match;
+  }
+  return PROJECT_DOCUMENT_CATEGORY_SET.has(normalized as ProjectDocumentCategory)
+    ? (normalized as ProjectDocumentCategory)
+    : "other";
+}
+
+function mapPhaseKey(value: string): ProjectPhaseKey {
+  const normalized = value?.trim().toLowerCase();
+  if (PROJECT_PHASE_KEY_SET.has(normalized as ProjectPhaseKey)) {
+    return normalized as ProjectPhaseKey;
+  }
+  return "baseline";
+}
+
+function mapPhaseStatus(value: string): ProjectPhaseStatus {
+  const normalized = value?.trim().toLowerCase();
+  if (PROJECT_PHASE_STATUS_SET.has(normalized as ProjectPhaseStatus)) {
+    return normalized as ProjectPhaseStatus;
+  }
+  return "not_started";
+}
+
+function mapBaselineTool(value: string | null): BaselineSurveyTool {
+  const normalized = value?.trim().toLowerCase();
+  if (normalized && BASELINE_SURVEY_TOOL_SET.has(normalized as BaselineSurveyTool)) {
+    return normalized as BaselineSurveyTool;
+  }
+  return "manual";
+}
+
+function mapBaselineStatus(value: string): BaselineSurveyStatus {
+  const normalized = value?.trim().toLowerCase();
+  if (BASELINE_SURVEY_STATUS_SET.has(normalized as BaselineSurveyStatus)) {
+    return normalized as BaselineSurveyStatus;
+  }
+  return "draft";
+}
+
+function mapDataCollectionStatus(value: string): DataCollectionTaskStatus {
+  const normalized = value?.trim().toLowerCase();
+  if (DATA_COLLECTION_STATUS_SET.has(normalized as DataCollectionTaskStatus)) {
+    return normalized as DataCollectionTaskStatus;
+  }
+  return "pending";
+}
+
+function mapMonthlyStatus(value: string): MonthlyNarrativeStatus {
+  const normalized = value?.trim().toLowerCase();
+  if (MONTHLY_STATUS_SET.has(normalized as MonthlyNarrativeStatus)) {
+    return normalized as MonthlyNarrativeStatus;
+  }
+  return "draft";
+}
+
+function mapEvaluationType(value: string): EvaluationType {
+  const normalized = value?.trim().toLowerCase();
+  if (EVALUATION_TYPE_SET.has(normalized as EvaluationType)) {
+    return normalized as EvaluationType;
+  }
+  return "special";
+}
+
+function mapStoryType(value: string): StoryType {
+  const normalized = value?.trim().toLowerCase();
+  if (STORY_TYPE_SET.has(normalized as StoryType)) {
+    return normalized as StoryType;
+  }
+  return "impact";
+}
+
+function mapComplaintStatus(value: string): ComplaintStatus {
+  const normalized = value?.trim().toLowerCase();
+  if (COMPLAINT_STATUS_SET.has(normalized as ComplaintStatus)) {
+    return normalized as ComplaintStatus;
+  }
+  return "open";
+}
+
+function mapFindingType(value: string): FindingType {
+  const normalized = value?.trim().toLowerCase();
+  if (FINDING_TYPE_SET.has(normalized as FindingType)) {
+    return normalized as FindingType;
+  }
+  return "negative";
+}
+
+function mapFindingSeverity(value: string): FindingSeverity {
+  const normalized = value?.trim().toLowerCase();
+  if (FINDING_SEVERITY_SET.has(normalized as FindingSeverity)) {
+    return normalized as FindingSeverity;
+  }
+  return "minor";
+}
+
+function mapFindingStatus(value: string): FindingStatus {
+  const normalized = value?.trim().toLowerCase();
+  if (FINDING_STATUS_SET.has(normalized as FindingStatus)) {
+    return normalized as FindingStatus;
+  }
+  return "pending";
+}
+
+function createPlaceholders(count: number): string {
+  return Array.from({ length: count }, () => "?").join(", ");
+}
+
+function safeIsoString(value: string | null): string {
+  if (!value) {
+    return "";
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+  return date.toISOString();
+}
+
+function optionalIsoString(value: string | null): string | undefined {
+  const iso = safeIsoString(value);
+  return iso ? iso : undefined;
 }
 
 function bufferToDataUrl(data: Buffer | null, mime: string | null): string | null {
@@ -199,19 +627,25 @@ export async function fetchDashboardState(): Promise<DashboardState> {
     const [sectorRows] = await connection.query<SectorRow[]>("SELECT * FROM sectors ORDER BY display_name ASC");
     const sectorIds = sectorRows.map((row) => row.id);
 
-    const [beneficiaryRows] = sectorIds.length
-      ? await connection.query<BeneficiaryRow[]>(
-          "SELECT sector_id, type_key, direct, indirect FROM beneficiary_stats WHERE sector_id IN (?)",
-          [sectorIds]
-        )
-      : [[], []];
+    let beneficiaryRows: BeneficiaryRow[] = [];
+    if (sectorIds.length) {
+      const placeholders = sectorIds.map(() => "?").join(", ");
+      const [rows] = await connection.query<BeneficiaryRow[]>(
+        `SELECT sector_id, type_key, direct, indirect FROM beneficiary_stats WHERE sector_id IN (${placeholders})`,
+        sectorIds
+      );
+      beneficiaryRows = rows;
+    }
 
-    const [provinceRows] = sectorIds.length
-      ? await connection.query<ProvinceRow[]>(
-          "SELECT sector_id, province FROM sector_provinces WHERE sector_id IN (?) ORDER BY province",
-          [sectorIds]
-        )
-      : [[], []];
+    let provinceRows: ProvinceRow[] = [];
+    if (sectorIds.length) {
+      const placeholders = sectorIds.map(() => "?").join(", ");
+      const [rows] = await connection.query<ProvinceRow[]>(
+        `SELECT sector_id, province FROM sector_provinces WHERE sector_id IN (${placeholders}) ORDER BY province`,
+        sectorIds
+      );
+      provinceRows = rows;
+    }
 
     const sectors: Record<string, SectorDetails> = {} as Record<string, SectorDetails>;
 
@@ -292,7 +726,7 @@ export async function fetchDashboardState(): Promise<DashboardState> {
     }));
 
     const [brandingRows] = await connection.query<BrandingRow[]>(
-      "SELECT company_name, logo_data, logo_mime, favicon_data, favicon_mime, updated_at FROM branding_settings WHERE id = 1"
+      "SELECT company_name, logo_data, logo_mime, favicon_data, favicon_mime FROM branding_settings WHERE id = 1"
     );
 
     const brandingRow = brandingRows[0];
@@ -303,184 +737,854 @@ export async function fetchDashboardState(): Promise<DashboardState> {
       faviconDataUrl: bufferToDataUrl(brandingRow?.favicon_data ?? null, brandingRow?.favicon_mime ?? null),
     };
 
-    const [complaintRows] = await connection.query<ComplaintRow[]>(
-      "SELECT id, full_name, email, phone, message, submitted_at FROM complaints ORDER BY submitted_at DESC"
+    const [tableInfoRows] = await connection.query<{ name: string }[]>(
+      "SELECT name FROM sqlite_master WHERE type = 'table'"
     );
+    const existingTables = new Set(tableInfoRows.map((row) => row.name.toLowerCase()));
 
-    const complaints = complaintRows.map<ComplaintRecord>((row) => ({
-      id: row.id.toString(),
-      fullName: row.full_name,
-      email: row.email,
-      phone: row.phone ?? undefined,
-      message: row.message,
-      submittedAt: row.submitted_at.toISOString(),
-    }));
+    const hasProjectsTable = existingTables.has("projects");
+    const hasProjectProvinces = existingTables.has("project_provinces");
+    const hasProjectDistricts = existingTables.has("project_districts");
+    const hasProjectCommunities = existingTables.has("project_communities");
+    const hasProjectClusters = existingTables.has("project_clusters");
+    const hasProjectStandardSectors = existingTables.has("project_standard_sectors");
+    const hasProjectBeneficiaries = existingTables.has("project_beneficiaries");
+    const hasProjectDocuments = existingTables.has("project_documents");
+    const hasProjectPhases = existingTables.has("project_phases");
+    const hasEnumerators = existingTables.has("enumerators");
+    const hasBaselineSurveys = existingTables.has("baseline_surveys");
+    const hasBaselineAssignments = existingTables.has("baseline_enumerator_assignments");
+    const hasDataCollectionTasks = existingTables.has("data_collection_tasks");
+    const hasBaselineReports = existingTables.has("baseline_reports");
+    const hasFieldVisits = existingTables.has("field_visit_reports");
+    const hasMonthlyReports = existingTables.has("monthly_reports");
+    const hasEvaluations = existingTables.has("evaluations");
+    const hasStories = existingTables.has("stories");
+    const hasComplaintMetadata = existingTables.has("complaint_metadata");
+    const hasComplaintResponses = existingTables.has("complaint_responses");
+    const hasCrmAwareness = existingTables.has("crm_awareness_records");
+    const hasFindings = existingTables.has("findings");
+    const hasDistributionRecords = existingTables.has("distribution_records");
+    const hasPdmSurveys = existingTables.has("pdm_surveys");
+    const hasPdmReports = existingTables.has("pdm_reports");
+    const hasLessons = existingTables.has("lessons");
+    const hasKnowledgeResources = existingTables.has("knowledge_resources");
+    const hasUserAccessAssignments = existingTables.has("user_access_assignments");
+    const hasIntegrations = existingTables.has("integrations");
 
-    const [projectRows] = await connection.query<ProjectRow[]>(
-      "SELECT id, name, sector_key, goal, objectives, major_achievements, country, start_date, end_date, staff FROM projects ORDER BY created_at DESC"
-    );
+    let projectRows: ProjectRow[] = [];
+    if (hasProjectsTable) {
+      const [rows] = await connection.query<ProjectRow[]>(
+        `SELECT
+           id,
+           code,
+           title,
+           donor,
+           sector,
+           country,
+           start_date,
+           end_date,
+           budget,
+           focal_point,
+           goal,
+           objectives,
+           major_achievements,
+           staff,
+           created_at,
+           updated_at
+         FROM projects
+         ORDER BY title ASC`
+      );
+      projectRows = rows;
+    }
 
     const projectIds = projectRows.map((row) => row.id);
-    const [projectGeoRows] = projectIds.length
-      ? await connection.query<ProjectGeoRow[]>(
-          "SELECT project_id, level, name FROM project_geography WHERE project_id IN (?)",
-          [projectIds]
-        )
-      : [[], []];
+    let projectProvinceRows: ProjectProvinceRow[] = [];
+    let projectDistrictRows: ProjectDistrictRow[] = [];
+    let projectCommunityRows: ProjectCommunityRow[] = [];
+    let projectClusterRows: ProjectClusterRow[] = [];
+    let projectStandardSectorRows: ProjectStandardSectorRow[] = [];
+    let projectBeneficiaryRows: ProjectBeneficiaryRow[] = [];
+    let projectDocumentRows: ProjectDocumentRow[] = [];
+    let projectPhaseRows: ProjectPhaseRow[] = [];
 
-    const [projectBeneficiaryRows] = projectIds.length
-      ? await connection.query<ProjectBeneficiaryRow[]>(
-          "SELECT project_id, type_key, direct, indirect FROM project_beneficiaries WHERE project_id IN (?)",
-          [projectIds]
-        )
-      : [[], []];
+    if (projectIds.length) {
+      const placeholders = createPlaceholders(projectIds.length);
 
-    const [projectClusterRows] = projectIds.length
-      ? await connection.query<ProjectClusterRow[]>(
-          "SELECT project_id, cluster FROM project_clusters WHERE project_id IN (?)",
-          [projectIds]
-        )
-      : [[], []];
+      if (hasProjectProvinces) {
+        [projectProvinceRows] = await connection.query<ProjectProvinceRow[]>(
+          `SELECT project_id, province
+           FROM project_provinces
+           WHERE project_id IN (${placeholders})
+           ORDER BY project_id, province`,
+          projectIds
+        );
+      }
 
-    const [projectSectorLabelRows] = projectIds.length
-      ? await connection.query<ProjectSectorLabelRow[]>(
-          "SELECT project_id, sector_label FROM project_standard_sectors WHERE project_id IN (?)",
-          [projectIds]
-        )
-      : [[], []];
+      if (hasProjectDistricts) {
+        [projectDistrictRows] = await connection.query<ProjectDistrictRow[]>(
+          `SELECT project_id, district
+           FROM project_districts
+           WHERE project_id IN (${placeholders})
+           ORDER BY project_id, district`,
+          projectIds
+        );
+      }
 
-    const projects = projectRows.map((row) => {
-      const provinces: string[] = [];
-      const districts: string[] = [];
-      const communities: string[] = [];
+      if (hasProjectCommunities) {
+        [projectCommunityRows] = await connection.query<ProjectCommunityRow[]>(
+          `SELECT project_id, community
+           FROM project_communities
+           WHERE project_id IN (${placeholders})
+           ORDER BY project_id, community`,
+          projectIds
+        );
+      }
 
-      projectGeoRows
-        .filter((geo) => geo.project_id === row.id)
-        .forEach((geo) => {
-          if (geo.level === "province") {
-            provinces.push(geo.name);
-          } else if (geo.level === "district") {
-            districts.push(geo.name);
-          } else {
-            communities.push(geo.name);
-          }
-        });
+      if (hasProjectClusters) {
+        [projectClusterRows] = await connection.query<ProjectClusterRow[]>(
+          `SELECT project_id, cluster
+           FROM project_clusters
+           WHERE project_id IN (${placeholders})
+           ORDER BY project_id, cluster`,
+          projectIds
+        );
+      }
 
-      const breakdown = createEmptyBreakdown();
-      projectBeneficiaryRows
-        .filter((b) => b.project_id === row.id)
-        .forEach((b) => {
-          const key = b.type_key as BeneficiaryTypeKey;
-          breakdown.direct[key] = b.direct;
-          breakdown.indirect[key] = b.indirect;
-        });
+      if (hasProjectStandardSectors) {
+        [projectStandardSectorRows] = await connection.query<ProjectStandardSectorRow[]>(
+          `SELECT project_id, standard_sector
+           FROM project_standard_sectors
+           WHERE project_id IN (${placeholders})
+           ORDER BY project_id, standard_sector`,
+          projectIds
+        );
+      }
 
-      const clusters = projectClusterRows
-        .filter((cluster) => cluster.project_id === row.id)
-        .map((cluster) => cluster.cluster);
+      if (hasProjectBeneficiaries) {
+        [projectBeneficiaryRows] = await connection.query<ProjectBeneficiaryRow[]>(
+          `SELECT project_id, type_key, direct, indirect
+           FROM project_beneficiaries
+           WHERE project_id IN (${placeholders})`,
+          projectIds
+        );
+      }
 
-      const standardSectors = projectSectorLabelRows
-        .filter((sector) => sector.project_id === row.id)
-        .map((sector) => sector.sector_label);
+      if (hasProjectDocuments) {
+        [projectDocumentRows] = await connection.query<ProjectDocumentRow[]>(
+          `SELECT id, project_id, category, title, file_url, uploaded_at
+           FROM project_documents
+           WHERE project_id IN (${placeholders})
+           ORDER BY uploaded_at DESC, id DESC`,
+          projectIds
+        );
+      }
 
+      if (hasProjectPhases) {
+        [projectPhaseRows] = await connection.query<ProjectPhaseRow[]>(
+          `SELECT id, project_id, phase, status, notes, updated_at
+           FROM project_phases
+           WHERE project_id IN (${placeholders})
+           ORDER BY project_id, phase`,
+          projectIds
+        );
+      }
+    }
+
+    const provinceMap = new Map<number, string[]>();
+    projectProvinceRows.forEach((row) => {
+      const list = provinceMap.get(row.project_id) ?? [];
+      list.push(row.province);
+      provinceMap.set(row.project_id, list);
+    });
+    provinceMap.forEach((list, key) => {
+      provinceMap.set(
+        key,
+        Array.from(new Set(list)).sort((a, b) => a.localeCompare(b))
+      );
+    });
+
+    const districtMap = new Map<number, string[]>();
+    projectDistrictRows.forEach((row) => {
+      const list = districtMap.get(row.project_id) ?? [];
+      list.push(row.district);
+      districtMap.set(row.project_id, list);
+    });
+    districtMap.forEach((list, key) => {
+      districtMap.set(
+        key,
+        Array.from(new Set(list)).sort((a, b) => a.localeCompare(b))
+      );
+    });
+
+    const communityMap = new Map<number, string[]>();
+    projectCommunityRows.forEach((row) => {
+      const list = communityMap.get(row.project_id) ?? [];
+      list.push(row.community);
+      communityMap.set(row.project_id, list);
+    });
+    communityMap.forEach((list, key) => {
+      communityMap.set(
+        key,
+        Array.from(new Set(list)).sort((a, b) => a.localeCompare(b))
+      );
+    });
+
+    const clusterMap = new Map<number, string[]>();
+    projectClusterRows.forEach((row) => {
+      const list = clusterMap.get(row.project_id) ?? [];
+      list.push(row.cluster);
+      clusterMap.set(row.project_id, list);
+    });
+    clusterMap.forEach((list, key) => {
+      clusterMap.set(
+        key,
+        Array.from(new Set(list)).sort((a, b) => a.localeCompare(b))
+      );
+    });
+
+    const standardSectorMap = new Map<number, string[]>();
+    projectStandardSectorRows.forEach((row) => {
+      const list = standardSectorMap.get(row.project_id) ?? [];
+      list.push(row.standard_sector);
+      standardSectorMap.set(row.project_id, list);
+    });
+    standardSectorMap.forEach((list, key) => {
+      standardSectorMap.set(
+        key,
+        Array.from(new Set(list)).sort((a, b) => a.localeCompare(b))
+      );
+    });
+
+    const projectBeneficiaryMap = new Map<number, BeneficiaryBreakdown>();
+    projectIds.forEach((id) => {
+      projectBeneficiaryMap.set(id, createEmptyBreakdown());
+    });
+    projectBeneficiaryRows.forEach((row) => {
+      if (!(BENEFICIARY_TYPE_KEYS as readonly string[]).includes(row.type_key)) {
+        return;
+      }
+      const breakdown = projectBeneficiaryMap.get(row.project_id) ?? createEmptyBreakdown();
+      const type = row.type_key as BeneficiaryTypeKey;
+      breakdown.direct[type] = row.direct ?? 0;
+      breakdown.indirect[type] = row.indirect ?? 0;
+      projectBeneficiaryMap.set(row.project_id, breakdown);
+    });
+
+    const projectDocuments: ProjectDocumentRecord[] = projectDocumentRows.map((row) => {
+      const uploadedAt = safeIsoString(row.uploaded_at);
       return {
         id: row.id.toString(),
-        name: row.name,
-        sector: row.sector_key as ProjectSector,
-        country: row.country,
+        projectId: row.project_id.toString(),
+        category: mapDocumentCategory(row.category),
+        title: row.title,
+        fileUrl: row.file_url ?? undefined,
+        uploadedAt,
+      };
+    });
+    projectDocuments.sort((a, b) => (b.uploadedAt || "").localeCompare(a.uploadedAt || ""));
+
+    const projectDocumentMap = new Map<number, ProjectDocumentRecord[]>();
+    projectDocuments.forEach((doc) => {
+      const projectId = Number.parseInt(doc.projectId, 10);
+      if (Number.isNaN(projectId)) {
+        return;
+      }
+      const list = projectDocumentMap.get(projectId) ?? [];
+      list.push(doc);
+      projectDocumentMap.set(projectId, list);
+    });
+
+    const projectPhases: ProjectPhaseRecord[] = projectPhaseRows.map((row) => ({
+      id: row.id.toString(),
+      projectId: row.project_id.toString(),
+      phase: mapPhaseKey(row.phase),
+      status: mapPhaseStatus(row.status),
+      notes: row.notes ?? undefined,
+      updatedAt: safeIsoString(row.updated_at),
+    }));
+
+    const projectPhaseMap = new Map<number, ProjectPhaseRecord[]>();
+    projectPhases.forEach((phase) => {
+      const projectId = Number.parseInt(phase.projectId, 10);
+      if (Number.isNaN(projectId)) {
+        return;
+      }
+      const list = projectPhaseMap.get(projectId) ?? [];
+      list.push(phase);
+      projectPhaseMap.set(projectId, list);
+    });
+    projectPhaseMap.forEach((list, key) => {
+      projectPhaseMap.set(
+        key,
+        [...list].sort(
+          (a, b) => PROJECT_PHASES.indexOf(a.phase) - PROJECT_PHASES.indexOf(b.phase)
+        )
+      );
+    });
+
+    const projects: DashboardProject[] = projectRows.map((row) => {
+      const projectId = row.id;
+      const provinces = provinceMap.get(projectId) ?? [];
+      const districts = districtMap.get(projectId) ?? [];
+      const communities = communityMap.get(projectId) ?? [];
+      const clusters = clusterMap.get(projectId) ?? [];
+      const standardSectors = standardSectorMap.get(projectId) ?? [];
+      const beneficiaries = cloneBreakdownData(projectBeneficiaryMap.get(projectId));
+      const documents = projectDocumentMap.get(projectId) ?? [];
+      const phases = projectPhaseMap.get(projectId) ?? [];
+
+      return {
+        id: projectId.toString(),
+        code: row.code,
+        name: row.title,
+        sector: (row.sector ?? "Unassigned") as ProjectSector,
+        beneficiaries,
+        country: row.country ?? "Afghanistan",
         provinces,
         districts,
         communities,
         goal: row.goal ?? "",
         objectives: row.objectives ?? "",
         majorAchievements: row.major_achievements ?? "",
-        beneficiaries: breakdown,
-        clusters,
-        standardSectors,
-        staff: row.staff,
         start: formatDate(row.start_date),
         end: formatDate(row.end_date),
+        staff: row.staff ?? 0,
+        clusters,
+        standardSectors,
+        donor: row.donor ?? undefined,
+        budget: row.budget ?? undefined,
+        focalPoint: row.focal_point ?? undefined,
+        documents: documents.map((doc) => ({ ...doc })),
+        phases: phases.map((phase) => ({ ...phase })),
       };
     });
 
-    const aggregateAllSectors = (() => {
-      if (!projects.length) {
-        return {
-          provinces: [] as string[],
-          beneficiaries: createEmptyBreakdown(),
-          projects: 0,
-          staff: 0,
-          start: "",
-          end: "",
-        };
+    let enumeratorRows: EnumeratorRow[] = [];
+    if (hasEnumerators) {
+      [enumeratorRows] = await connection.query<EnumeratorRow[]>(
+        "SELECT id, full_name, email, phone, province FROM enumerators ORDER BY full_name ASC"
+      );
+    }
+
+    let baselineSurveyRows: BaselineSurveyRow[] = [];
+    let baselineAssignmentRows: BaselineAssignmentRow[] = [];
+    let dataCollectionTaskRows: DataCollectionTaskRow[] = [];
+    let baselineReportRows: BaselineReportRow[] = [];
+    let fieldVisitRows: FieldVisitReportRow[] = [];
+    let monthlyReportRows: MonthlyReportRow[] = [];
+
+    if (projectIds.length) {
+      const placeholders = createPlaceholders(projectIds.length);
+
+      if (hasBaselineSurveys) {
+        [baselineSurveyRows] = await connection.query<BaselineSurveyRow[]>(
+          `SELECT id, project_id, title, tool, status, questionnaire_url, created_at, updated_at
+           FROM baseline_surveys
+           WHERE project_id IN (${placeholders})
+           ORDER BY created_at DESC, id DESC`,
+          projectIds
+        );
       }
 
-      const provinceSet = new Set<string>();
-      const beneficiaryTotals = createEmptyBreakdown();
-      let staffTotal = 0;
-      let earliestStartValue = Number.POSITIVE_INFINITY;
-      let earliestStartLabel = "";
-      let latestEndValue = Number.NEGATIVE_INFINITY;
-      let latestEndLabel = "";
+      if (hasFieldVisits) {
+        [fieldVisitRows] = await connection.query<FieldVisitReportRow[]>(
+          `SELECT id, project_id, visit_date, location, positive_findings, negative_findings, photo_url, gps_coordinates, officer, created_at
+           FROM field_visit_reports
+           WHERE project_id IN (${placeholders})
+           ORDER BY visit_date DESC, id DESC`,
+          projectIds
+        );
+      }
 
-      projects.forEach((project) => {
-        project.provinces.forEach((province) => provinceSet.add(province));
+      if (hasMonthlyReports) {
+        [monthlyReportRows] = await connection.query<MonthlyReportRow[]>(
+          `SELECT id, project_id, report_month, summary, gaps, recommendations, status, reviewer, feedback, submitted_at, updated_at
+           FROM monthly_reports
+           WHERE project_id IN (${placeholders})
+           ORDER BY report_month DESC, id DESC`,
+          projectIds
+        );
+      }
+    }
 
-        BENEFICIARY_TYPE_KEYS.forEach((key) => {
-          beneficiaryTotals.direct[key] += project.beneficiaries.direct?.[key] ?? 0;
-          beneficiaryTotals.indirect[key] += project.beneficiaries.indirect?.[key] ?? 0;
-        });
+    const surveyIds = baselineSurveyRows.map((row) => row.id);
+    if (surveyIds.length) {
+      const surveyPlaceholders = createPlaceholders(surveyIds.length);
 
-        if (Number.isFinite(project.staff)) {
-          staffTotal += project.staff;
-        }
+      if (hasBaselineAssignments) {
+        [baselineAssignmentRows] = await connection.query<BaselineAssignmentRow[]>(
+          `SELECT baseline_survey_id, enumerator_id
+           FROM baseline_enumerator_assignments
+           WHERE baseline_survey_id IN (${surveyPlaceholders})`,
+          surveyIds
+        );
+      }
 
-        const startTime = project.start ? Date.parse(project.start) : Number.NaN;
-        if (!Number.isNaN(startTime) && startTime < earliestStartValue) {
-          earliestStartValue = startTime;
-          earliestStartLabel = project.start;
-        }
+      if (hasDataCollectionTasks) {
+        [dataCollectionTaskRows] = await connection.query<DataCollectionTaskRow[]>(
+          `SELECT id, baseline_survey_id, status, completed_at, notes
+           FROM data_collection_tasks
+           WHERE baseline_survey_id IN (${surveyPlaceholders})
+           ORDER BY id`,
+          surveyIds
+        );
+      }
 
-        const endTime = project.end ? Date.parse(project.end) : Number.NaN;
-        if (!Number.isNaN(endTime) && endTime > latestEndValue) {
-          latestEndValue = endTime;
-          latestEndLabel = project.end;
-        }
-      });
+      if (hasBaselineReports) {
+        [baselineReportRows] = await connection.query<BaselineReportRow[]>(
+          `SELECT id, baseline_survey_id, report_url, shared_with_program, shared_at, created_at
+           FROM baseline_reports
+           WHERE baseline_survey_id IN (${surveyPlaceholders})
+           ORDER BY created_at DESC, id DESC`,
+          surveyIds
+        );
+      }
+    }
 
-      return {
-        provinces: Array.from(provinceSet).sort((a, b) => a.localeCompare(b)),
-        beneficiaries: beneficiaryTotals,
-        projects: projects.length,
-        staff: staffTotal,
-        start: Number.isFinite(earliestStartValue) ? earliestStartLabel : "",
-        end: Number.isFinite(latestEndValue) ? latestEndLabel : "",
+    const enumeratorAssignmentCount = new Map<number, number>();
+    baselineAssignmentRows.forEach((row) => {
+      enumeratorAssignmentCount.set(
+        row.enumerator_id,
+        (enumeratorAssignmentCount.get(row.enumerator_id) ?? 0) + 1
+      );
+    });
+
+    const enumerators: EnumeratorRecord[] = enumeratorRows.map((row) => ({
+      id: row.id.toString(),
+      fullName: row.full_name,
+      email: row.email ?? undefined,
+      phone: row.phone ?? undefined,
+      province: row.province ?? undefined,
+      assignments: enumeratorAssignmentCount.get(row.id) ?? 0,
+    }));
+
+    const baselineSurveys: BaselineSurveyRecord[] = baselineSurveyRows.map((row) => ({
+      id: row.id.toString(),
+      projectId: row.project_id.toString(),
+      title: row.title,
+      tool: mapBaselineTool(row.tool),
+      status: mapBaselineStatus(row.status),
+      questionnaireUrl: row.questionnaire_url ?? undefined,
+      createdAt: safeIsoString(row.created_at),
+      updatedAt: safeIsoString(row.updated_at),
+    }));
+
+    const dataCollectionTasks: DataCollectionTaskRecord[] = dataCollectionTaskRows.map((row) => ({
+      id: row.id.toString(),
+      baselineSurveyId: row.baseline_survey_id?.toString() ?? "",
+      status: mapDataCollectionStatus(row.status),
+      completedAt: optionalIsoString(row.completed_at),
+      notes: row.notes ?? undefined,
+    }));
+
+    const baselineReports: BaselineReportRecord[] = baselineReportRows.map((row) => ({
+      id: row.id.toString(),
+      baselineSurveyId: row.baseline_survey_id.toString(),
+      reportUrl: row.report_url ?? undefined,
+      sharedWithProgram: Boolean(row.shared_with_program),
+      sharedAt: optionalIsoString(row.shared_at),
+      createdAt: safeIsoString(row.created_at),
+    }));
+
+    const fieldVisits: FieldVisitReportRecord[] = fieldVisitRows.map((row) => ({
+      id: row.id.toString(),
+      projectId: row.project_id.toString(),
+      visitDate: safeIsoString(row.visit_date),
+      location: row.location ?? undefined,
+      positiveFindings: row.positive_findings ?? undefined,
+      negativeFindings: row.negative_findings ?? undefined,
+      photoUrl: row.photo_url ?? undefined,
+      gpsCoordinates: row.gps_coordinates ?? undefined,
+      officer: row.officer ?? undefined,
+      createdAt: safeIsoString(row.created_at),
+    }));
+
+    const monthlyReports: MonthlyNarrativeRecord[] = monthlyReportRows.map((row) => ({
+      id: row.id.toString(),
+      projectId: row.project_id.toString(),
+      reportMonth: row.report_month,
+      summary: row.summary ?? undefined,
+      gaps: row.gaps ?? undefined,
+      recommendations: row.recommendations ?? undefined,
+      status: mapMonthlyStatus(row.status),
+      reviewer: row.reviewer ?? undefined,
+      feedback: row.feedback ?? undefined,
+      submittedAt: optionalIsoString(row.submitted_at),
+      updatedAt: safeIsoString(row.updated_at),
+    }));
+
+    const monitoring: MonitoringDashboardData = {
+      baselineSurveys,
+      enumerators,
+      dataCollectionTasks,
+      baselineReports,
+      fieldVisits,
+      monthlyReports,
+    };
+
+    let evaluationRows: EvaluationRow[] = [];
+    if (hasEvaluations) {
+      [evaluationRows] = await connection.query<EvaluationRow[]>(
+        `SELECT id, project_id, evaluator_name, evaluation_type, report_url, findings_summary, completed_at, created_at
+         FROM evaluations
+         ORDER BY (completed_at IS NULL) ASC, completed_at DESC, created_at DESC`
+      );
+    }
+
+    let storyRows: StoryRow[] = [];
+    if (hasStories) {
+      [storyRows] = await connection.query<StoryRow[]>(
+        `SELECT id, project_id, story_type, title, quote, summary, photo_url, spotlight_order, created_at
+         FROM stories
+         ORDER BY COALESCE(spotlight_order, 9999) ASC, created_at DESC`
+      );
+    }
+
+    const evaluationRecords: EvaluationRecord[] = evaluationRows.map((row) => ({
+      id: row.id.toString(),
+      projectId: row.project_id ? row.project_id.toString() : undefined,
+      evaluatorName: row.evaluator_name ?? undefined,
+      evaluationType: mapEvaluationType(row.evaluation_type),
+      reportUrl: row.report_url ?? undefined,
+      findingsSummary: row.findings_summary ?? undefined,
+      completedAt: optionalIsoString(row.completed_at),
+      createdAt: safeIsoString(row.created_at),
+    }));
+
+    const storyRecords: StoryRecord[] = storyRows.map((row) => ({
+      id: row.id.toString(),
+      projectId: row.project_id ? row.project_id.toString() : undefined,
+      storyType: mapStoryType(row.story_type),
+      title: row.title,
+      quote: row.quote ?? undefined,
+      summary: row.summary ?? undefined,
+      photoUrl: row.photo_url ?? undefined,
+      createdAt: safeIsoString(row.created_at),
+    }));
+
+    const evaluation: EvaluationDashboardData = {
+      evaluations: evaluationRecords,
+      stories: storyRecords,
+    };
+
+    const [complaintRows] = await connection.query<ComplaintRow[]>(
+      "SELECT id, full_name, email, phone, message, submitted_at FROM complaints ORDER BY submitted_at DESC"
+    );
+
+    const complaintIds = complaintRows.map((row) => row.id);
+
+    let complaintMetadataRows: ComplaintMetadataRow[] = [];
+    let complaintResponseRows: ComplaintResponseRow[] = [];
+    if (complaintIds.length) {
+      const placeholders = createPlaceholders(complaintIds.length);
+      if (hasComplaintMetadata) {
+        [complaintMetadataRows] = await connection.query<ComplaintMetadataRow[]>(
+          `SELECT complaint_id, status, assigned_officer, province, district, project_id, is_anonymous, auto_assigned_at, created_at, updated_at
+           FROM complaint_metadata
+           WHERE complaint_id IN (${placeholders})`,
+          complaintIds
+        );
+      }
+
+      if (hasComplaintResponses) {
+        [complaintResponseRows] = await connection.query<ComplaintResponseRow[]>(
+          `SELECT id, complaint_id, responder, response, created_at
+           FROM complaint_responses
+           WHERE complaint_id IN (${placeholders})
+           ORDER BY created_at ASC, id ASC`,
+          complaintIds
+        );
+      }
+    }
+
+    const complaintMetadataMap = new Map<number, ComplaintMetadataRow>();
+    complaintMetadataRows.forEach((row) => {
+      complaintMetadataMap.set(row.complaint_id, row);
+    });
+
+    const complaintResponseMap = new Map<number, ComplaintResponseRecord[]>();
+    complaintResponseRows.forEach((row) => {
+      const response: ComplaintResponseRecord = {
+        id: row.id.toString(),
+        complaintId: row.complaint_id.toString(),
+        responder: row.responder ?? undefined,
+        response: row.response,
+        createdAt: safeIsoString(row.created_at),
       };
-    })();
+      const list = complaintResponseMap.get(row.complaint_id) ?? [];
+      list.push(response);
+      complaintResponseMap.set(row.complaint_id, list);
+    });
 
-    const existingAllSector = sectors[ALL_SECTOR_KEY] ?? {
-      provinces: [] as string[],
-      beneficiaries: createEmptyBreakdown(),
-      projects: 0,
-      start: "",
-      end: "",
-      fieldActivity: ALL_SECTOR_FIELD_ACTIVITY,
-      staff: 0,
+    const complaints = complaintRows.map<ComplaintRecord>((row) => {
+      const metadata = complaintMetadataMap.get(row.id);
+      const status = mapComplaintStatus(metadata?.status ?? "open");
+      const responses = complaintResponseMap.get(row.id) ?? [];
+      return {
+        id: row.id.toString(),
+        fullName: row.full_name,
+        email: row.email,
+        phone: row.phone ?? undefined,
+        message: row.message,
+        submittedAt: safeIsoString(row.submitted_at),
+        status,
+        assignedOfficer: metadata?.assigned_officer ?? undefined,
+        province: metadata?.province ?? undefined,
+        district: metadata?.district ?? undefined,
+        projectId: metadata?.project_id ? metadata.project_id.toString() : undefined,
+        isAnonymous: Boolean(metadata?.is_anonymous),
+        responses,
+      };
+    });
+
+    const complaintMetrics: ComplaintSummaryMetrics = {
+      total: complaints.length,
+      open: 0,
+      inReview: 0,
+      resolved: 0,
+    };
+    complaints.forEach((complaint) => {
+      if (complaint.status === "open") {
+        complaintMetrics.open += 1;
+      } else if (complaint.status === "in_review") {
+        complaintMetrics.inReview += 1;
+      } else if (complaint.status === "resolved") {
+        complaintMetrics.resolved += 1;
+      }
+    });
+
+    let crmAwarenessRows: CrmAwarenessRow[] = [];
+    if (hasCrmAwareness) {
+      [crmAwarenessRows] = await connection.query<CrmAwarenessRow[]>(
+        `SELECT id, project_id, district, awareness_date, notes, created_at
+         FROM crm_awareness_records
+         ORDER BY (awareness_date IS NULL) ASC, awareness_date DESC, created_at DESC`
+      );
+    }
+
+    const crmAwareness: CrmAwarenessRecord[] = crmAwarenessRows.map((row) => ({
+      id: row.id.toString(),
+      projectId: row.project_id ? row.project_id.toString() : undefined,
+      district: row.district ?? undefined,
+      awarenessDate: optionalIsoString(row.awareness_date),
+      notes: row.notes ?? undefined,
+      createdAt: safeIsoString(row.created_at),
+    }));
+
+    let findingRows: FindingRow[] = [];
+    if (hasFindings) {
+      [findingRows] = await connection.query<FindingRow[]>(
+        `SELECT id, project_id, finding_type, category, severity, department, status, description, evidence_url, reminder_due_at, last_reminded_at, created_at, updated_at
+         FROM findings
+         ORDER BY created_at DESC, id DESC`
+      );
+    }
+
+    const findingRecords: FindingRecord[] = findingRows.map((row) => ({
+      id: row.id.toString(),
+      projectId: row.project_id ? row.project_id.toString() : undefined,
+      findingType: mapFindingType(row.finding_type),
+      category: row.category ?? undefined,
+      severity: mapFindingSeverity(row.severity),
+      department: row.department ?? undefined,
+      status: mapFindingStatus(row.status),
+      description: row.description ?? undefined,
+      evidenceUrl: row.evidence_url ?? undefined,
+      reminderDueAt: optionalIsoString(row.reminder_due_at),
+      lastRemindedAt: optionalIsoString(row.last_reminded_at),
+      createdAt: safeIsoString(row.created_at),
+      updatedAt: safeIsoString(row.updated_at),
+    }));
+
+    const findingsSummary: FindingsSummary = {
+      total: findingRecords.length,
+      byType: {
+        negative: 0,
+        positive: 0,
+      },
+      bySeverity: {
+        minor: 0,
+        major: 0,
+        critical: 0,
+      },
+      byStatus: {
+        pending: 0,
+        in_progress: 0,
+        solved: 0,
+      },
+      byDepartment: {} as FindingsByDepartment,
     };
 
-    sectors[ALL_SECTOR_KEY] = {
-      ...existingAllSector,
-      provinces: aggregateAllSectors.provinces.length
-        ? aggregateAllSectors.provinces
-        : existingAllSector.provinces,
-      beneficiaries: aggregateAllSectors.projects
-        ? aggregateAllSectors.beneficiaries
-        : existingAllSector.beneficiaries,
-      projects: aggregateAllSectors.projects || existingAllSector.projects,
-      start: aggregateAllSectors.start || existingAllSector.start,
-      end: aggregateAllSectors.end || existingAllSector.end,
-      staff: aggregateAllSectors.projects ? aggregateAllSectors.staff : existingAllSector.staff,
+    findingRecords.forEach((record) => {
+      findingsSummary.byType[record.findingType] += 1;
+      findingsSummary.bySeverity[record.severity] += 1;
+      findingsSummary.byStatus[record.status] += 1;
+
+      const departmentKey = record.department?.trim() || "Unassigned";
+      const departmentEntry = findingsSummary.byDepartment[departmentKey] ?? {
+        pending: 0,
+        inProgress: 0,
+        solved: 0,
+      };
+      if (record.status === "pending") {
+        departmentEntry.pending += 1;
+      } else if (record.status === "in_progress") {
+        departmentEntry.inProgress += 1;
+      } else {
+        departmentEntry.solved += 1;
+      }
+      findingsSummary.byDepartment[departmentKey] = departmentEntry;
+    });
+
+    const findings: FindingsDashboardData = {
+      findings: findingRecords,
+      summary: findingsSummary,
     };
+
+    let distributionRows: DistributionRow[] = [];
+    if (hasDistributionRecords) {
+      [distributionRows] = await connection.query<DistributionRow[]>(
+        `SELECT id, project_id, assistance_type, distribution_date, location, target_beneficiaries, notes, created_at
+         FROM distribution_records
+         ORDER BY (distribution_date IS NULL) ASC, distribution_date DESC, created_at DESC`
+      );
+    }
+
+    let pdmSurveyRows: PdmSurveyRow[] = [];
+    if (hasPdmSurveys) {
+      [pdmSurveyRows] = await connection.query<PdmSurveyRow[]>(
+        `SELECT id, project_id, tool, quality_score, quantity_score, satisfaction_score, protection_score, completed_at, created_at
+         FROM pdm_surveys
+         ORDER BY (completed_at IS NULL) ASC, completed_at DESC, created_at DESC`
+      );
+    }
+
+    let pdmReportRows: PdmReportRow[] = [];
+    if (hasPdmReports) {
+      [pdmReportRows] = await connection.query<PdmReportRow[]>(
+        `SELECT id, project_id, report_date, summary, recommendations, feedback_to_program, created_at
+         FROM pdm_reports
+         ORDER BY (report_date IS NULL) ASC, report_date DESC, created_at DESC`
+      );
+    }
+
+    const distributions: DistributionRecord[] = distributionRows.map((row) => ({
+      id: row.id.toString(),
+      projectId: row.project_id ? row.project_id.toString() : undefined,
+      assistanceType: row.assistance_type,
+      distributionDate: optionalIsoString(row.distribution_date),
+      location: row.location ?? undefined,
+      targetBeneficiaries: row.target_beneficiaries ?? undefined,
+      notes: row.notes ?? undefined,
+      createdAt: safeIsoString(row.created_at),
+    }));
+
+    const pdmSurveys: PdmSurveyRecord[] = pdmSurveyRows.map((row) => ({
+      id: row.id.toString(),
+      projectId: row.project_id ? row.project_id.toString() : undefined,
+      tool: row.tool ?? undefined,
+      qualityScore: row.quality_score ?? undefined,
+      quantityScore: row.quantity_score ?? undefined,
+      satisfactionScore: row.satisfaction_score ?? undefined,
+      protectionScore: row.protection_score ?? undefined,
+      completedAt: optionalIsoString(row.completed_at),
+      createdAt: safeIsoString(row.created_at),
+    }));
+
+    const pdmReports: PdmReportRecord[] = pdmReportRows.map((row) => ({
+      id: row.id.toString(),
+      projectId: row.project_id ? row.project_id.toString() : undefined,
+      reportDate: optionalIsoString(row.report_date),
+      summary: row.summary ?? undefined,
+      recommendations: row.recommendations ?? undefined,
+      feedbackToProgram: row.feedback_to_program ?? undefined,
+      createdAt: safeIsoString(row.created_at),
+    }));
+
+    const pdm: PdmDashboardData = {
+      distributions,
+      surveys: pdmSurveys,
+      reports: pdmReports,
+    };
+
+    let lessonRows: LessonRow[] = [];
+    if (hasLessons) {
+      [lessonRows] = await connection.query<LessonRow[]>(
+        `SELECT id, project_id, source, lesson, department, theme, captured_at, created_at
+         FROM lessons
+         ORDER BY created_at DESC`
+      );
+    }
+
+    let knowledgeResourceRows: KnowledgeResourceRow[] = [];
+    if (hasKnowledgeResources) {
+      [knowledgeResourceRows] = await connection.query<KnowledgeResourceRow[]>(
+        `SELECT id, title, category, theme, description, file_url, created_at
+         FROM knowledge_resources
+         ORDER BY created_at DESC`
+      );
+    }
+
+    const lessons: LessonRecord[] = lessonRows.map((row) => ({
+      id: row.id.toString(),
+      projectId: row.project_id ? row.project_id.toString() : undefined,
+      source: row.source ?? undefined,
+      lesson: row.lesson,
+      department: row.department ?? undefined,
+      theme: row.theme ?? undefined,
+      capturedAt: optionalIsoString(row.captured_at),
+      createdAt: safeIsoString(row.created_at),
+    }));
+
+    const knowledgeResources: KnowledgeResourceRecord[] = knowledgeResourceRows.map((row) => ({
+      id: row.id.toString(),
+      title: row.title,
+      category: row.category ?? undefined,
+      theme: row.theme ?? undefined,
+      description: row.description ?? undefined,
+      fileUrl: row.file_url ?? undefined,
+      createdAt: safeIsoString(row.created_at),
+    }));
+
+    const knowledgeHub: KnowledgeHubData = {
+      lessons,
+      resources: knowledgeResources,
+    };
+
+    let userAccessRows: UserAccessAssignmentRow[] = [];
+    if (hasUserAccessAssignments) {
+      [userAccessRows] = await connection.query<UserAccessAssignmentRow[]>(
+        `SELECT id, user_id, project_id, province, role
+         FROM user_access_assignments
+         ORDER BY user_id ASC, project_id ASC`
+      );
+    }
+
+    const userAccessAssignments: UserAccessAssignmentRecord[] = userAccessRows.map((row) => ({
+      id: row.id.toString(),
+      userId: row.user_id.toString(),
+      projectId: row.project_id ? row.project_id.toString() : undefined,
+      province: row.province ?? undefined,
+      role: row.role ?? undefined,
+    }));
+
+    let integrationRows: IntegrationRow[] = [];
+    if (hasIntegrations) {
+      [integrationRows] = await connection.query<IntegrationRow[]>(
+        `SELECT id, name, config, created_at, updated_at
+         FROM integrations
+         ORDER BY name ASC`
+      );
+    }
+
+    const integrations: IntegrationRecord[] = integrationRows.map((row) => ({
+      id: row.id.toString(),
+      name: row.name,
+      config: row.config ?? undefined,
+      createdAt: safeIsoString(row.created_at),
+      updatedAt: safeIsoString(row.updated_at),
+    }));
 
     const [clusterCatalogRows] = await connection.query<ClusterCatalogRow[]>(
       "SELECT id, name, description FROM cluster_catalog ORDER BY name ASC"
@@ -507,8 +1611,19 @@ export async function fetchDashboardState(): Promise<DashboardState> {
       reportingYears,
       users,
       projects,
+      projectDocuments,
+      projectPhases,
       branding,
       complaints,
+      complaintMetrics,
+      crmAwareness,
+      monitoring,
+      evaluation,
+      findings,
+      pdm,
+      knowledgeHub,
+      userAccessAssignments,
+      integrations,
       clusterCatalog,
       sectorCatalog,
     };
@@ -543,15 +1658,28 @@ export async function insertUser(payload: {
   passwordHash?: string | null;
 }): Promise<void> {
   await withConnection(async (connection) => {
+    const email = payload.email.trim().toLowerCase();
+    const name = payload.name.trim();
+    const organization = payload.organization?.trim() ?? null;
+
+    const [existingRows] = await connection.query<UserWithPasswordRow[]>(
+      "SELECT id, password_hash FROM users WHERE email = ? LIMIT 1",
+      [email]
+    );
+
+    if (existingRows.length) {
+      const existing = existingRows[0];
+      const passwordHash = payload.passwordHash ?? existing.password_hash ?? null;
+      await connection.execute(
+        "UPDATE users SET name = ?, role = ?, organization = ?, password_hash = ?, updated_at = datetime('now') WHERE id = ?",
+        [name, payload.role, organization, passwordHash, existing.id]
+      );
+      return;
+    }
+
     await connection.execute(
-      "INSERT INTO users (name, email, role, organization, password_hash) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE name = VALUES(name), role = VALUES(role), organization = VALUES(organization), password_hash = COALESCE(VALUES(password_hash), password_hash)",
-      [
-        payload.name.trim(),
-        payload.email.trim().toLowerCase(),
-        payload.role,
-        payload.organization?.trim() ?? null,
-        payload.passwordHash ?? null,
-      ]
+      "INSERT INTO users (name, email, role, organization, password_hash) VALUES (?, ?, ?, ?, ?)",
+      [name, email, payload.role, organization, payload.passwordHash ?? null]
     );
   });
 }
@@ -564,7 +1692,9 @@ export async function removeUserById(id: string): Promise<void> {
 
 export async function insertReportingYear(year: number): Promise<void> {
   await withConnection(async (connection) => {
-    await connection.execute("INSERT IGNORE INTO reporting_years (year) VALUES (?)", [year]);
+    await connection.execute("INSERT INTO reporting_years (year) VALUES (?) ON CONFLICT(year) DO NOTHING", [
+      year,
+    ]);
   });
 }
 
@@ -603,26 +1733,34 @@ export async function upsertSectorDetails(sectorKey: string, details: SectorDeta
           "INSERT INTO sectors (sector_key, display_name, projects, start_date, end_date, field_activity, staff) VALUES (?, ?, ?, NULLIF(?, ''), NULLIF(?, ''), ?, ?)",
           [sectorKey, sectorKey, details.projects, details.start, details.end, details.fieldActivity, details.staff]
         );
-        sectorId = (result as mysql.ResultSetHeader).insertId;
+        sectorId = result.insertId;
       }
 
       await connection.execute("DELETE FROM sector_provinces WHERE sector_id = ?", [sectorId]);
       if (details.provinces.length) {
-        const values = details.provinces.map((province) => [sectorId, province.trim()]);
-        await connection.query("INSERT INTO sector_provinces (sector_id, province) VALUES ?", [values]);
+        const insertProvince = details.provinces
+          .map((province) => province.trim())
+          .filter((province) => province.length);
+        for (const province of insertProvince) {
+          await connection.execute("INSERT INTO sector_provinces (sector_id, province) VALUES (?, ?)", [
+            sectorId,
+            province,
+          ]);
+        }
       }
 
       await connection.execute("DELETE FROM beneficiary_stats WHERE sector_id = ?", [sectorId]);
-      const beneficiaryValues = BENEFICIARY_TYPE_KEYS.map((key) => [
-        sectorId,
-        key,
-        details.beneficiaries.direct[key],
-        details.beneficiaries.indirect[key],
-      ]);
-      await connection.query(
-        "INSERT INTO beneficiary_stats (sector_id, type_key, direct, indirect) VALUES ?",
-        [beneficiaryValues]
-      );
+      for (const key of BENEFICIARY_TYPE_KEYS) {
+        await connection.execute(
+          "INSERT INTO beneficiary_stats (sector_id, type_key, direct, indirect) VALUES (?, ?, ?, ?)",
+          [
+            sectorId,
+            key,
+            details.beneficiaries.direct[key],
+            details.beneficiaries.indirect[key],
+          ]
+        );
+      }
 
       await connection.commit();
     } catch (error) {
@@ -630,40 +1768,6 @@ export async function upsertSectorDetails(sectorKey: string, details: SectorDeta
       throw error;
     }
   });
-}
-
-function sanitizeNameList(values: string[]): string[] {
-  return Array.from(
-    new Set(
-      values
-        .map((value) => value.trim())
-        .filter((value) => value.length)
-    )
-  );
-}
-
-async function ensureCatalogEntries(
-  connection: mysql.PoolConnection,
-  table: "cluster_catalog" | "sector_catalog",
-  names: string[]
-): Promise<void> {
-  if (!names.length) {
-    return;
-  }
-
-  const [rows] = await connection.query<RowDataPacket[]>(
-    `SELECT name FROM ${table} WHERE name IN (?)`,
-    [names]
-  );
-
-  const found = new Set(rows.map((row) => row.name as string));
-  const missing = names.filter((name) => !found.has(name));
-  if (missing.length) {
-    const label = table === "cluster_catalog" ? "clusters" : "sectors";
-    throw new Error(
-      `Unknown ${label}: ${missing.join(", ")}. Register them before linking to a project.`
-    );
-  }
 }
 
 export type CatalogEntry = {
@@ -671,204 +1775,6 @@ export type CatalogEntry = {
   name: string;
   description?: string;
 };
-
-export async function insertProject(payload: {
-  name: string;
-  sectorKey: string;
-  country: string;
-  goal: string;
-  objectives: string;
-  majorAchievements: string;
-  start: string;
-  end: string;
-  staff: number;
-  beneficiaries: BeneficiaryBreakdown;
-  provinces: string[];
-  districts: string[];
-  communities: string[];
-  clusters: string[];
-  standardSectors: string[];
-}): Promise<number> {
-  return withConnection(async (connection) => {
-    await connection.beginTransaction();
-    try {
-      const provinces = sanitizeNameList(payload.provinces);
-      const districts = sanitizeNameList(payload.districts);
-      const communities = sanitizeNameList(payload.communities);
-      const clusters = sanitizeNameList(payload.clusters);
-      const standardSectors = sanitizeNameList(payload.standardSectors);
-
-      await ensureCatalogEntries(connection, "cluster_catalog", clusters);
-      await ensureCatalogEntries(connection, "sector_catalog", standardSectors);
-
-      const [result] = await connection.execute(
-        "INSERT INTO projects (name, sector_key, goal, objectives, major_achievements, country, start_date, end_date, staff) VALUES (?, ?, ?, ?, ?, ?, NULLIF(?, ''), NULLIF(?, ''), ?)",
-        [
-          payload.name,
-          payload.sectorKey,
-          payload.goal,
-          payload.objectives,
-          payload.majorAchievements,
-          payload.country,
-          payload.start,
-          payload.end,
-          payload.staff,
-        ]
-      );
-
-      const projectId = (result as mysql.ResultSetHeader).insertId;
-
-      const geoValues: Array<[number, "province" | "district" | "community", string]> = [];
-      provinces.forEach((province) => {
-        geoValues.push([projectId, "province", province]);
-      });
-      districts.forEach((district) => {
-        geoValues.push([projectId, "district", district]);
-      });
-      communities.forEach((community) => {
-        geoValues.push([projectId, "community", community]);
-      });
-
-      if (geoValues.length) {
-        await connection.query(
-          "INSERT INTO project_geography (project_id, level, name) VALUES ?",
-          [geoValues]
-        );
-      }
-
-      const beneficiaryValues = BENEFICIARY_TYPE_KEYS.map((key) => [
-        projectId,
-        key,
-        payload.beneficiaries.direct[key],
-        payload.beneficiaries.indirect[key],
-      ]);
-      await connection.query(
-        "INSERT INTO project_beneficiaries (project_id, type_key, direct, indirect) VALUES ?",
-        [beneficiaryValues]
-      );
-
-      if (clusters.length) {
-        await connection.query(
-          "INSERT INTO project_clusters (project_id, cluster) VALUES ?",
-          [clusters.map((cluster) => [projectId, cluster])]
-        );
-      }
-
-      if (standardSectors.length) {
-        await connection.query(
-          "INSERT INTO project_standard_sectors (project_id, sector_label) VALUES ?",
-          [standardSectors.map((sector) => [projectId, sector])]
-        );
-      }
-
-      await connection.commit();
-      return projectId;
-    } catch (error) {
-      await connection.rollback();
-      throw error;
-    }
-  });
-}
-
-export async function updateProject(projectId: string, payload: {
-  name: string;
-  sectorKey: string;
-  country: string;
-  goal: string;
-  objectives: string;
-  majorAchievements: string;
-  start: string;
-  end: string;
-  staff: number;
-  beneficiaries: BeneficiaryBreakdown;
-  provinces: string[];
-  districts: string[];
-  communities: string[];
-  clusters: string[];
-  standardSectors: string[];
-}): Promise<void> {
-  const id = Number(projectId);
-  await withConnection(async (connection) => {
-    await connection.beginTransaction();
-    try {
-      const provinces = sanitizeNameList(payload.provinces);
-      const districts = sanitizeNameList(payload.districts);
-      const communities = sanitizeNameList(payload.communities);
-      const clusters = sanitizeNameList(payload.clusters);
-      const standardSectors = sanitizeNameList(payload.standardSectors);
-
-      await ensureCatalogEntries(connection, "cluster_catalog", clusters);
-      await ensureCatalogEntries(connection, "sector_catalog", standardSectors);
-
-      await connection.execute(
-        "UPDATE projects SET name = ?, sector_key = ?, goal = ?, objectives = ?, major_achievements = ?, country = ?, start_date = NULLIF(?, ''), end_date = NULLIF(?, ''), staff = ? WHERE id = ?",
-        [
-          payload.name,
-          payload.sectorKey,
-          payload.goal,
-          payload.objectives,
-          payload.majorAchievements,
-          payload.country,
-          payload.start,
-          payload.end,
-          payload.staff,
-          id,
-        ]
-      );
-
-      await connection.execute("DELETE FROM project_geography WHERE project_id = ?", [id]);
-      const geoValues: Array<[number, "province" | "district" | "community", string]> = [];
-      provinces.forEach((province) => geoValues.push([id, "province", province]));
-      districts.forEach((district) => geoValues.push([id, "district", district]));
-      communities.forEach((community) => geoValues.push([id, "community", community]));
-      if (geoValues.length) {
-        await connection.query(
-          "INSERT INTO project_geography (project_id, level, name) VALUES ?",
-          [geoValues]
-        );
-      }
-
-      await connection.execute("DELETE FROM project_beneficiaries WHERE project_id = ?", [id]);
-      const beneficiaryValues = BENEFICIARY_TYPE_KEYS.map((key) => [
-        id,
-        key,
-        payload.beneficiaries.direct[key],
-        payload.beneficiaries.indirect[key],
-      ]);
-      await connection.query(
-        "INSERT INTO project_beneficiaries (project_id, type_key, direct, indirect) VALUES ?",
-        [beneficiaryValues]
-      );
-
-      await connection.execute("DELETE FROM project_clusters WHERE project_id = ?", [id]);
-      if (clusters.length) {
-        await connection.query(
-          "INSERT INTO project_clusters (project_id, cluster) VALUES ?",
-          [clusters.map((cluster) => [id, cluster])]
-        );
-      }
-
-      await connection.execute("DELETE FROM project_standard_sectors WHERE project_id = ?", [id]);
-      if (standardSectors.length) {
-        await connection.query(
-          "INSERT INTO project_standard_sectors (project_id, sector_label) VALUES ?",
-          [standardSectors.map((sector) => [id, sector])]
-        );
-      }
-
-      await connection.commit();
-    } catch (error) {
-      await connection.rollback();
-      throw error;
-    }
-  });
-}
-
-export async function deleteProject(projectId: string): Promise<void> {
-  await withConnection(async (connection) => {
-    await connection.execute("DELETE FROM projects WHERE id = ?", [projectId]);
-  });
-}
 
 export async function fetchClusterCatalog(): Promise<CatalogEntry[]> {
   return withConnection(async (connection) => {
@@ -907,16 +1813,17 @@ export async function insertClusterCatalogEntry(payload: {
   const description = payload.description?.trim() ?? null;
 
   return withConnection(async (connection) => {
-    const [result] = await connection.execute(
-      "INSERT INTO cluster_catalog (name, description) VALUES (?, ?) ON DUPLICATE KEY UPDATE description = VALUES(description), id = LAST_INSERT_ID(id)",
+    const [rows] = await connection.query<ClusterCatalogRow[]>(
+      `INSERT INTO cluster_catalog (name, description)
+       VALUES (?, ?)
+       ON CONFLICT(name) DO UPDATE SET description = excluded.description
+       RETURNING id, name, description`,
       [name, description]
     );
-    const id = (result as mysql.ResultSetHeader).insertId;
-    const [rows] = await connection.query<ClusterCatalogRow[]>(
-      "SELECT id, name, description FROM cluster_catalog WHERE id = ?",
-      [id]
-    );
     const record = rows[0];
+    if (!record) {
+      throw new Error("Failed to store cluster entry.");
+    }
     return {
       id: record.id.toString(),
       name: record.name,
@@ -936,16 +1843,17 @@ export async function insertSectorCatalogEntry(payload: {
   const description = payload.description?.trim() ?? null;
 
   return withConnection(async (connection) => {
-    const [result] = await connection.execute(
-      "INSERT INTO sector_catalog (name, description) VALUES (?, ?) ON DUPLICATE KEY UPDATE description = VALUES(description), id = LAST_INSERT_ID(id)",
+    const [rows] = await connection.query<SectorCatalogRow[]>(
+      `INSERT INTO sector_catalog (name, description)
+       VALUES (?, ?)
+       ON CONFLICT(name) DO UPDATE SET description = excluded.description
+       RETURNING id, name, description`,
       [name, description]
     );
-    const id = (result as mysql.ResultSetHeader).insertId;
-    const [rows] = await connection.query<SectorCatalogRow[]>(
-      "SELECT id, name, description FROM sector_catalog WHERE id = ?",
-      [id]
-    );
     const record = rows[0];
+    if (!record) {
+      throw new Error("Failed to store sector entry.");
+    }
     return {
       id: record.id.toString(),
       name: record.name,
@@ -1009,10 +1917,10 @@ export async function createUserSessionRecord(
   expiresAt: Date
 ): Promise<void> {
   await withConnection(async (connection) => {
-    await connection.execute("DELETE FROM user_sessions WHERE expires_at < NOW()");
+    await connection.execute("DELETE FROM user_sessions WHERE expires_at < datetime('now')");
     await connection.execute(
       "INSERT INTO user_sessions (user_id, token_hash, expires_at) VALUES (?, ?, ?)",
-      [userId, tokenHash, expiresAt]
+      [userId, tokenHash, expiresAt.toISOString()]
     );
   });
 }
@@ -1031,7 +1939,7 @@ export async function findSessionByTokenHash(tokenHash: string): Promise<Session
          u.organization
        FROM user_sessions s
        INNER JOIN users u ON u.id = s.user_id
-       WHERE s.token_hash = ? AND s.expires_at > NOW()
+       WHERE s.token_hash = ? AND s.expires_at > datetime('now')
        LIMIT 1`,
       [tokenHash]
     );
@@ -1041,9 +1949,10 @@ export async function findSessionByTokenHash(tokenHash: string): Promise<Session
     }
 
     const session = rows[0];
+    const expiresAtDate = new Date(session.expires_at);
     return {
       sessionId: session.id.toString(),
-      expiresAt: session.expires_at,
+      expiresAt: expiresAtDate,
       user: {
         id: session.user_id,
         name: session.name,
@@ -1063,7 +1972,7 @@ export async function deleteSessionByTokenHash(tokenHash: string): Promise<void>
 
 export async function purgeExpiredSessions(): Promise<void> {
   await withConnection(async (connection) => {
-    await connection.execute("DELETE FROM user_sessions WHERE expires_at <= NOW()");
+    await connection.execute("DELETE FROM user_sessions WHERE expires_at <= datetime('now')");
   });
 }
 
@@ -1087,12 +1996,12 @@ export async function updateBranding(payload: {
     await connection.execute(
       `INSERT INTO branding_settings (id, company_name, logo_data, logo_mime, favicon_data, favicon_mime)
        VALUES (1, ?, ?, ?, ?, ?)
-       ON DUPLICATE KEY UPDATE
-         company_name = VALUES(company_name),
-         logo_data = COALESCE(VALUES(logo_data), logo_data),
-         logo_mime = COALESCE(VALUES(logo_mime), logo_mime),
-         favicon_data = COALESCE(VALUES(favicon_data), favicon_data),
-         favicon_mime = COALESCE(VALUES(favicon_mime), favicon_mime)`,
+       ON CONFLICT(id) DO UPDATE SET
+         company_name = excluded.company_name,
+         logo_data = COALESCE(excluded.logo_data, branding_settings.logo_data),
+         logo_mime = COALESCE(excluded.logo_mime, branding_settings.logo_mime),
+         favicon_data = COALESCE(excluded.favicon_data, branding_settings.favicon_data),
+         favicon_mime = COALESCE(excluded.favicon_mime, branding_settings.favicon_mime)`,
       [companyName ?? "NSDO", logo.data, logo.mime, favicon.data, favicon.mime]
     );
   });

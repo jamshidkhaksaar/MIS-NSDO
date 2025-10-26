@@ -1,178 +1,163 @@
--- Optional sample data for local development
+PRAGMA foreign_keys = ON;
 
-INSERT INTO reporting_years (year) VALUES (2023) ON DUPLICATE KEY UPDATE year = VALUES(year);
-INSERT INTO reporting_years (year) VALUES (2024) ON DUPLICATE KEY UPDATE year = VALUES(year);
-INSERT INTO reporting_years (year) VALUES (2025) ON DUPLICATE KEY UPDATE year = VALUES(year);
+-- Reporting years
+INSERT INTO reporting_years (year) VALUES (2023) ON CONFLICT(year) DO NOTHING;
+INSERT INTO reporting_years (year) VALUES (2024) ON CONFLICT(year) DO NOTHING;
+INSERT INTO reporting_years (year) VALUES (2025) ON CONFLICT(year) DO NOTHING;
 
-INSERT INTO cluster_catalog (name, description) VALUES
-  ('Protection Cluster', 'Protection coordination and safeguarding activities.'),
-  ('Emergency Shelter and Non-Food Items (ES/NFI) Cluster', 'Shelter support and essential household supplies.'),
-  ('Health Cluster', 'Medical response and health system strengthening.'),
-  ('Nutrition Cluster', 'Nutrition programming for vulnerable populations.'),
-  ('Food Security and Agriculture Cluster', 'Agricultural livelihoods and food security actions.'),
-  ('WASH (Water, Sanitation and Hygiene) Cluster', 'Water, sanitation, and hygiene interventions.'),
-  ('Education Cluster', 'Education coordination and learning continuity.'),
-  ('Livelihoods Cluster', 'Income generation and livelihoods support.')
-ON DUPLICATE KEY UPDATE description = VALUES(description);
+-- Cluster catalog
+INSERT INTO cluster_catalog (name, description) VALUES ('Protection Cluster', 'Protection coordination and safeguarding activities.') ON CONFLICT(name) DO UPDATE SET description = excluded.description;
+INSERT INTO cluster_catalog (name, description) VALUES ('Emergency Shelter and Non-Food Items (ES/NFI) Cluster', 'Shelter support and essential household supplies.') ON CONFLICT(name) DO UPDATE SET description = excluded.description;
+INSERT INTO cluster_catalog (name, description) VALUES ('Health Cluster', 'Medical response and health system strengthening.') ON CONFLICT(name) DO UPDATE SET description = excluded.description;
+INSERT INTO cluster_catalog (name, description) VALUES ('Nutrition Cluster', 'Nutrition programming for vulnerable populations.') ON CONFLICT(name) DO UPDATE SET description = excluded.description;
+INSERT INTO cluster_catalog (name, description) VALUES ('Food Security and Agriculture Cluster', 'Agricultural livelihoods and food security actions.') ON CONFLICT(name) DO UPDATE SET description = excluded.description;
+INSERT INTO cluster_catalog (name, description) VALUES ('WASH (Water, Sanitation and Hygiene) Cluster', 'Water, sanitation, and hygiene interventions.') ON CONFLICT(name) DO UPDATE SET description = excluded.description;
+INSERT INTO cluster_catalog (name, description) VALUES ('Education Cluster', 'Education coordination and learning continuity.') ON CONFLICT(name) DO UPDATE SET description = excluded.description;
+INSERT INTO cluster_catalog (name, description) VALUES ('Livelihoods Cluster', 'Income generation and livelihoods support.') ON CONFLICT(name) DO UPDATE SET description = excluded.description;
 
-INSERT INTO sector_catalog (name, description) VALUES
-  ('Agriculture & Rural Development', 'Agricultural productivity and rural resilience.'),
-  ('Education & Literacy', 'Formal and informal education support.'),
-  ('Health Systems Strengthening', 'Primary and secondary health system capacity.'),
-  ('WASH (Water, Sanitation, Hygiene)', 'Safe water access, sanitation, and hygiene programming.'),
-  ('Protection (including GBV, Child Protection, Legal Aid)', 'Protection services and safeguards.'),
-  ('Food Security & Agriculture', 'Food security programming and agricultural inputs.'),
-  ('Livelihoods & Economic Empowerment', 'Income generation and skills development.'),
-  ('Environment & Climate Resilience', 'Climate adaptation and environmental protection.'),
-  ('Disaster Risk Reduction (DRR)', 'Preparedness and risk reduction programming.'),
-  ('Returnee & IDP Support', 'Assistance for displaced populations.'),
-  ('Vocational Training (TVET)', 'Skills training and workforce development.')
-ON DUPLICATE KEY UPDATE description = VALUES(description);
+-- Sector catalog
+INSERT INTO sector_catalog (name, description) VALUES ('Agriculture & Rural Development', 'Agricultural productivity and rural resilience.') ON CONFLICT(name) DO UPDATE SET description = excluded.description;
+INSERT INTO sector_catalog (name, description) VALUES ('Education & Literacy', 'Formal and informal education support.') ON CONFLICT(name) DO UPDATE SET description = excluded.description;
+INSERT INTO sector_catalog (name, description) VALUES ('Health Systems Strengthening', 'Primary and secondary health system capacity.') ON CONFLICT(name) DO UPDATE SET description = excluded.description;
+INSERT INTO sector_catalog (name, description) VALUES ('WASH (Water, Sanitation, Hygiene)', 'Safe water access, sanitation, and hygiene programming.') ON CONFLICT(name) DO UPDATE SET description = excluded.description;
+INSERT INTO sector_catalog (name, description) VALUES ('Protection (including GBV, Child Protection, Legal Aid)', 'Protection services and safeguards.') ON CONFLICT(name) DO UPDATE SET description = excluded.description;
+INSERT INTO sector_catalog (name, description) VALUES ('Food Security & Agriculture', 'Food security programming and agricultural inputs.') ON CONFLICT(name) DO UPDATE SET description = excluded.description;
+INSERT INTO sector_catalog (name, description) VALUES ('Livelihoods & Economic Empowerment', 'Income generation and skills development.') ON CONFLICT(name) DO UPDATE SET description = excluded.description;
+INSERT INTO sector_catalog (name, description) VALUES ('Environment & Climate Resilience', 'Climate adaptation and environmental protection.') ON CONFLICT(name) DO UPDATE SET description = excluded.description;
+INSERT INTO sector_catalog (name, description) VALUES ('Disaster Risk Reduction (DRR)', 'Preparedness and risk reduction programming.') ON CONFLICT(name) DO UPDATE SET description = excluded.description;
+INSERT INTO sector_catalog (name, description) VALUES ('Returnee & IDP Support', 'Assistance for displaced populations.') ON CONFLICT(name) DO UPDATE SET description = excluded.description;
+INSERT INTO sector_catalog (name, description) VALUES ('Vocational Training (TVET)', 'Skills training and workforce development.') ON CONFLICT(name) DO UPDATE SET description = excluded.description;
 
-INSERT INTO sectors (id, sector_key, display_name, projects, start_date, end_date, field_activity, staff)
-VALUES
-  (1, 'Humanitarian', 'Humanitarian', 14, '2024-02-15', '2025-09-30', 'Emergency response & relief kits', 62),
-  (2, 'Advocacy', 'Advocacy', 9, '2024-03-01', '2024-12-31', 'Policy dialogues & community forums', 28),
-  (3, 'Development', 'Development', 11, '2024-01-10', '2025-12-31', 'Infrastructure rehabilitation', 44)
-ON DUPLICATE KEY UPDATE
-  projects = VALUES(projects),
-  start_date = VALUES(start_date),
-  end_date = VALUES(end_date),
-  field_activity = VALUES(field_activity),
-  staff = VALUES(staff);
+-- Sectors
+INSERT INTO sectors (sector_key, display_name, projects, start_date, end_date, field_activity, staff)
+VALUES ('Humanitarian', 'Humanitarian', 14, '2024-02-15', '2025-09-30', 'Emergency response & relief kits', 62)
+ON CONFLICT(sector_key) DO UPDATE SET
+  display_name = excluded.display_name,
+  projects = excluded.projects,
+  start_date = excluded.start_date,
+  end_date = excluded.end_date,
+  field_activity = excluded.field_activity,
+  staff = excluded.staff;
 
-DELETE FROM sector_provinces WHERE sector_id IN (1,2,3);
-INSERT INTO sector_provinces (sector_id, province) VALUES
-  (1, 'Kabul'), (1, 'Takhar'), (1, 'Badakhshan'), (1, 'Herat'),
-  (2, 'Parwan'), (2, 'Kabul'), (2, 'Baghlan'),
-  (3, 'Kunduz'), (3, 'Baghlan'), (3, 'Parwan'), (3, 'Badakhshan')
-ON DUPLICATE KEY UPDATE province = VALUES(province);
+INSERT INTO sectors (sector_key, display_name, projects, start_date, end_date, field_activity, staff)
+VALUES ('Advocacy', 'Advocacy', 9, '2024-03-01', '2024-12-31', 'Policy dialogues & community forums', 28)
+ON CONFLICT(sector_key) DO UPDATE SET
+  display_name = excluded.display_name,
+  projects = excluded.projects,
+  start_date = excluded.start_date,
+  end_date = excluded.end_date,
+  field_activity = excluded.field_activity,
+  staff = excluded.staff;
 
-DELETE FROM beneficiary_stats WHERE sector_id IN (1,2,3);
-INSERT INTO beneficiary_stats (sector_id, type_key, direct, indirect) VALUES
-  (1, 'childrenGirls', 280, 180),
-  (1, 'childrenBoys', 260, 170),
-  (1, 'adultsWomen', 310, 240),
-  (1, 'adultsMen', 210, 195),
-  (1, 'households', 140, 120),
-  (1, 'idps', 90, 75),
-  (1, 'returnees', 65, 48),
-  (1, 'pwds', 55, 36),
-  (2, 'childrenGirls', 160, 120),
-  (2, 'childrenBoys', 150, 115),
-  (2, 'adultsWomen', 190, 160),
-  (2, 'adultsMen', 140, 120),
-  (2, 'households', 90, 72),
-  (2, 'idps', 50, 42),
-  (2, 'returnees', 44, 30),
-  (2, 'pwds', 28, 22),
-  (3, 'childrenGirls', 210, 150),
-  (3, 'childrenBoys', 200, 140),
-  (3, 'adultsWomen', 250, 190),
-  (3, 'adultsMen', 220, 170),
-  (3, 'households', 120, 110),
-  (3, 'idps', 70, 62),
-  (3, 'returnees', 60, 48),
-  (3, 'pwds', 44, 34);
+INSERT INTO sectors (sector_key, display_name, projects, start_date, end_date, field_activity, staff)
+VALUES ('Development', 'Development', 11, '2024-01-10', '2025-12-31', 'Infrastructure rehabilitation', 44)
+ON CONFLICT(sector_key) DO UPDATE SET
+  display_name = excluded.display_name,
+  projects = excluded.projects,
+  start_date = excluded.start_date,
+  end_date = excluded.end_date,
+  field_activity = excluded.field_activity,
+  staff = excluded.staff;
 
-INSERT INTO users (name, email, role, organization) VALUES
-  ('Jamila Farzad', 'jamila.farzad@example.org', 'Administrator', 'NSDO HQ'),
-  ('Rahim Khan', 'rahim.khan@example.org', 'Editor', 'Regional Office'),
-  ('Sara Barakzai', 'sara.barakzai@example.org', 'Viewer', 'Partner Agency'),
-  ('Mohammad Dawood', 'm.dawood@nsdo.org.af', 'Administrator', 'NSDO IT Unit')
-ON DUPLICATE KEY UPDATE name = VALUES(name), role = VALUES(role), organization = VALUES(organization);
+-- Sector provinces
+INSERT OR IGNORE INTO sector_provinces (sector_id, province)
+SELECT id, 'Kabul' FROM sectors WHERE sector_key = 'Humanitarian';
+INSERT OR IGNORE INTO sector_provinces (sector_id, province)
+SELECT id, 'Takhar' FROM sectors WHERE sector_key = 'Humanitarian';
+INSERT OR IGNORE INTO sector_provinces (sector_id, province)
+SELECT id, 'Badakhshan' FROM sectors WHERE sector_key = 'Humanitarian';
+INSERT OR IGNORE INTO sector_provinces (sector_id, province)
+SELECT id, 'Herat' FROM sectors WHERE sector_key = 'Humanitarian';
 
-INSERT INTO projects (id, name, sector_key, goal, objectives, major_achievements, country, start_date, end_date, staff)
-VALUES
-  (
-    1,
-    'Community-Based Agricultural Support',
-    'Agriculture',
-    'Increase household food security through resilient agricultural practices.',
-    '• Provide farmer field school training across 3 provinces.\n• Introduce drought-resilient seed kits and irrigation tools.\n• Establish producer cooperatives to connect farmers with local markets.',
-    '• 1,250 farmers trained on climate-smart techniques.\n• 18 agribusiness cooperatives formed with 45% women leadership.\n• Average crop yields increased by 27% in target districts.',
-    'Afghanistan',
-    '2024-01-10',
-    '2025-12-31',
-    45
-  ),
-  (
-    2,
-    'Inclusive Education Access Initiative',
-    'Education',
-    'Broaden safe learning access for primary students in rural communities.',
-    '• Rehabilitate 12 community classrooms and learning spaces.\n• Deploy accelerated learning curricula for out-of-school children.\n• Train teachers on inclusive education and safeguarding.',
-    '• 2,050 children re-enrolled in formal schooling pathways.\n• 164 teachers certified on inclusive pedagogy.\n• Child protection referral pathways established in all target schools.',
-    'Afghanistan',
-    '2024-03-01',
-    '2025-09-30',
-    32
-  )
-ON DUPLICATE KEY UPDATE
-  name = VALUES(name),
-  sector_key = VALUES(sector_key),
-  goal = VALUES(goal),
-  objectives = VALUES(objectives),
-  major_achievements = VALUES(major_achievements),
-  country = VALUES(country),
-  start_date = VALUES(start_date),
-  end_date = VALUES(end_date),
-  staff = VALUES(staff);
+INSERT OR IGNORE INTO sector_provinces (sector_id, province)
+SELECT id, 'Parwan' FROM sectors WHERE sector_key = 'Advocacy';
+INSERT OR IGNORE INTO sector_provinces (sector_id, province)
+SELECT id, 'Kabul' FROM sectors WHERE sector_key = 'Advocacy';
+INSERT OR IGNORE INTO sector_provinces (sector_id, province)
+SELECT id, 'Baghlan' FROM sectors WHERE sector_key = 'Advocacy';
 
-DELETE FROM project_geography WHERE project_id IN (1,2);
-INSERT INTO project_geography (project_id, level, name) VALUES
-  (1, 'province', 'Kabul'),
-  (1, 'province', 'Takhar'),
-  (1, 'province', 'Herat'),
-  (1, 'district', 'Kabul City'),
-  (1, 'district', 'Rostaq'),
-  (1, 'district', 'Guzara'),
-  (1, 'community', 'Pole-e-Charkhi'),
-  (1, 'community', 'Dasht-e-Qala'),
-  (1, 'community', 'Karokh'),
-  (2, 'province', 'Kunduz'),
-  (2, 'province', 'Baghlan'),
-  (2, 'district', 'Kunduz City'),
-  (2, 'district', 'Pul-e-Khumri'),
-  (2, 'community', 'Imam Sahib'),
-  (2, 'community', 'Nahr-e-Shahi')
-ON DUPLICATE KEY UPDATE name = VALUES(name);
+INSERT OR IGNORE INTO sector_provinces (sector_id, province)
+SELECT id, 'Kunduz' FROM sectors WHERE sector_key = 'Development';
+INSERT OR IGNORE INTO sector_provinces (sector_id, province)
+SELECT id, 'Baghlan' FROM sectors WHERE sector_key = 'Development';
+INSERT OR IGNORE INTO sector_provinces (sector_id, province)
+SELECT id, 'Parwan' FROM sectors WHERE sector_key = 'Development';
+INSERT OR IGNORE INTO sector_provinces (sector_id, province)
+SELECT id, 'Badakhshan' FROM sectors WHERE sector_key = 'Development';
 
-DELETE FROM project_clusters WHERE project_id IN (1,2);
-INSERT INTO project_clusters (project_id, cluster) VALUES
-  (1, 'Food Security and Agriculture Cluster'),
-  (1, 'WASH (Water, Sanitation and Hygiene) Cluster'),
-  (2, 'Education Cluster'),
-  (2, 'Protection Cluster')
-ON DUPLICATE KEY UPDATE cluster = VALUES(cluster);
+-- Beneficiary stats
+INSERT INTO beneficiary_stats (sector_id, type_key, direct, indirect)
+SELECT id, 'childrenGirls', 280, 180 FROM sectors WHERE sector_key = 'Humanitarian'
+ON CONFLICT(sector_id, type_key) DO UPDATE SET direct = excluded.direct, indirect = excluded.indirect;
+INSERT INTO beneficiary_stats (sector_id, type_key, direct, indirect)
+SELECT id, 'childrenBoys', 260, 170 FROM sectors WHERE sector_key = 'Humanitarian'
+ON CONFLICT(sector_id, type_key) DO UPDATE SET direct = excluded.direct, indirect = excluded.indirect;
+INSERT INTO beneficiary_stats (sector_id, type_key, direct, indirect)
+SELECT id, 'adultsWomen', 310, 240 FROM sectors WHERE sector_key = 'Humanitarian'
+ON CONFLICT(sector_id, type_key) DO UPDATE SET direct = excluded.direct, indirect = excluded.indirect;
+INSERT INTO beneficiary_stats (sector_id, type_key, direct, indirect)
+SELECT id, 'adultsMen', 210, 195 FROM sectors WHERE sector_key = 'Humanitarian'
+ON CONFLICT(sector_id, type_key) DO UPDATE SET direct = excluded.direct, indirect = excluded.indirect;
+INSERT INTO beneficiary_stats (sector_id, type_key, direct, indirect)
+SELECT id, 'households', 140, 120 FROM sectors WHERE sector_key = 'Humanitarian'
+ON CONFLICT(sector_id, type_key) DO UPDATE SET direct = excluded.direct, indirect = excluded.indirect;
+INSERT INTO beneficiary_stats (sector_id, type_key, direct, indirect)
+SELECT id, 'idps', 90, 75 FROM sectors WHERE sector_key = 'Humanitarian'
+ON CONFLICT(sector_id, type_key) DO UPDATE SET direct = excluded.direct, indirect = excluded.indirect;
+INSERT INTO beneficiary_stats (sector_id, type_key, direct, indirect)
+SELECT id, 'returnees', 65, 48 FROM sectors WHERE sector_key = 'Humanitarian'
+ON CONFLICT(sector_id, type_key) DO UPDATE SET direct = excluded.direct, indirect = excluded.indirect;
+INSERT INTO beneficiary_stats (sector_id, type_key, direct, indirect)
+SELECT id, 'pwds', 55, 36 FROM sectors WHERE sector_key = 'Humanitarian'
+ON CONFLICT(sector_id, type_key) DO UPDATE SET direct = excluded.direct, indirect = excluded.indirect;
 
-DELETE FROM project_standard_sectors WHERE project_id IN (1,2);
-INSERT INTO project_standard_sectors (project_id, sector_label) VALUES
-  (1, 'Food Security & Agriculture'),
-  (1, 'Livelihoods & Economic Empowerment'),
-  (1, 'Environment & Climate Resilience'),
-  (2, 'Education'),
-  (2, 'Education & Literacy'),
-  (2, 'Disability Inclusion'),
-  (2, 'Gender Equality')
-ON DUPLICATE KEY UPDATE sector_label = VALUES(sector_label);
+INSERT INTO beneficiary_stats (sector_id, type_key, direct, indirect)
+SELECT id, 'childrenGirls', 160, 120 FROM sectors WHERE sector_key = 'Advocacy'
+ON CONFLICT(sector_id, type_key) DO UPDATE SET direct = excluded.direct, indirect = excluded.indirect;
+INSERT INTO beneficiary_stats (sector_id, type_key, direct, indirect)
+SELECT id, 'childrenBoys', 150, 115 FROM sectors WHERE sector_key = 'Advocacy'
+ON CONFLICT(sector_id, type_key) DO UPDATE SET direct = excluded.direct, indirect = excluded.indirect;
+INSERT INTO beneficiary_stats (sector_id, type_key, direct, indirect)
+SELECT id, 'adultsWomen', 190, 160 FROM sectors WHERE sector_key = 'Advocacy'
+ON CONFLICT(sector_id, type_key) DO UPDATE SET direct = excluded.direct, indirect = excluded.indirect;
+INSERT INTO beneficiary_stats (sector_id, type_key, direct, indirect)
+SELECT id, 'adultsMen', 140, 120 FROM sectors WHERE sector_key = 'Advocacy'
+ON CONFLICT(sector_id, type_key) DO UPDATE SET direct = excluded.direct, indirect = excluded.indirect;
+INSERT INTO beneficiary_stats (sector_id, type_key, direct, indirect)
+SELECT id, 'households', 90, 72 FROM sectors WHERE sector_key = 'Advocacy'
+ON CONFLICT(sector_id, type_key) DO UPDATE SET direct = excluded.direct, indirect = excluded.indirect;
+INSERT INTO beneficiary_stats (sector_id, type_key, direct, indirect)
+SELECT id, 'idps', 50, 42 FROM sectors WHERE sector_key = 'Advocacy'
+ON CONFLICT(sector_id, type_key) DO UPDATE SET direct = excluded.direct, indirect = excluded.indirect;
+INSERT INTO beneficiary_stats (sector_id, type_key, direct, indirect)
+SELECT id, 'returnees', 44, 30 FROM sectors WHERE sector_key = 'Advocacy'
+ON CONFLICT(sector_id, type_key) DO UPDATE SET direct = excluded.direct, indirect = excluded.indirect;
+INSERT INTO beneficiary_stats (sector_id, type_key, direct, indirect)
+SELECT id, 'pwds', 28, 22 FROM sectors WHERE sector_key = 'Advocacy'
+ON CONFLICT(sector_id, type_key) DO UPDATE SET direct = excluded.direct, indirect = excluded.indirect;
 
-DELETE FROM project_beneficiaries WHERE project_id IN (1,2);
-INSERT INTO project_beneficiaries (project_id, type_key, direct, indirect) VALUES
-  (1, 'childrenGirls', 320, 280),
-  (1, 'childrenBoys', 340, 295),
-  (1, 'adultsWomen', 460, 420),
-  (1, 'adultsMen', 380, 360),
-  (1, 'households', 220, 240),
-  (1, 'idps', 120, 140),
-  (1, 'returnees', 90, 110),
-  (1, 'pwds', 70, 84),
-  (2, 'childrenGirls', 620, 540),
-  (2, 'childrenBoys', 590, 520),
-  (2, 'adultsWomen', 420, 400),
-  (2, 'adultsMen', 340, 310),
-  (2, 'households', 180, 200),
-  (2, 'idps', 150, 170),
-  (2, 'returnees', 110, 130),
-  (2, 'pwds', 95, 100)
-ON DUPLICATE KEY UPDATE direct = VALUES(direct), indirect = VALUES(indirect);
+INSERT INTO beneficiary_stats (sector_id, type_key, direct, indirect)
+SELECT id, 'childrenGirls', 210, 150 FROM sectors WHERE sector_key = 'Development'
+ON CONFLICT(sector_id, type_key) DO UPDATE SET direct = excluded.direct, indirect = excluded.indirect;
+INSERT INTO beneficiary_stats (sector_id, type_key, direct, indirect)
+SELECT id, 'childrenBoys', 200, 140 FROM sectors WHERE sector_key = 'Development'
+ON CONFLICT(sector_id, type_key) DO UPDATE SET direct = excluded.direct, indirect = excluded.indirect;
+INSERT INTO beneficiary_stats (sector_id, type_key, direct, indirect)
+SELECT id, 'adultsWomen', 250, 190 FROM sectors WHERE sector_key = 'Development'
+ON CONFLICT(sector_id, type_key) DO UPDATE SET direct = excluded.direct, indirect = excluded.indirect;
+INSERT INTO beneficiary_stats (sector_id, type_key, direct, indirect)
+SELECT id, 'adultsMen', 220, 170 FROM sectors WHERE sector_key = 'Development'
+ON CONFLICT(sector_id, type_key) DO UPDATE SET direct = excluded.direct, indirect = excluded.indirect;
+INSERT INTO beneficiary_stats (sector_id, type_key, direct, indirect)
+SELECT id, 'households', 120, 110 FROM sectors WHERE sector_key = 'Development'
+ON CONFLICT(sector_id, type_key) DO UPDATE SET direct = excluded.direct, indirect = excluded.indirect;
+INSERT INTO beneficiary_stats (sector_id, type_key, direct, indirect)
+SELECT id, 'idps', 70, 62 FROM sectors WHERE sector_key = 'Development'
+ON CONFLICT(sector_id, type_key) DO UPDATE SET direct = excluded.direct, indirect = excluded.indirect;
+INSERT INTO beneficiary_stats (sector_id, type_key, direct, indirect)
+SELECT id, 'returnees', 60, 48 FROM sectors WHERE sector_key = 'Development'
+ON CONFLICT(sector_id, type_key) DO UPDATE SET direct = excluded.direct, indirect = excluded.indirect;
+INSERT INTO beneficiary_stats (sector_id, type_key, direct, indirect)
+SELECT id, 'pwds', 44, 34 FROM sectors WHERE sector_key = 'Development'
+ON CONFLICT(sector_id, type_key) DO UPDATE SET direct = excluded.direct, indirect = excluded.indirect;
+

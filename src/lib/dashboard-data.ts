@@ -164,6 +164,13 @@ export type ComplaintRecord = {
   phone?: string;
   message: string;
   submittedAt: string;
+  status: ComplaintStatus;
+  assignedOfficer?: string;
+  province?: string;
+  district?: string;
+  projectId?: string;
+  isAnonymous: boolean;
+  responses: ComplaintResponseRecord[];
 };
 
 export const DEFAULT_COMPLAINTS: ComplaintRecord[] = [];
@@ -172,6 +179,7 @@ export type ProjectSector = (typeof PROJECT_SECTORS)[number] | string;
 
 export type DashboardProject = {
   id: string;
+  code: string;
   name: string;
   sector: ProjectSector;
   beneficiaries: BeneficiaryBreakdown;
@@ -187,6 +195,327 @@ export type DashboardProject = {
   staff: number;
   clusters: string[];
   standardSectors: string[];
+  donor?: string;
+  budget?: number;
+  focalPoint?: string;
+  documents?: ProjectDocumentRecord[];
+  phases?: ProjectPhaseRecord[];
 };
 
 export type DashboardProjects = DashboardProject[];
+
+export const PROJECT_DOCUMENT_CATEGORIES = [
+  "mePlan",
+  "indicatorTable",
+  "baselineAttachment",
+  "evaluationReport",
+  "beneficiaryProfile",
+  "learningResource",
+  "other",
+] as const;
+
+export type ProjectDocumentCategory = (typeof PROJECT_DOCUMENT_CATEGORIES)[number];
+
+export type ProjectDocumentRecord = {
+  id: string;
+  projectId: string;
+  category: ProjectDocumentCategory;
+  title: string;
+  fileUrl?: string;
+  uploadedAt: string;
+};
+
+export const PROJECT_PHASES = [
+  "baseline",
+  "monitoring",
+  "evaluation",
+  "accountability",
+  "learning",
+] as const;
+
+export type ProjectPhaseKey = (typeof PROJECT_PHASES)[number];
+
+export type ProjectPhaseStatus = "not_started" | "in_progress" | "completed";
+
+export type ProjectPhaseRecord = {
+  id: string;
+  projectId: string;
+  phase: ProjectPhaseKey;
+  status: ProjectPhaseStatus;
+  notes?: string;
+  updatedAt: string;
+};
+
+export type BaselineSurveyTool = "kobo" | "manual" | "other";
+
+export type BaselineSurveyStatus = "draft" | "in_progress" | "completed" | "archived";
+
+export type BaselineSurveyRecord = {
+  id: string;
+  projectId: string;
+  title: string;
+  tool: BaselineSurveyTool;
+  status: BaselineSurveyStatus;
+  questionnaireUrl?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type EnumeratorRecord = {
+  id: string;
+  fullName: string;
+  email?: string;
+  phone?: string;
+  province?: string;
+  assignments: number;
+};
+
+export type DataCollectionTaskStatus = "pending" | "in_progress" | "completed";
+
+export type DataCollectionTaskRecord = {
+  id: string;
+  baselineSurveyId: string;
+  status: DataCollectionTaskStatus;
+  completedAt?: string;
+  notes?: string;
+};
+
+export type BaselineReportRecord = {
+  id: string;
+  baselineSurveyId: string;
+  reportUrl?: string;
+  sharedWithProgram: boolean;
+  sharedAt?: string;
+  createdAt: string;
+};
+
+export type FieldVisitReportRecord = {
+  id: string;
+  projectId: string;
+  visitDate: string;
+  location?: string;
+  positiveFindings?: string;
+  negativeFindings?: string;
+  photoUrl?: string;
+  gpsCoordinates?: string;
+  officer?: string;
+  createdAt: string;
+};
+
+export type MonthlyNarrativeStatus = "draft" | "submitted" | "approved" | "feedback";
+
+export type MonthlyNarrativeRecord = {
+  id: string;
+  projectId: string;
+  reportMonth: string;
+  summary?: string;
+  gaps?: string;
+  recommendations?: string;
+  status: MonthlyNarrativeStatus;
+  reviewer?: string;
+  feedback?: string;
+  submittedAt?: string;
+  updatedAt: string;
+};
+
+export type EvaluationType = "baseline" | "midterm" | "endline" | "special";
+
+export type EvaluationRecord = {
+  id: string;
+  projectId?: string;
+  evaluatorName?: string;
+  evaluationType: EvaluationType;
+  reportUrl?: string;
+  findingsSummary?: string;
+  completedAt?: string;
+  createdAt: string;
+};
+
+export type StoryType = "case" | "success" | "impact";
+
+export type StoryRecord = {
+  id: string;
+  projectId?: string;
+  storyType: StoryType;
+  title: string;
+  quote?: string;
+  summary?: string;
+  photoUrl?: string;
+  createdAt: string;
+};
+
+export type ComplaintStatus = "open" | "in_review" | "resolved";
+
+export type ComplaintResponseRecord = {
+  id: string;
+  complaintId: string;
+  responder?: string;
+  response: string;
+  createdAt: string;
+};
+
+export type ComplaintMetadataRecord = {
+  complaintId: string;
+  status: ComplaintStatus;
+  assignedOfficer?: string;
+  province?: string;
+  district?: string;
+  projectId?: string;
+  isAnonymous: boolean;
+  autoAssignedAt?: string;
+  updatedAt: string;
+};
+
+export type ComplaintSummaryMetrics = {
+  total: number;
+  open: number;
+  inReview: number;
+  resolved: number;
+};
+
+export type CrmAwarenessRecord = {
+  id: string;
+  projectId?: string;
+  district?: string;
+  awarenessDate?: string;
+  notes?: string;
+  createdAt: string;
+};
+
+export type FindingType = "negative" | "positive";
+
+export type FindingSeverity = "minor" | "major" | "critical";
+
+export type FindingStatus = "pending" | "in_progress" | "solved";
+
+export type FindingRecord = {
+  id: string;
+  projectId?: string;
+  findingType: FindingType;
+  category?: string;
+  severity: FindingSeverity;
+  department?: string;
+  status: FindingStatus;
+  description?: string;
+  evidenceUrl?: string;
+  reminderDueAt?: string;
+  lastRemindedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type FindingsByDepartment = Record<string, { pending: number; inProgress: number; solved: number }>;
+
+export type FindingsSummary = {
+  total: number;
+  byType: Record<FindingType, number>;
+  bySeverity: Record<FindingSeverity, number>;
+  byStatus: Record<FindingStatus, number>;
+  byDepartment: FindingsByDepartment;
+};
+
+export type DistributionRecord = {
+  id: string;
+  projectId?: string;
+  assistanceType: string;
+  distributionDate?: string;
+  location?: string;
+  targetBeneficiaries?: number;
+  notes?: string;
+  createdAt: string;
+};
+
+export type PdmSurveyRecord = {
+  id: string;
+  projectId?: string;
+  tool?: string;
+  qualityScore?: number;
+  quantityScore?: number;
+  satisfactionScore?: number;
+  protectionScore?: number;
+  completedAt?: string;
+  createdAt: string;
+};
+
+export type PdmReportRecord = {
+  id: string;
+  projectId?: string;
+  reportDate?: string;
+  summary?: string;
+  recommendations?: string;
+  feedbackToProgram?: string;
+  createdAt: string;
+};
+
+export type LessonRecord = {
+  id: string;
+  projectId?: string;
+  source?: string;
+  lesson: string;
+  department?: string;
+  theme?: string;
+  capturedAt?: string;
+  createdAt: string;
+};
+
+export type KnowledgeResourceRecord = {
+  id: string;
+  title: string;
+  category?: string;
+  theme?: string;
+  description?: string;
+  fileUrl?: string;
+  createdAt: string;
+};
+
+export type UserAccessAssignmentRecord = {
+  id: string;
+  userId: string;
+  projectId?: string;
+  province?: string;
+  role?: string;
+};
+
+export type IntegrationRecord = {
+  id: string;
+  name: string;
+  config?: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type MonitoringDashboardData = {
+  baselineSurveys: BaselineSurveyRecord[];
+  enumerators: EnumeratorRecord[];
+  dataCollectionTasks: DataCollectionTaskRecord[];
+  baselineReports: BaselineReportRecord[];
+  fieldVisits: FieldVisitReportRecord[];
+  monthlyReports: MonthlyNarrativeRecord[];
+};
+
+export type EvaluationDashboardData = {
+  evaluations: EvaluationRecord[];
+  stories: StoryRecord[];
+};
+
+export type AccountabilityDashboardData = {
+  complaints: ComplaintRecord[];
+  complaintMetrics: ComplaintSummaryMetrics;
+  crmAwareness: CrmAwarenessRecord[];
+};
+
+export type FindingsDashboardData = {
+  findings: FindingRecord[];
+  summary: FindingsSummary;
+};
+
+export type PdmDashboardData = {
+  distributions: DistributionRecord[];
+  surveys: PdmSurveyRecord[];
+  reports: PdmReportRecord[];
+};
+
+export type KnowledgeHubData = {
+  lessons: LessonRecord[];
+  resources: KnowledgeResourceRecord[];
+};

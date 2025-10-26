@@ -23,6 +23,17 @@ import {
   type BrandingSettings,
   type ComplaintRecord,
   type CatalogEntry,
+  type ProjectDocumentRecord,
+  type ProjectPhaseRecord,
+  type MonitoringDashboardData,
+  type EvaluationDashboardData,
+  type ComplaintSummaryMetrics,
+  type CrmAwarenessRecord,
+  type FindingsDashboardData,
+  type PdmDashboardData,
+  type KnowledgeHubData,
+  type UserAccessAssignmentRecord,
+  type IntegrationRecord,
 } from "@/lib/dashboard-data";
 import { usePathname } from "next/navigation";
 
@@ -73,19 +84,27 @@ type DashboardContextValue = {
   reportingYears: number[];
   users: DashboardUser[];
   projects: DashboardProject[];
+  projectDocuments: ProjectDocumentRecord[];
+  projectPhases: ProjectPhaseRecord[];
   complaints: ComplaintRecord[];
+  complaintMetrics: ComplaintSummaryMetrics;
+  crmAwareness: CrmAwarenessRecord[];
   branding: BrandingSettings;
   clusterCatalog: CatalogEntry[];
   sectorCatalog: CatalogEntry[];
+  monitoring: MonitoringDashboardData;
+  evaluation: EvaluationDashboardData;
+  findings: FindingsDashboardData;
+  pdm: PdmDashboardData;
+  knowledgeHub: KnowledgeHubData;
+  userAccessAssignments: UserAccessAssignmentRecord[];
+  integrations: IntegrationRecord[];
   refresh: () => Promise<void>;
   updateSector: (sector: SectorKey, details: SectorDetails) => Promise<void>;
   addReportingYear: (year: number) => Promise<void>;
   removeReportingYear: (year: number) => Promise<void>;
   addUser: (user: { name: string; email: string; role: DashboardUserRole; organization?: string; password?: string }) => Promise<void>;
   removeUser: (userId: string) => Promise<void>;
-  addProject: (project: Omit<DashboardProject, "id">) => Promise<void>;
-  updateProject: (projectId: string, updates: Omit<DashboardProject, "id">) => Promise<void>;
-  removeProject: (projectId: string) => Promise<void>;
   updateBranding: (payload: Partial<BrandingSettings>) => Promise<void>;
   addComplaint: (complaint: { fullName: string; email: string; phone?: string; message: string }) => Promise<void>;
   removeComplaint: (complaintId: string) => Promise<void>;
@@ -101,10 +120,63 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
   const [reportingYears, setReportingYears] = useState<number[]>([]);
   const [users, setUsers] = useState<DashboardUser[]>([]);
   const [projects, setProjects] = useState<DashboardProject[]>([]);
+  const [projectDocuments, setProjectDocuments] = useState<ProjectDocumentRecord[]>([]);
+  const [projectPhases, setProjectPhases] = useState<ProjectPhaseRecord[]>([]);
   const [complaints, setComplaints] = useState<ComplaintRecord[]>(DEFAULT_COMPLAINTS);
+  const [complaintMetrics, setComplaintMetrics] = useState<ComplaintSummaryMetrics>({
+    total: 0,
+    open: 0,
+    inReview: 0,
+    resolved: 0,
+  });
+  const [crmAwareness, setCrmAwareness] = useState<CrmAwarenessRecord[]>([]);
   const [branding, setBranding] = useState<BrandingSettings>(DEFAULT_BRANDING);
   const [clusterCatalog, setClusterCatalog] = useState<CatalogEntry[]>([]);
   const [sectorCatalog, setSectorCatalog] = useState<CatalogEntry[]>([]);
+  const [monitoring, setMonitoring] = useState<MonitoringDashboardData>({
+    baselineSurveys: [],
+    enumerators: [],
+    dataCollectionTasks: [],
+    baselineReports: [],
+    fieldVisits: [],
+    monthlyReports: [],
+  });
+  const [evaluation, setEvaluation] = useState<EvaluationDashboardData>({
+    evaluations: [],
+    stories: [],
+  });
+  const [findings, setFindings] = useState<FindingsDashboardData>({
+    findings: [],
+    summary: {
+      total: 0,
+      byType: {
+        negative: 0,
+        positive: 0,
+      },
+      bySeverity: {
+        minor: 0,
+        major: 0,
+        critical: 0,
+      },
+      byStatus: {
+        pending: 0,
+        in_progress: 0,
+        solved: 0,
+      },
+      byDepartment: {},
+    },
+  });
+  const [pdm, setPdm] = useState<PdmDashboardData>({
+    distributions: [],
+    surveys: [],
+    reports: [],
+  });
+  const [knowledgeHub, setKnowledgeHub] = useState<KnowledgeHubData>({
+    lessons: [],
+    resources: [],
+  });
+  const [userAccessAssignments, setUserAccessAssignments] = useState<UserAccessAssignmentRecord[]>([]);
+  const [integrations, setIntegrations] = useState<IntegrationRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const pathname = usePathname();
   const isPublicRoute = pathname === "/login";
@@ -117,8 +189,19 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
         reportingYears: number[];
         users: DashboardUser[];
         projects: DashboardProject[];
+        projectDocuments: ProjectDocumentRecord[];
+        projectPhases: ProjectPhaseRecord[];
         branding: BrandingSettings;
         complaints: ComplaintRecord[];
+        complaintMetrics: ComplaintSummaryMetrics;
+        crmAwareness: CrmAwarenessRecord[];
+        monitoring: MonitoringDashboardData;
+        evaluation: EvaluationDashboardData;
+        findings: FindingsDashboardData;
+        pdm: PdmDashboardData;
+        knowledgeHub: KnowledgeHubData;
+        userAccessAssignments: UserAccessAssignmentRecord[];
+        integrations: IntegrationRecord[];
         clusterCatalog: CatalogEntry[];
         sectorCatalog: CatalogEntry[];
       }>(DASHBOARD_STATE_ENDPOINT);
@@ -127,10 +210,21 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
       setReportingYears(state.reportingYears);
       setUsers(state.users);
       setProjects(state.projects);
+      setProjectDocuments(state.projectDocuments);
+      setProjectPhases(state.projectPhases);
       setBranding(state.branding);
       setComplaints(state.complaints);
+      setComplaintMetrics(state.complaintMetrics);
+      setCrmAwareness(state.crmAwareness);
       setClusterCatalog(state.clusterCatalog);
       setSectorCatalog(state.sectorCatalog);
+      setMonitoring(state.monitoring);
+      setEvaluation(state.evaluation);
+      setFindings(state.findings);
+      setPdm(state.pdm);
+      setKnowledgeHub(state.knowledgeHub);
+      setUserAccessAssignments(state.userAccessAssignments);
+      setIntegrations(state.integrations);
     } catch (error) {
       const status = (error as JsonFetchError)?.status;
       if (status === 401) {
@@ -138,10 +232,63 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
         setReportingYears([]);
         setUsers([]);
         setProjects([]);
+        setProjectDocuments([]);
+        setProjectPhases([]);
         setBranding(DEFAULT_BRANDING);
         setComplaints(DEFAULT_COMPLAINTS);
+        setComplaintMetrics({
+          total: 0,
+          open: 0,
+          inReview: 0,
+          resolved: 0,
+        });
+        setCrmAwareness([]);
         setClusterCatalog([]);
         setSectorCatalog([]);
+        setMonitoring({
+          baselineSurveys: [],
+          enumerators: [],
+          dataCollectionTasks: [],
+          baselineReports: [],
+          fieldVisits: [],
+          monthlyReports: [],
+        });
+        setEvaluation({
+          evaluations: [],
+          stories: [],
+        });
+        setFindings({
+          findings: [],
+          summary: {
+            total: 0,
+            byType: {
+              negative: 0,
+              positive: 0,
+            },
+            bySeverity: {
+              minor: 0,
+              major: 0,
+              critical: 0,
+            },
+            byStatus: {
+              pending: 0,
+              in_progress: 0,
+              solved: 0,
+            },
+            byDepartment: {},
+          },
+        });
+        setPdm({
+          distributions: [],
+          surveys: [],
+          reports: [],
+        });
+        setKnowledgeHub({
+          lessons: [],
+          resources: [],
+        });
+        setUserAccessAssignments([]);
+        setIntegrations([]);
       } else if (status === 0) {
         console.warn("Network request to", DASHBOARD_STATE_ENDPOINT, "failed. Retaining existing state.");
       } else {
@@ -158,10 +305,63 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
       setReportingYears([]);
       setUsers([]);
       setProjects([]);
+      setProjectDocuments([]);
+      setProjectPhases([]);
       setComplaints(DEFAULT_COMPLAINTS);
+      setComplaintMetrics({
+        total: 0,
+        open: 0,
+        inReview: 0,
+        resolved: 0,
+      });
+      setCrmAwareness([]);
       setBranding(DEFAULT_BRANDING);
       setClusterCatalog([]);
       setSectorCatalog([]);
+      setMonitoring({
+        baselineSurveys: [],
+        enumerators: [],
+        dataCollectionTasks: [],
+        baselineReports: [],
+        fieldVisits: [],
+        monthlyReports: [],
+      });
+      setEvaluation({
+        evaluations: [],
+        stories: [],
+      });
+      setFindings({
+        findings: [],
+        summary: {
+          total: 0,
+          byType: {
+            negative: 0,
+            positive: 0,
+          },
+          bySeverity: {
+            minor: 0,
+            major: 0,
+            critical: 0,
+          },
+          byStatus: {
+            pending: 0,
+            in_progress: 0,
+            solved: 0,
+          },
+          byDepartment: {},
+        },
+      });
+      setPdm({
+        distributions: [],
+        surveys: [],
+        reports: [],
+      });
+      setKnowledgeHub({
+        lessons: [],
+        resources: [],
+      });
+      setUserAccessAssignments([]);
+      setIntegrations([]);
       setIsLoading(false);
       return;
     }
@@ -222,29 +422,6 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
     return entry;
   }, []);
 
-  const addProject = useCallback(async (project: Omit<DashboardProject, "id">) => {
-    await jsonFetch("/api/projects", {
-      method: "POST",
-      body: JSON.stringify(project),
-    });
-    await refresh();
-  }, [refresh]);
-
-  const updateProject = useCallback(async (projectId: string, updates: Omit<DashboardProject, "id">) => {
-    await jsonFetch(`/api/projects/${projectId}`, {
-      method: "PUT",
-      body: JSON.stringify(updates),
-    });
-    await refresh();
-  }, [refresh]);
-
-  const removeProject = useCallback(async (projectId: string) => {
-    await jsonFetch(`/api/projects/${projectId}`, {
-      method: "DELETE",
-    });
-    await refresh();
-  }, [refresh]);
-
   const updateBranding = useCallback(async (payload: Partial<BrandingSettings>) => {
     await jsonFetch("/api/branding", {
       method: "PATCH",
@@ -273,19 +450,27 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
     reportingYears,
     users,
     projects,
+    projectDocuments,
+    projectPhases,
     complaints,
+    complaintMetrics,
+    crmAwareness,
     branding,
     clusterCatalog,
     sectorCatalog,
+    monitoring,
+    evaluation,
+    findings,
+    pdm,
+    knowledgeHub,
+    userAccessAssignments,
+    integrations,
     refresh,
     updateSector,
     addReportingYear,
     removeReportingYear,
     addUser,
     removeUser,
-    addProject,
-    updateProject,
-    removeProject,
     updateBranding,
     addComplaint,
     removeComplaint,
@@ -297,19 +482,27 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
     reportingYears,
     users,
     projects,
+    projectDocuments,
+    projectPhases,
     complaints,
+    complaintMetrics,
+    crmAwareness,
     branding,
     clusterCatalog,
     sectorCatalog,
+    monitoring,
+    evaluation,
+    findings,
+    pdm,
+    knowledgeHub,
+    userAccessAssignments,
+    integrations,
     refresh,
     updateSector,
     addReportingYear,
     removeReportingYear,
     addUser,
     removeUser,
-    addProject,
-    updateProject,
-    removeProject,
     updateBranding,
     addComplaint,
     removeComplaint,

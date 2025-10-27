@@ -772,6 +772,7 @@ export default function Home() {
         share: totalBeneficiaries ? totalDirect / totalBeneficiaries : 0,
         highlight: beneficiaryView === "direct",
         color: "from-blue-500 to-blue-400",
+        highlightColor: "text-blue-600",
       },
       {
         key: "indirect",
@@ -780,6 +781,7 @@ export default function Home() {
         share: totalBeneficiaries ? totalIndirect / totalBeneficiaries : 0,
         highlight: beneficiaryView === "indirect",
         color: "from-emerald-500 to-emerald-400",
+        highlightColor: "text-emerald-600",
       },
       {
         key: "total",
@@ -788,6 +790,7 @@ export default function Home() {
         share: totalBeneficiaries ? 1 : 0,
         highlight: beneficiaryView === "total",
         color: "from-amber-500 to-amber-400",
+        highlightColor: "text-amber-600",
       },
     ],
     [beneficiaryView, totalBeneficiaries, totalDirect, totalIndirect]
@@ -2286,7 +2289,7 @@ export default function Home() {
                       </div>
                       <div
                         className={`text-3xl font-bold ${
-                          candle.highlight ? "text-blue-600" : "text-brand-strong"
+                          candle.highlight ? candle.highlightColor : "text-brand-strong"
                         }`}
                       >
                         {candle.value.toLocaleString()}

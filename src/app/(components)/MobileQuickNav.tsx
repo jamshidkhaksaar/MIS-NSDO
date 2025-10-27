@@ -3,9 +3,10 @@
 interface MobileQuickNavProps {
   sections: Array<{ href: string; label: string }>;
   activeSection: string;
+  onNavClick: (event: React.MouseEvent<HTMLAnchorElement>, href: string) => void;
 }
 
-export default function MobileQuickNav({ sections, activeSection }: MobileQuickNavProps) {
+export default function MobileQuickNav({ sections, activeSection, onNavClick }: MobileQuickNavProps) {
   if (!sections.length) {
     return null;
   }
@@ -19,6 +20,7 @@ export default function MobileQuickNav({ sections, activeSection }: MobileQuickN
             <a
               key={section.href}
               href={section.href}
+              onClick={(e) => onNavClick(e, section.href)}
               className={`flex-shrink-0 rounded-full border px-4 py-2 text-sm font-semibold transition-all duration-200 ${
                 isActive
                   ? 'border-[#2f8230] bg-gradient-to-r from-[#3ea93d] to-[#2f8230] text-white shadow-brand-soft'

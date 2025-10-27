@@ -215,6 +215,7 @@ export default function Home() {
   const filterSentinelRef = useRef<HTMLDivElement | null>(null);
   const [isFilterPinned, setIsFilterPinned] = useState(false);
   const [isSideNavCollapsed, setIsSideNavCollapsed] = useState(false);
+  const [isNavVisible, setIsNavVisible] = useState(false);
   const [activeSection, setActiveSection] = useState<string>("");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobileMenuClosing, setIsMobileMenuClosing] = useState(false);
@@ -225,6 +226,14 @@ export default function Home() {
       setIsMobileMenuOpen(false);
       setIsMobileMenuClosing(false);
     }, 300);
+  }, []);
+
+  const handleNavClick = useCallback((event: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    event.preventDefault();
+    const targetElement = document.querySelector(href);
+    if (targetElement) {
+      targetElement.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
   }, []);
 
   const sortedProjects = useMemo(
@@ -342,6 +351,11 @@ export default function Home() {
 
   useEffect(() => {
     const handleScroll = () => {
+      if (window.scrollY > 300) {
+        setIsNavVisible(true);
+      } else {
+        setIsNavVisible(false);
+      }
       const sections = navigableSections.map((section) => {
         const element = document.querySelector(section.href);
         if (element) {
@@ -772,7 +786,6 @@ export default function Home() {
         share: totalBeneficiaries ? totalDirect / totalBeneficiaries : 0,
         highlight: beneficiaryView === "direct",
         color: "from-blue-500 to-blue-400",
-        highlightColor: "text-blue-600",
       },
       {
         key: "indirect",
@@ -781,7 +794,6 @@ export default function Home() {
         share: totalBeneficiaries ? totalIndirect / totalBeneficiaries : 0,
         highlight: beneficiaryView === "indirect",
         color: "from-emerald-500 to-emerald-400",
-        highlightColor: "text-emerald-600",
       },
       {
         key: "total",
@@ -790,7 +802,6 @@ export default function Home() {
         share: totalBeneficiaries ? 1 : 0,
         highlight: beneficiaryView === "total",
         color: "from-amber-500 to-amber-400",
-        highlightColor: "text-amber-600",
       },
     ],
     [beneficiaryView, totalBeneficiaries, totalDirect, totalIndirect]
@@ -1272,6 +1283,7 @@ export default function Home() {
           <div className="hidden lg:flex flex-1 justify-center text-sm font-medium">
             <a
               href="#publish-dashboard"
+              onClick={(e) => handleNavClick(e, "#publish-dashboard")}
               className="inline-flex h-11 min-w-[180px] items-center justify-center whitespace-nowrap rounded-full px-5 text-sm font-semibold chip-brand-soft"
             >
               Publish Dashboard
@@ -1511,7 +1523,11 @@ export default function Home() {
         </div>
       </nav>
 
-      <MobileQuickNav sections={navigableSections} activeSection={activeSection} />
+      <MobileQuickNav
+        sections={navigableSections}
+        activeSection={activeSection}
+        onNavClick={handleNavClick}
+      />
 
       {/* Mobile Navigation Drawer */}
       {isMobileMenuOpen && (
@@ -1628,7 +1644,10 @@ export default function Home() {
                       <a
                         key={section.href}
                         href={section.href}
-                        onClick={closeMobileMenu}
+                        onClick={(e) => {
+                          closeMobileMenu();
+                          handleNavClick(e, section.href);
+                        }}
                         className={`group flex items-center justify-between rounded-lg border px-3 py-2.5 text-sm font-semibold transition-all duration-200 ${
                           isActive
                             ? "border-[#2f8230] bg-gradient-to-r from-[#3ea93d] to-[#2f8230] text-white shadow-brand-soft"
@@ -1693,9 +1712,9 @@ export default function Home() {
       )}
 
       <aside
-        className={`pointer-events-auto fixed right-3 sm:right-4 md:right-6 top-1/2 z-50 hidden xl:flex -translate-y-1/2 transform rounded-2xl border border-brand bg-white/90 shadow-xl shadow-brand-soft/40 backdrop-blur-md transition-all duration-300 ease-out flex-col ${
+        className={`fixed right-3 sm:right-4 md:right-6 top-1/2 z-50 hidden xl:flex -translate-y-1/2 transform rounded-2xl border border-brand bg-white/90 shadow-xl shadow-brand-soft/40 backdrop-blur-md transition-all duration-300 ease-out flex-col ${
           isSideNavCollapsed ? "w-14 sm:w-16 p-2" : "w-56 sm:w-64 p-3"
-        }`}
+        } ${isNavVisible ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
       >
         <div className={`flex items-center gap-2 ${isSideNavCollapsed ? "justify-center" : "justify-between"}`}>
           {!isSideNavCollapsed && (
@@ -1752,6 +1771,7 @@ export default function Home() {
                 <a
                   key={section.href}
                   href={section.href}
+                  onClick={(e) => handleNavClick(e, section.href)}
                   className={`group relative flex h-10 w-10 items-center justify-center rounded-full border text-[10px] font-bold uppercase tracking-wide transition-all duration-200 hover:-translate-y-[1px] hover:scale-105 ${
                     isActive
                       ? "border-brand-primary bg-brand-primary text-white shadow-lg scale-110"
@@ -1793,6 +1813,7 @@ export default function Home() {
                 <a
                   key={section.href}
                   href={section.href}
+                  onClick={(e) => handleNavClick(e, section.href)}
                   className={`group inline-flex items-center justify-between gap-2 rounded-xl border px-4 py-3 text-sm font-semibold transition-all duration-200 ease-out hover:-translate-y-[1px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3ea93d] ${
                     isActive
                       ? "border-brand-primary bg-gradient-to-r from-brand-primary to-[#3ea93d] text-white shadow-lg scale-[1.02]"
@@ -2289,7 +2310,7 @@ export default function Home() {
                       </div>
                       <div
                         className={`text-3xl font-bold ${
-                          candle.highlight ? candle.highlightColor : "text-brand-strong"
+                          candle.highlight ? "text-blue-600" : "text-brand-strong"
                         }`}
                       >
                         {candle.value.toLocaleString()}

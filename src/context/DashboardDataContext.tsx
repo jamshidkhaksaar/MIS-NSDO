@@ -118,6 +118,27 @@ type DashboardContextValue = {
   updateSectorCatalogEntry: (input: { id: string; name: string; description?: string }) => Promise<CatalogEntry>;
   removeClusterCatalogEntry: (clusterId: string) => Promise<void>;
   removeSectorCatalogEntry: (sectorId: string) => Promise<void>;
+  updateProject: (input: {
+    id: string;
+    code: string;
+    name: string;
+    sector?: string;
+    donor?: string;
+    country?: string;
+    start?: string;
+    end?: string;
+    budget?: number | null;
+    focalPoint?: string;
+    goal?: string;
+    objectives?: string;
+    majorAchievements?: string;
+    staff?: number | null;
+    provinces?: string[];
+    districts?: string[];
+    communities?: string[];
+    clusters?: string[];
+    standardSectors?: string[];
+  }) => Promise<void>;
   isLoading: boolean;
 };
 
@@ -485,6 +506,34 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
     await refresh();
   }, [refresh]);
 
+  const updateProject = useCallback(async (input: {
+    id: string;
+    code: string;
+    name: string;
+    sector?: string;
+    donor?: string;
+    country?: string;
+    start?: string;
+    end?: string;
+    budget?: number | null;
+    focalPoint?: string;
+    goal?: string;
+    objectives?: string;
+    majorAchievements?: string;
+    staff?: number | null;
+    provinces?: string[];
+    districts?: string[];
+    communities?: string[];
+    clusters?: string[];
+    standardSectors?: string[];
+  }) => {
+    await jsonFetch(`/api/projects/${encodeURIComponent(input.id)}`, {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    });
+    await refresh();
+  }, [refresh]);
+
   const value = useMemo<DashboardContextValue>(() => ({
     sectors,
     reportingYears,
@@ -520,6 +569,7 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
     updateSectorCatalogEntry,
     removeClusterCatalogEntry,
     removeSectorCatalogEntry,
+    updateProject,
     isLoading,
   }), [
     sectors,
@@ -556,6 +606,7 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
     updateSectorCatalogEntry,
     removeClusterCatalogEntry,
     removeSectorCatalogEntry,
+    updateProject,
     isLoading,
   ]);
 

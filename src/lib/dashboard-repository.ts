@@ -2106,6 +2106,115 @@ export async function deleteSectorCatalogEntry(id: string): Promise<void> {
   });
 }
 
+export async function updateProjectRecord(payload: {
+  id: string;
+  code: string;
+  name: string;
+  sector?: string | null;
+  donor?: string | null;
+  country?: string | null;
+  start?: string | null;
+  end?: string | null;
+  budget?: number | null;
+  focalPoint?: string | null;
+  goal?: string | null;
+  objectives?: string | null;
+  majorAchievements?: string | null;
+  staff?: number | null;
+  provinces?: string[];
+  districts?: string[];
+  communities?: string[];
+  clusters?: string[];
+  standardSectors?: string[];
+}): Promise<void> {
+  const projectId = Number.parseInt(payload.id, 10);
+  if (!Number.isFinite(projectId)) {
+    throw new Error("A valid project id is required.");
+  }
+
+  const code = payload.code?.trim();
+  if (!code) {
+    throw new Error("Project code is required.");
+  }
+
+  const title = payload.name?.trim();
+  if (!title) {
+    throw new Error("Project name is required.");
+  }
+
+  await withConnection(async (connection) => {
+    await connection.beginTransaction();
+    try {
+      const [updateResult] = await connection.execute(
+        `UPDATE projects
+         SET code = ?,
+             title = ?,
+             donor = ?,
+             sector = ?,
+             country = ?,
+             start_date = ?,
+             end_date = ?,
+             budget = ?,
+             focal_point = ?,
+             goal = ?,
+             objectives = ?,
+             major_achievements = ?,
+             staff = ?,
+             updated_at = datetime('now')
+         WHERE id = ?`,
+        [
+          code,
+          title,
+          payload.donor?.trim() || null,
+          payload.sector?.trim() || null,
+          payload.country?.trim() || null,
+          payload.start?.trim() || null,
+          payload.end?.trim() || null,
+          typeof payload.budget === "number" ? payload.budget : null,
+          payload.focalPoint?.trim() || null,
+          payload.goal?.trim() || null,
+          payload.objectives?.trim() || null,
+          payload.majorAchievements?.trim() || null,
+          typeof payload.staff === "number" ? payload.staff : null,
+          projectId,
+        ]
+      );
+
+      if (!updateResult.affectedRows) {
+        throw new Error("Project not found.");
+      }
+
+      const resetAndInsert = async (table: string, column: string, values: string[] | undefined) => {
+        await connection.execute(`DELETE FROM ${table} WHERE project_id = ?`, [projectId]);
+        if (!values?.length) {
+          return;
+        }
+        for (const rawValue of values) {
+          const value = rawValue?.trim();
+          if (!value) {
+            continue;
+          }
+          await connection.execute(
+            `INSERT INTO ${table} (project_id, ${column}) VALUES (?, ?)`,
+            [projectId, value]
+          );
+        }
+      };
+
+      await resetAndInsert("project_provinces", "province", payload.provinces);
+      await resetAndInsert("project_districts", "district", payload.districts);
+      await resetAndInsert("project_communities", "community", payload.communities);
+      await resetAndInsert("project_clusters", "cluster", payload.clusters);
+      await resetAndInsert("project_standard_sectors", "standard_sector", payload.standardSectors);
+
+      await connection.commit();
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    }
+  });
+}
+
 export async function createBaselineSurvey(payload: {
   projectId: string;
   title: string;

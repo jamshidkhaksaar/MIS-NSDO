@@ -79,6 +79,10 @@ function mergeCatalogEntry(list: CatalogEntry[], entry: CatalogEntry): CatalogEn
   return [...list, entry].sort((a, b) => a.name.localeCompare(b.name));
 }
 
+function removeCatalogEntry(list: CatalogEntry[], id: string): CatalogEntry[] {
+  return list.filter((item) => item.id !== id);
+}
+
 type DashboardContextValue = {
   sectors: SectorState;
   reportingYears: number[];
@@ -110,6 +114,10 @@ type DashboardContextValue = {
   removeComplaint: (complaintId: string) => Promise<void>;
   registerCluster: (input: { name: string; description?: string }) => Promise<CatalogEntry>;
   registerSector: (input: { name: string; description?: string }) => Promise<CatalogEntry>;
+  updateClusterCatalogEntry: (input: { id: string; name: string; description?: string }) => Promise<CatalogEntry>;
+  updateSectorCatalogEntry: (input: { id: string; name: string; description?: string }) => Promise<CatalogEntry>;
+  removeClusterCatalogEntry: (clusterId: string) => Promise<void>;
+  removeSectorCatalogEntry: (sectorId: string) => Promise<void>;
   isLoading: boolean;
 };
 
@@ -422,6 +430,38 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
     return entry;
   }, []);
 
+  const updateClusterCatalogEntry = useCallback(async (input: { id: string; name: string; description?: string }) => {
+    const entry = await jsonFetch<CatalogEntry>(`/api/catalog/clusters/${encodeURIComponent(input.id)}`, {
+      method: "PATCH",
+      body: JSON.stringify({ name: input.name, description: input.description }),
+    });
+    setClusterCatalog((previous) => mergeCatalogEntry(previous, entry));
+    return entry;
+  }, []);
+
+  const removeClusterCatalogEntry = useCallback(async (clusterId: string) => {
+    await jsonFetch(`/api/catalog/clusters/${encodeURIComponent(clusterId)}`, {
+      method: "DELETE",
+    });
+    setClusterCatalog((previous) => removeCatalogEntry(previous, clusterId));
+  }, []);
+
+  const updateSectorCatalogEntry = useCallback(async (input: { id: string; name: string; description?: string }) => {
+    const entry = await jsonFetch<CatalogEntry>(`/api/catalog/sectors/${encodeURIComponent(input.id)}`, {
+      method: "PATCH",
+      body: JSON.stringify({ name: input.name, description: input.description }),
+    });
+    setSectorCatalog((previous) => mergeCatalogEntry(previous, entry));
+    return entry;
+  }, []);
+
+  const removeSectorCatalogEntry = useCallback(async (sectorId: string) => {
+    await jsonFetch(`/api/catalog/sectors/${encodeURIComponent(sectorId)}`, {
+      method: "DELETE",
+    });
+    setSectorCatalog((previous) => removeCatalogEntry(previous, sectorId));
+  }, []);
+
   const updateBranding = useCallback(async (payload: Partial<BrandingSettings>) => {
     await jsonFetch("/api/branding", {
       method: "PATCH",
@@ -476,6 +516,10 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
     removeComplaint,
     registerCluster,
     registerSector,
+    updateClusterCatalogEntry,
+    updateSectorCatalogEntry,
+    removeClusterCatalogEntry,
+    removeSectorCatalogEntry,
     isLoading,
   }), [
     sectors,
@@ -508,6 +552,10 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
     removeComplaint,
     registerCluster,
     registerSector,
+    updateClusterCatalogEntry,
+    updateSectorCatalogEntry,
+    removeClusterCatalogEntry,
+    removeSectorCatalogEntry,
     isLoading,
   ]);
 

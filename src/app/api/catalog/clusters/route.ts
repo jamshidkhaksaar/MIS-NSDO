@@ -32,6 +32,9 @@ export async function POST(request: Request) {
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
+    if (error instanceof Error && error.name === "CatalogDuplicateError") {
+      return NextResponse.json({ message: "A cluster with this name already exists." }, { status: 409 });
+    }
     console.error("Failed to store cluster catalog entry", error);
     return NextResponse.json({ message: "Failed to store cluster" }, { status: 500 });
   }

@@ -1,22 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import MultiSelectDropdown from "./MultiSelectDropdown";
 import LocationSelector from "./LocationSelector";
+import { useDashboardData } from "@/context/DashboardDataContext";
 
-const sectorOptions = [
-  { value: "health", label: "Health" },
-  { value: "education", label: "Education" },
-  { value: "wash", label: "WASH" },
-  { value: "protection", label: "Protection" },
-  { value: "agriculture", label: "Agriculture" },
+const DEFAULT_SECTOR_OPTIONS = [
+  { value: "Health", label: "Health" },
+  { value: "Education", label: "Education" },
+  { value: "WASH", label: "WASH" },
+  { value: "Protection", label: "Protection" },
+  { value: "Agriculture", label: "Agriculture" },
 ];
 
-const clusterOptions = [
-  { value: "food-security", label: "Food Security" },
-  { value: "emergency-shelter", label: "Emergency Shelter" },
-  { value: "coordination", label: "Coordination" },
-  { value: "nutrition", label: "Nutrition" },
+const DEFAULT_CLUSTER_OPTIONS = [
+  { value: "Food Security", label: "Food Security" },
+  { value: "Emergency Shelter", label: "Emergency Shelter" },
+  { value: "Coordination", label: "Coordination" },
+  { value: "Nutrition", label: "Nutrition" },
 ];
 
 type FormData = {
@@ -30,6 +31,7 @@ type FormData = {
 };
 
 export default function ProjectForm() {
+  const { sectorCatalog, clusterCatalog } = useDashboardData();
   const [formData, setFormData] = useState<FormData>({
     projectName: "",
     donorName: "",
@@ -39,6 +41,50 @@ export default function ProjectForm() {
     endDate: "",
     status: "Pipeline Project",
   });
+
+  const sectorOptions = useMemo(() => {
+    const entries = new Map<string, { value: string; label: string }>();
+
+    sectorCatalog.forEach((entry) => {
+      const trimmedName = entry.name.trim();
+      if (!trimmedName) {
+        return;
+      }
+      const key = trimmedName.toLowerCase();
+      entries.set(key, { value: trimmedName, label: trimmedName });
+    });
+
+    DEFAULT_SECTOR_OPTIONS.forEach((option) => {
+      const key = option.label.toLowerCase();
+      if (!entries.has(key)) {
+        entries.set(key, option);
+      }
+    });
+
+    return Array.from(entries.values()).sort((a, b) => a.label.localeCompare(b.label));
+  }, [sectorCatalog]);
+
+  const clusterOptions = useMemo(() => {
+    const entries = new Map<string, { value: string; label: string }>();
+
+    clusterCatalog.forEach((entry) => {
+      const trimmedName = entry.name.trim();
+      if (!trimmedName) {
+        return;
+      }
+      const key = trimmedName.toLowerCase();
+      entries.set(key, { value: trimmedName, label: trimmedName });
+    });
+
+    DEFAULT_CLUSTER_OPTIONS.forEach((option) => {
+      const key = option.label.toLowerCase();
+      if (!entries.has(key)) {
+        entries.set(key, option);
+      }
+    });
+
+    return Array.from(entries.values()).sort((a, b) => a.label.localeCompare(b.label));
+  }, [clusterCatalog]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { id, value } = e.target;

@@ -1390,6 +1390,13 @@ export default function Home() {
                       >
                         <span>Registered Projects</span>
                       </Link>
+                      <Link
+                        href="/projects/catalog-modifier"
+                        onClick={() => setIsProjectsMenuOpen(false)}
+                        className="flex w-full items-center rounded-lg px-3 py-2 menu-item-brand"
+                      >
+                        <span>Cluster &amp; Sector Modifier</span>
+                      </Link>
                       <button
                         type="button"
                         disabled
@@ -1573,6 +1580,13 @@ export default function Home() {
                       className="flex w-full items-center rounded-lg px-3 py-2.5 text-sm font-medium menu-item-brand"
                     >
                       <span>Registered Projects</span>
+                    </Link>
+                    <Link
+                      href="/projects/catalog-modifier"
+                      onClick={closeMobileMenu}
+                      className="flex w-full items-center rounded-lg px-3 py-2.5 text-sm font-medium menu-item-brand"
+                    >
+                      <span>Cluster &amp; Sector Modifier</span>
                     </Link>
                   </div>
 

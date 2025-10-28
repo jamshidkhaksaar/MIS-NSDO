@@ -32,6 +32,9 @@ export async function POST(request: Request) {
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
+    if (error instanceof Error && error.name === "CatalogDuplicateError") {
+      return NextResponse.json({ message: "A sector with this name already exists." }, { status: 409 });
+    }
     console.error("Failed to store sector catalog entry", error);
     return NextResponse.json({ message: "Failed to store sector" }, { status: 500 });
   }

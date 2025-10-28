@@ -1813,10 +1813,19 @@ export async function insertClusterCatalogEntry(payload: {
   const description = payload.description?.trim() ?? null;
 
   return withConnection(async (connection) => {
+    const [existing] = await connection.query<ClusterCatalogRow[]>(
+      "SELECT id FROM cluster_catalog WHERE lower(name) = lower(?) LIMIT 1",
+      [name]
+    );
+    if (existing.length) {
+      const duplicateError = new Error("DUPLICATE_CLUSTER_NAME");
+      duplicateError.name = "CatalogDuplicateError";
+      throw duplicateError;
+    }
+
     const [rows] = await connection.query<ClusterCatalogRow[]>(
       `INSERT INTO cluster_catalog (name, description)
        VALUES (?, ?)
-       ON CONFLICT(name) DO UPDATE SET description = excluded.description
        RETURNING id, name, description`,
       [name, description]
     );
@@ -1832,6 +1841,68 @@ export async function insertClusterCatalogEntry(payload: {
   });
 }
 
+export async function updateClusterCatalogEntry(payload: {
+  id: string;
+  name: string;
+  description?: string;
+}): Promise<CatalogEntry> {
+  const id = Number.parseInt(payload.id, 10);
+  if (!Number.isFinite(id)) {
+    throw new Error("A valid cluster id is required.");
+  }
+  const name = payload.name.trim();
+  if (!name) {
+    throw new Error("Cluster name is required.");
+  }
+  const description = payload.description?.trim() ?? null;
+
+  return withConnection(async (connection) => {
+    const [conflictRows] = await connection.query<ClusterCatalogRow[]>(
+      "SELECT id FROM cluster_catalog WHERE lower(name) = lower(?) AND id <> ? LIMIT 1",
+      [name, id]
+    );
+    if (conflictRows.length) {
+      const duplicateError = new Error("DUPLICATE_CLUSTER_NAME");
+      duplicateError.name = "CatalogDuplicateError";
+      throw duplicateError;
+    }
+
+    const [rows] = await connection.query<ClusterCatalogRow[]>(
+      `UPDATE cluster_catalog
+       SET name = ?, description = ?
+       WHERE id = ?
+       RETURNING id, name, description`,
+      [name, description, id]
+    );
+    const record = rows[0];
+    if (!record) {
+      throw new Error("Cluster entry not found.");
+    }
+    return {
+      id: record.id.toString(),
+      name: record.name,
+      description: record.description ?? undefined,
+    };
+  });
+}
+
+export async function deleteClusterCatalogEntry(id: string): Promise<void> {
+  const numericId = Number.parseInt(id, 10);
+  if (!Number.isFinite(numericId)) {
+    throw new Error("A valid cluster id is required.");
+  }
+
+  await withConnection(async (connection) => {
+    const [result] = await connection.execute(
+      "DELETE FROM cluster_catalog WHERE id = ?",
+      [numericId]
+    );
+    if (!result.affectedRows) {
+      throw new Error("Cluster entry not found.");
+    }
+  });
+}
+
 export async function insertSectorCatalogEntry(payload: {
   name: string;
   description?: string;
@@ -1843,10 +1914,19 @@ export async function insertSectorCatalogEntry(payload: {
   const description = payload.description?.trim() ?? null;
 
   return withConnection(async (connection) => {
+    const [existing] = await connection.query<SectorCatalogRow[]>(
+      "SELECT id FROM sector_catalog WHERE lower(name) = lower(?) LIMIT 1",
+      [name]
+    );
+    if (existing.length) {
+      const duplicateError = new Error("DUPLICATE_SECTOR_NAME");
+      duplicateError.name = "CatalogDuplicateError";
+      throw duplicateError;
+    }
+
     const [rows] = await connection.query<SectorCatalogRow[]>(
       `INSERT INTO sector_catalog (name, description)
        VALUES (?, ?)
-       ON CONFLICT(name) DO UPDATE SET description = excluded.description
        RETURNING id, name, description`,
       [name, description]
     );
@@ -1961,6 +2041,68 @@ export async function findSessionByTokenHash(tokenHash: string): Promise<Session
         organization: session.organization ?? undefined,
       },
     };
+  });
+}
+
+export async function updateSectorCatalogEntry(payload: {
+  id: string;
+  name: string;
+  description?: string;
+}): Promise<CatalogEntry> {
+  const id = Number.parseInt(payload.id, 10);
+  if (!Number.isFinite(id)) {
+    throw new Error("A valid sector id is required.");
+  }
+  const name = payload.name.trim();
+  if (!name) {
+    throw new Error("Sector name is required.");
+  }
+  const description = payload.description?.trim() ?? null;
+
+  return withConnection(async (connection) => {
+    const [conflictRows] = await connection.query<SectorCatalogRow[]>(
+      "SELECT id FROM sector_catalog WHERE lower(name) = lower(?) AND id <> ? LIMIT 1",
+      [name, id]
+    );
+    if (conflictRows.length) {
+      const duplicateError = new Error("DUPLICATE_SECTOR_NAME");
+      duplicateError.name = "CatalogDuplicateError";
+      throw duplicateError;
+    }
+
+    const [rows] = await connection.query<SectorCatalogRow[]>(
+      `UPDATE sector_catalog
+       SET name = ?, description = ?
+       WHERE id = ?
+       RETURNING id, name, description`,
+      [name, description, id]
+    );
+    const record = rows[0];
+    if (!record) {
+      throw new Error("Sector entry not found.");
+    }
+    return {
+      id: record.id.toString(),
+      name: record.name,
+      description: record.description ?? undefined,
+    };
+  });
+}
+
+export async function deleteSectorCatalogEntry(id: string): Promise<void> {
+  const numericId = Number.parseInt(id, 10);
+  if (!Number.isFinite(numericId)) {
+    throw new Error("A valid sector id is required.");
+  }
+
+  await withConnection(async (connection) => {
+    const [result] = await connection.execute(
+      "DELETE FROM sector_catalog WHERE id = ?",
+      [numericId]
+    );
+    if (!result.affectedRows) {
+      throw new Error("Sector entry not found.");
+    }
   });
 }
 

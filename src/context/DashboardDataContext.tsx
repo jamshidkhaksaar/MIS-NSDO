@@ -10,8 +10,6 @@ import {
   type ReactNode,
 } from "react";
 import {
-  ALL_SECTOR_KEY,
-  ALL_SECTOR_FIELD_ACTIVITY,
   DEFAULT_BRANDING,
   DEFAULT_COMPLAINTS,
   type DashboardProject,
@@ -624,5 +622,3 @@ export function useDashboardData() {
   }
   return context;
 }
-
-export { ALL_SECTOR_KEY, ALL_SECTOR_FIELD_ACTIVITY, BENEFICIARY_TYPE_KEYS, BENEFICIARY_TYPE_META, BENEFICIARY_GROUPS };

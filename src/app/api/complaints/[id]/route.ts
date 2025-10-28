@@ -1,14 +1,15 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { deleteComplaint } from "@/lib/dashboard-repository";
 import { requireUserSession, UnauthorizedError } from "@/lib/auth-server";
 
 export async function DELETE(
-  _request: Request,
-  { params }: { params: { id: string } }
+  _request: NextRequest,
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
     await requireUserSession();
-    await deleteComplaint(params.id);
+    const { id } = await context.params;
+    await deleteComplaint(id);
     return NextResponse.json({ message: "Complaint archived" });
   } catch (error) {
     if (error instanceof UnauthorizedError) {

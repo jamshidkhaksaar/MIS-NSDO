@@ -24,7 +24,7 @@ import type {
   BeneficiaryBreakdown,
   SectorDetails,
   SectorKey,
-} from "@/context/DashboardDataContext";
+} from "@/lib/dashboard-data";
 import Loading from "./loading";
 import {
   TelegramCardLoader,
@@ -472,25 +472,68 @@ export default function Home() {
     }
 
     if (!baseSectorKeys.length) {
+      const emptySnapshots: SectorSnapshotMap = {
+        [ALL_SECTOR_KEY]: {
+          provinces: [],
+          beneficiaries: createEmptyBreakdown(),
+        },
+        Humanitarian: {
+          provinces: [],
+          beneficiaries: createEmptyBreakdown(),
+        },
+        Advocacy: {
+          provinces: [],
+          beneficiaries: createEmptyBreakdown(),
+        },
+        Development: {
+          provinces: [],
+          beneficiaries: createEmptyBreakdown(),
+        },
+      };
+
+      const emptyDetails: SectorDetailMap = {
+        [ALL_SECTOR_KEY]: {
+          provinces: [],
+          beneficiaries: createEmptyBreakdown(),
+          projects: 0,
+          start: DEFAULT_START_LABEL,
+          end: DEFAULT_END_LABEL,
+          fieldActivity: ALL_SECTOR_FIELD_ACTIVITY,
+          staff: 0,
+        },
+        Humanitarian: {
+          provinces: [],
+          beneficiaries: createEmptyBreakdown(),
+          projects: 0,
+          start: DEFAULT_START_LABEL,
+          end: DEFAULT_END_LABEL,
+          fieldActivity: "",
+          staff: 0,
+        },
+        Advocacy: {
+          provinces: [],
+          beneficiaries: createEmptyBreakdown(),
+          projects: 0,
+          start: DEFAULT_START_LABEL,
+          end: DEFAULT_END_LABEL,
+          fieldActivity: "",
+          staff: 0,
+        },
+        Development: {
+          provinces: [],
+          beneficiaries: createEmptyBreakdown(),
+          projects: 0,
+          start: DEFAULT_START_LABEL,
+          end: DEFAULT_END_LABEL,
+          fieldActivity: "",
+          staff: 0,
+        },
+      };
+
       return {
         allProvinces: [],
-        sectorSnapshots: {
-          [ALL_SECTOR_KEY]: {
-            provinces: [],
-            beneficiaries: createEmptyBreakdown(),
-          },
-        } as SectorSnapshotMap,
-        sectorDetails: {
-          [ALL_SECTOR_KEY]: {
-            provinces: [],
-            beneficiaries: createEmptyBreakdown(),
-            projects: 0,
-            start: DEFAULT_START_LABEL,
-            end: DEFAULT_END_LABEL,
-            fieldActivity: ALL_SECTOR_FIELD_ACTIVITY,
-            staff: 0,
-          },
-        } as SectorDetailMap,
+        sectorSnapshots: emptySnapshots,
+        sectorDetails: emptyDetails,
       };
     }
 

@@ -1,14 +1,15 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { deleteReportingYear } from "@/lib/dashboard-repository";
 import { requireUserSession, UnauthorizedError } from "@/lib/auth-server";
 
 export async function DELETE(
-  _request: Request,
-  { params }: { params: { year: string } }
+  _request: NextRequest,
+  context: { params: Promise<{ year: string }> }
 ) {
   try {
     await requireUserSession();
-    const year = Number(params.year);
+    const { year: yearParam } = await context.params;
+    const year = Number(yearParam);
     if (!Number.isFinite(year)) {
       return NextResponse.json({ message: "Invalid year" }, { status: 400 });
     }

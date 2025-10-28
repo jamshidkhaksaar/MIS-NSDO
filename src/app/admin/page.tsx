@@ -5,7 +5,7 @@ import Link from "next/link";
 import {
   useDashboardData,
 } from "@/context/DashboardDataContext";
-import type { DashboardUserRole } from "@/context/DashboardDataContext";
+import type { DashboardUserRole } from "@/lib/dashboard-data";
 
 const ROLE_OPTIONS: DashboardUserRole[] = ["Administrator", "Editor", "Viewer"];
 

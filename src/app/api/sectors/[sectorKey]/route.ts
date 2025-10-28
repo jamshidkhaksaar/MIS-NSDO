@@ -1,16 +1,17 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { upsertSectorDetails } from "@/lib/dashboard-repository";
 import type { SectorDetails } from "@/lib/dashboard-data";
 import { requireUserSession, UnauthorizedError } from "@/lib/auth-server";
 
 export async function PUT(
-  request: Request,
-  { params }: { params: { sectorKey: string } }
+  request: NextRequest,
+  context: { params: Promise<{ sectorKey: string }> }
 ) {
   try {
     await requireUserSession();
     const payload = (await request.json()) as SectorDetails;
-    await upsertSectorDetails(params.sectorKey, payload);
+    const { sectorKey } = await context.params;
+    await upsertSectorDetails(sectorKey, payload);
     return NextResponse.json({ message: "Sector updated" });
   } catch (error) {
     if (error instanceof UnauthorizedError) {

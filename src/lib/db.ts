@@ -1,10 +1,21 @@
-import Database, { type Database as DatabaseInstance, type Statement } from "better-sqlite3";
+import Database from "better-sqlite3";
 import fs from "node:fs";
 import path from "node:path";
 
 type ExecuteResult = {
   insertId: number;
   affectedRows: number;
+};
+
+type Statement = {
+  all: (...params: unknown[]) => unknown[];
+  run: (...params: unknown[]) => { lastInsertRowid?: number | bigint; changes?: number };
+};
+
+type DatabaseInstance = {
+  prepare: (sql: string) => Statement;
+  exec: (sql: string) => void;
+  pragma: (command: string) => void;
 };
 
 class SQLiteConnection {
@@ -85,8 +96,9 @@ function resolveDatabasePath(): string {
 function getDatabaseInstance(): DatabaseInstance {
   if (!database) {
     const filePath = resolveDatabasePath();
-    database = new Database(filePath);
-    database.pragma("foreign_keys = ON");
+    const instance = new (Database as unknown as { new (path: string): DatabaseInstance })(filePath);
+    instance.pragma("foreign_keys = ON");
+    database = instance;
   }
   return database;
 }

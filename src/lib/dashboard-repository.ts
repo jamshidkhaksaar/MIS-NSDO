@@ -31,6 +31,7 @@ import {
   type EvaluationDashboardData,
   type FindingsDashboardData,
   type FindingsByDepartment,
+  type FindingsSummary,
   type PdmDashboardData,
   type KnowledgeHubData,
   type ComplaintRecord,
@@ -624,13 +625,13 @@ function bufferToDataUrl(data: Buffer | null, mime: string | null): string | nul
 
 export async function fetchDashboardState(): Promise<DashboardState> {
   return withConnection(async (connection) => {
-    const [sectorRows] = await connection.query<SectorRow[]>("SELECT * FROM sectors ORDER BY display_name ASC");
+    const [sectorRows] = await connection.query<SectorRow>("SELECT * FROM sectors ORDER BY display_name ASC");
     const sectorIds = sectorRows.map((row) => row.id);
 
     let beneficiaryRows: BeneficiaryRow[] = [];
     if (sectorIds.length) {
       const placeholders = sectorIds.map(() => "?").join(", ");
-      const [rows] = await connection.query<BeneficiaryRow[]>(
+      const [rows] = await connection.query<BeneficiaryRow>(
         `SELECT sector_id, type_key, direct, indirect FROM beneficiary_stats WHERE sector_id IN (${placeholders})`,
         sectorIds
       );
@@ -640,7 +641,7 @@ export async function fetchDashboardState(): Promise<DashboardState> {
     let provinceRows: ProvinceRow[] = [];
     if (sectorIds.length) {
       const placeholders = sectorIds.map(() => "?").join(", ");
-      const [rows] = await connection.query<ProvinceRow[]>(
+      const [rows] = await connection.query<ProvinceRow>(
         `SELECT sector_id, province FROM sector_provinces WHERE sector_id IN (${placeholders}) ORDER BY province`,
         sectorIds
       );
@@ -708,12 +709,12 @@ export async function fetchDashboardState(): Promise<DashboardState> {
       };
     }
 
-    const [yearRows] = await connection.query<ReportingYearRow[]>
+    const [yearRows] = await connection.query<ReportingYearRow>
       ("SELECT year FROM reporting_years ORDER BY year ASC");
 
     const reportingYears = yearRows.map((row) => row.year);
 
-    const [userRows] = await connection.query<UserRow[]>(
+    const [userRows] = await connection.query<UserRow>(
       "SELECT id, name, email, role, organization FROM users ORDER BY name ASC"
     );
 
@@ -725,7 +726,7 @@ export async function fetchDashboardState(): Promise<DashboardState> {
       organization: row.organization ?? undefined,
     }));
 
-    const [brandingRows] = await connection.query<BrandingRow[]>(
+    const [brandingRows] = await connection.query<BrandingRow>(
       "SELECT company_name, logo_data, logo_mime, favicon_data, favicon_mime FROM branding_settings WHERE id = 1"
     );
 
@@ -737,7 +738,7 @@ export async function fetchDashboardState(): Promise<DashboardState> {
       faviconDataUrl: bufferToDataUrl(brandingRow?.favicon_data ?? null, brandingRow?.favicon_mime ?? null),
     };
 
-    const [tableInfoRows] = await connection.query<{ name: string }[]>(
+    const [tableInfoRows] = await connection.query<{ name: string }>(
       "SELECT name FROM sqlite_master WHERE type = 'table'"
     );
     const existingTables = new Set(tableInfoRows.map((row) => row.name.toLowerCase()));
@@ -774,7 +775,7 @@ export async function fetchDashboardState(): Promise<DashboardState> {
 
     let projectRows: ProjectRow[] = [];
     if (hasProjectsTable) {
-      const [rows] = await connection.query<ProjectRow[]>(
+      const [rows] = await connection.query<ProjectRow>(
         `SELECT
            id,
            code,
@@ -812,7 +813,7 @@ export async function fetchDashboardState(): Promise<DashboardState> {
       const placeholders = createPlaceholders(projectIds.length);
 
       if (hasProjectProvinces) {
-        [projectProvinceRows] = await connection.query<ProjectProvinceRow[]>(
+        [projectProvinceRows] = await connection.query<ProjectProvinceRow>(
           `SELECT project_id, province
            FROM project_provinces
            WHERE project_id IN (${placeholders})
@@ -822,7 +823,7 @@ export async function fetchDashboardState(): Promise<DashboardState> {
       }
 
       if (hasProjectDistricts) {
-        [projectDistrictRows] = await connection.query<ProjectDistrictRow[]>(
+        [projectDistrictRows] = await connection.query<ProjectDistrictRow>(
           `SELECT project_id, district
            FROM project_districts
            WHERE project_id IN (${placeholders})
@@ -832,7 +833,7 @@ export async function fetchDashboardState(): Promise<DashboardState> {
       }
 
       if (hasProjectCommunities) {
-        [projectCommunityRows] = await connection.query<ProjectCommunityRow[]>(
+        [projectCommunityRows] = await connection.query<ProjectCommunityRow>(
           `SELECT project_id, community
            FROM project_communities
            WHERE project_id IN (${placeholders})
@@ -842,7 +843,7 @@ export async function fetchDashboardState(): Promise<DashboardState> {
       }
 
       if (hasProjectClusters) {
-        [projectClusterRows] = await connection.query<ProjectClusterRow[]>(
+        [projectClusterRows] = await connection.query<ProjectClusterRow>(
           `SELECT project_id, cluster
            FROM project_clusters
            WHERE project_id IN (${placeholders})
@@ -852,7 +853,7 @@ export async function fetchDashboardState(): Promise<DashboardState> {
       }
 
       if (hasProjectStandardSectors) {
-        [projectStandardSectorRows] = await connection.query<ProjectStandardSectorRow[]>(
+        [projectStandardSectorRows] = await connection.query<ProjectStandardSectorRow>(
           `SELECT project_id, standard_sector
            FROM project_standard_sectors
            WHERE project_id IN (${placeholders})
@@ -862,7 +863,7 @@ export async function fetchDashboardState(): Promise<DashboardState> {
       }
 
       if (hasProjectBeneficiaries) {
-        [projectBeneficiaryRows] = await connection.query<ProjectBeneficiaryRow[]>(
+        [projectBeneficiaryRows] = await connection.query<ProjectBeneficiaryRow>(
           `SELECT project_id, type_key, direct, indirect
            FROM project_beneficiaries
            WHERE project_id IN (${placeholders})`,
@@ -871,7 +872,7 @@ export async function fetchDashboardState(): Promise<DashboardState> {
       }
 
       if (hasProjectDocuments) {
-        [projectDocumentRows] = await connection.query<ProjectDocumentRow[]>(
+        [projectDocumentRows] = await connection.query<ProjectDocumentRow>(
           `SELECT id, project_id, category, title, file_url, uploaded_at
            FROM project_documents
            WHERE project_id IN (${placeholders})
@@ -881,7 +882,7 @@ export async function fetchDashboardState(): Promise<DashboardState> {
       }
 
       if (hasProjectPhases) {
-        [projectPhaseRows] = await connection.query<ProjectPhaseRow[]>(
+        [projectPhaseRows] = await connection.query<ProjectPhaseRow>(
           `SELECT id, project_id, phase, status, notes, updated_at
            FROM project_phases
            WHERE project_id IN (${placeholders})
@@ -1062,7 +1063,7 @@ export async function fetchDashboardState(): Promise<DashboardState> {
 
     let enumeratorRows: EnumeratorRow[] = [];
     if (hasEnumerators) {
-      [enumeratorRows] = await connection.query<EnumeratorRow[]>(
+      [enumeratorRows] = await connection.query<EnumeratorRow>(
         "SELECT id, full_name, email, phone, province FROM enumerators ORDER BY full_name ASC"
       );
     }
@@ -1078,7 +1079,7 @@ export async function fetchDashboardState(): Promise<DashboardState> {
       const placeholders = createPlaceholders(projectIds.length);
 
       if (hasBaselineSurveys) {
-        [baselineSurveyRows] = await connection.query<BaselineSurveyRow[]>(
+        [baselineSurveyRows] = await connection.query<BaselineSurveyRow>(
           `SELECT id, project_id, title, tool, status, questionnaire_url, created_at, updated_at
            FROM baseline_surveys
            WHERE project_id IN (${placeholders})
@@ -1088,7 +1089,7 @@ export async function fetchDashboardState(): Promise<DashboardState> {
       }
 
       if (hasFieldVisits) {
-        [fieldVisitRows] = await connection.query<FieldVisitReportRow[]>(
+        [fieldVisitRows] = await connection.query<FieldVisitReportRow>(
           `SELECT id, project_id, visit_date, location, positive_findings, negative_findings, photo_url, gps_coordinates, officer, created_at
            FROM field_visit_reports
            WHERE project_id IN (${placeholders})
@@ -1098,7 +1099,7 @@ export async function fetchDashboardState(): Promise<DashboardState> {
       }
 
       if (hasMonthlyReports) {
-        [monthlyReportRows] = await connection.query<MonthlyReportRow[]>(
+        [monthlyReportRows] = await connection.query<MonthlyReportRow>(
           `SELECT id, project_id, report_month, summary, gaps, recommendations, status, reviewer, feedback, submitted_at, updated_at
            FROM monthly_reports
            WHERE project_id IN (${placeholders})
@@ -1113,7 +1114,7 @@ export async function fetchDashboardState(): Promise<DashboardState> {
       const surveyPlaceholders = createPlaceholders(surveyIds.length);
 
       if (hasBaselineAssignments) {
-        [baselineAssignmentRows] = await connection.query<BaselineAssignmentRow[]>(
+        [baselineAssignmentRows] = await connection.query<BaselineAssignmentRow>(
           `SELECT baseline_survey_id, enumerator_id
            FROM baseline_enumerator_assignments
            WHERE baseline_survey_id IN (${surveyPlaceholders})`,
@@ -1122,7 +1123,7 @@ export async function fetchDashboardState(): Promise<DashboardState> {
       }
 
       if (hasDataCollectionTasks) {
-        [dataCollectionTaskRows] = await connection.query<DataCollectionTaskRow[]>(
+        [dataCollectionTaskRows] = await connection.query<DataCollectionTaskRow>(
           `SELECT id, baseline_survey_id, status, completed_at, notes
            FROM data_collection_tasks
            WHERE baseline_survey_id IN (${surveyPlaceholders})
@@ -1132,7 +1133,7 @@ export async function fetchDashboardState(): Promise<DashboardState> {
       }
 
       if (hasBaselineReports) {
-        [baselineReportRows] = await connection.query<BaselineReportRow[]>(
+        [baselineReportRows] = await connection.query<BaselineReportRow>(
           `SELECT id, baseline_survey_id, report_url, shared_with_program, shared_at, created_at
            FROM baseline_reports
            WHERE baseline_survey_id IN (${surveyPlaceholders})
@@ -1225,7 +1226,7 @@ export async function fetchDashboardState(): Promise<DashboardState> {
 
     let evaluationRows: EvaluationRow[] = [];
     if (hasEvaluations) {
-      [evaluationRows] = await connection.query<EvaluationRow[]>(
+      [evaluationRows] = await connection.query<EvaluationRow>(
         `SELECT id, project_id, evaluator_name, evaluation_type, report_url, findings_summary, completed_at, created_at
          FROM evaluations
          ORDER BY (completed_at IS NULL) ASC, completed_at DESC, created_at DESC`
@@ -1234,7 +1235,7 @@ export async function fetchDashboardState(): Promise<DashboardState> {
 
     let storyRows: StoryRow[] = [];
     if (hasStories) {
-      [storyRows] = await connection.query<StoryRow[]>(
+      [storyRows] = await connection.query<StoryRow>(
         `SELECT id, project_id, story_type, title, quote, summary, photo_url, spotlight_order, created_at
          FROM stories
          ORDER BY COALESCE(spotlight_order, 9999) ASC, created_at DESC`
@@ -1268,7 +1269,7 @@ export async function fetchDashboardState(): Promise<DashboardState> {
       stories: storyRecords,
     };
 
-    const [complaintRows] = await connection.query<ComplaintRow[]>(
+    const [complaintRows] = await connection.query<ComplaintRow>(
       "SELECT id, full_name, email, phone, message, submitted_at FROM complaints ORDER BY submitted_at DESC"
     );
 
@@ -1279,7 +1280,7 @@ export async function fetchDashboardState(): Promise<DashboardState> {
     if (complaintIds.length) {
       const placeholders = createPlaceholders(complaintIds.length);
       if (hasComplaintMetadata) {
-        [complaintMetadataRows] = await connection.query<ComplaintMetadataRow[]>(
+        [complaintMetadataRows] = await connection.query<ComplaintMetadataRow>(
           `SELECT complaint_id, status, assigned_officer, province, district, project_id, is_anonymous, auto_assigned_at, created_at, updated_at
            FROM complaint_metadata
            WHERE complaint_id IN (${placeholders})`,
@@ -1288,7 +1289,7 @@ export async function fetchDashboardState(): Promise<DashboardState> {
       }
 
       if (hasComplaintResponses) {
-        [complaintResponseRows] = await connection.query<ComplaintResponseRow[]>(
+        [complaintResponseRows] = await connection.query<ComplaintResponseRow>(
           `SELECT id, complaint_id, responder, response, created_at
            FROM complaint_responses
            WHERE complaint_id IN (${placeholders})
@@ -1356,7 +1357,7 @@ export async function fetchDashboardState(): Promise<DashboardState> {
 
     let crmAwarenessRows: CrmAwarenessRow[] = [];
     if (hasCrmAwareness) {
-      [crmAwarenessRows] = await connection.query<CrmAwarenessRow[]>(
+      [crmAwarenessRows] = await connection.query<CrmAwarenessRow>(
         `SELECT id, project_id, district, awareness_date, notes, created_at
          FROM crm_awareness_records
          ORDER BY (awareness_date IS NULL) ASC, awareness_date DESC, created_at DESC`
@@ -1374,7 +1375,7 @@ export async function fetchDashboardState(): Promise<DashboardState> {
 
     let findingRows: FindingRow[] = [];
     if (hasFindings) {
-      [findingRows] = await connection.query<FindingRow[]>(
+      [findingRows] = await connection.query<FindingRow>(
         `SELECT id, project_id, finding_type, category, severity, department, status, description, evidence_url, reminder_due_at, last_reminded_at, created_at, updated_at
          FROM findings
          ORDER BY created_at DESC, id DESC`
@@ -1444,7 +1445,7 @@ export async function fetchDashboardState(): Promise<DashboardState> {
 
     let distributionRows: DistributionRow[] = [];
     if (hasDistributionRecords) {
-      [distributionRows] = await connection.query<DistributionRow[]>(
+      [distributionRows] = await connection.query<DistributionRow>(
         `SELECT id, project_id, assistance_type, distribution_date, location, target_beneficiaries, notes, created_at
          FROM distribution_records
          ORDER BY (distribution_date IS NULL) ASC, distribution_date DESC, created_at DESC`
@@ -1453,7 +1454,7 @@ export async function fetchDashboardState(): Promise<DashboardState> {
 
     let pdmSurveyRows: PdmSurveyRow[] = [];
     if (hasPdmSurveys) {
-      [pdmSurveyRows] = await connection.query<PdmSurveyRow[]>(
+      [pdmSurveyRows] = await connection.query<PdmSurveyRow>(
         `SELECT id, project_id, tool, quality_score, quantity_score, satisfaction_score, protection_score, completed_at, created_at
          FROM pdm_surveys
          ORDER BY (completed_at IS NULL) ASC, completed_at DESC, created_at DESC`
@@ -1462,7 +1463,7 @@ export async function fetchDashboardState(): Promise<DashboardState> {
 
     let pdmReportRows: PdmReportRow[] = [];
     if (hasPdmReports) {
-      [pdmReportRows] = await connection.query<PdmReportRow[]>(
+      [pdmReportRows] = await connection.query<PdmReportRow>(
         `SELECT id, project_id, report_date, summary, recommendations, feedback_to_program, created_at
          FROM pdm_reports
          ORDER BY (report_date IS NULL) ASC, report_date DESC, created_at DESC`
@@ -1510,7 +1511,7 @@ export async function fetchDashboardState(): Promise<DashboardState> {
 
     let lessonRows: LessonRow[] = [];
     if (hasLessons) {
-      [lessonRows] = await connection.query<LessonRow[]>(
+      [lessonRows] = await connection.query<LessonRow>(
         `SELECT id, project_id, source, lesson, department, theme, captured_at, created_at
          FROM lessons
          ORDER BY created_at DESC`
@@ -1519,7 +1520,7 @@ export async function fetchDashboardState(): Promise<DashboardState> {
 
     let knowledgeResourceRows: KnowledgeResourceRow[] = [];
     if (hasKnowledgeResources) {
-      [knowledgeResourceRows] = await connection.query<KnowledgeResourceRow[]>(
+      [knowledgeResourceRows] = await connection.query<KnowledgeResourceRow>(
         `SELECT id, title, category, theme, description, file_url, created_at
          FROM knowledge_resources
          ORDER BY created_at DESC`
@@ -1554,7 +1555,7 @@ export async function fetchDashboardState(): Promise<DashboardState> {
 
     let userAccessRows: UserAccessAssignmentRow[] = [];
     if (hasUserAccessAssignments) {
-      [userAccessRows] = await connection.query<UserAccessAssignmentRow[]>(
+      [userAccessRows] = await connection.query<UserAccessAssignmentRow>(
         `SELECT id, user_id, project_id, province, role
          FROM user_access_assignments
          ORDER BY user_id ASC, project_id ASC`
@@ -1571,7 +1572,7 @@ export async function fetchDashboardState(): Promise<DashboardState> {
 
     let integrationRows: IntegrationRow[] = [];
     if (hasIntegrations) {
-      [integrationRows] = await connection.query<IntegrationRow[]>(
+      [integrationRows] = await connection.query<IntegrationRow>(
         `SELECT id, name, config, created_at, updated_at
          FROM integrations
          ORDER BY name ASC`
@@ -1586,7 +1587,7 @@ export async function fetchDashboardState(): Promise<DashboardState> {
       updatedAt: safeIsoString(row.updated_at),
     }));
 
-    const [clusterCatalogRows] = await connection.query<ClusterCatalogRow[]>(
+    const [clusterCatalogRows] = await connection.query<ClusterCatalogRow>(
       "SELECT id, name, description FROM cluster_catalog ORDER BY name ASC"
     );
 
@@ -1596,7 +1597,7 @@ export async function fetchDashboardState(): Promise<DashboardState> {
       description: row.description ?? undefined,
     }));
 
-    const [sectorCatalogRows] = await connection.query<SectorCatalogRow[]>(
+    const [sectorCatalogRows] = await connection.query<SectorCatalogRow>(
       "SELECT id, name, description FROM sector_catalog ORDER BY name ASC"
     );
 
@@ -1662,7 +1663,7 @@ export async function insertUser(payload: {
     const name = payload.name.trim();
     const organization = payload.organization?.trim() ?? null;
 
-    const [existingRows] = await connection.query<UserWithPasswordRow[]>(
+    const [existingRows] = await connection.query<UserWithPasswordRow>(
       "SELECT id, password_hash FROM users WHERE email = ? LIMIT 1",
       [email]
     );
@@ -1708,7 +1709,7 @@ export async function upsertSectorDetails(sectorKey: string, details: SectorDeta
   await withConnection(async (connection) => {
     await connection.beginTransaction();
     try {
-      const [rows] = await connection.query<SectorRow[]>(
+      const [rows] = await connection.query<SectorRow>(
         "SELECT id FROM sectors WHERE sector_key = ?",
         [sectorKey]
       );
@@ -1778,7 +1779,7 @@ export type CatalogEntry = {
 
 export async function fetchClusterCatalog(): Promise<CatalogEntry[]> {
   return withConnection(async (connection) => {
-    const [rows] = await connection.query<ClusterCatalogRow[]>(
+    const [rows] = await connection.query<ClusterCatalogRow>(
       "SELECT id, name, description FROM cluster_catalog ORDER BY name ASC"
     );
     return rows.map((row) => ({
@@ -1791,7 +1792,7 @@ export async function fetchClusterCatalog(): Promise<CatalogEntry[]> {
 
 export async function fetchSectorCatalog(): Promise<CatalogEntry[]> {
   return withConnection(async (connection) => {
-    const [rows] = await connection.query<SectorCatalogRow[]>(
+    const [rows] = await connection.query<SectorCatalogRow>(
       "SELECT id, name, description FROM sector_catalog ORDER BY name ASC"
     );
     return rows.map((row) => ({
@@ -1813,7 +1814,7 @@ export async function insertClusterCatalogEntry(payload: {
   const description = payload.description?.trim() ?? null;
 
   return withConnection(async (connection) => {
-    const [existing] = await connection.query<ClusterCatalogRow[]>(
+    const [existing] = await connection.query<ClusterCatalogRow>(
       "SELECT id FROM cluster_catalog WHERE lower(name) = lower(?) LIMIT 1",
       [name]
     );
@@ -1823,7 +1824,7 @@ export async function insertClusterCatalogEntry(payload: {
       throw duplicateError;
     }
 
-    const [rows] = await connection.query<ClusterCatalogRow[]>(
+    const [rows] = await connection.query<ClusterCatalogRow>(
       `INSERT INTO cluster_catalog (name, description)
        VALUES (?, ?)
        RETURNING id, name, description`,
@@ -1857,7 +1858,7 @@ export async function updateClusterCatalogEntry(payload: {
   const description = payload.description?.trim() ?? null;
 
   return withConnection(async (connection) => {
-    const [conflictRows] = await connection.query<ClusterCatalogRow[]>(
+    const [conflictRows] = await connection.query<ClusterCatalogRow>(
       "SELECT id FROM cluster_catalog WHERE lower(name) = lower(?) AND id <> ? LIMIT 1",
       [name, id]
     );
@@ -1867,7 +1868,7 @@ export async function updateClusterCatalogEntry(payload: {
       throw duplicateError;
     }
 
-    const [rows] = await connection.query<ClusterCatalogRow[]>(
+    const [rows] = await connection.query<ClusterCatalogRow>(
       `UPDATE cluster_catalog
        SET name = ?, description = ?
        WHERE id = ?
@@ -1914,7 +1915,7 @@ export async function insertSectorCatalogEntry(payload: {
   const description = payload.description?.trim() ?? null;
 
   return withConnection(async (connection) => {
-    const [existing] = await connection.query<SectorCatalogRow[]>(
+    const [existing] = await connection.query<SectorCatalogRow>(
       "SELECT id FROM sector_catalog WHERE lower(name) = lower(?) LIMIT 1",
       [name]
     );
@@ -1924,7 +1925,7 @@ export async function insertSectorCatalogEntry(payload: {
       throw duplicateError;
     }
 
-    const [rows] = await connection.query<SectorCatalogRow[]>(
+    const [rows] = await connection.query<SectorCatalogRow>(
       `INSERT INTO sector_catalog (name, description)
        VALUES (?, ?)
        RETURNING id, name, description`,
@@ -1970,7 +1971,7 @@ export async function findUserByEmail(email: string): Promise<AuthUserRecord | n
   }
 
   return withConnection(async (connection) => {
-    const [rows] = await connection.query<UserWithPasswordRow[]>(
+    const [rows] = await connection.query<UserWithPasswordRow>(
       "SELECT id, name, email, role, organization, password_hash FROM users WHERE email = ? LIMIT 1",
       [normalizedEmail]
     );
@@ -2007,7 +2008,7 @@ export async function createUserSessionRecord(
 
 export async function findSessionByTokenHash(tokenHash: string): Promise<SessionLookupResult | null> {
   return withConnection(async (connection) => {
-    const [rows] = await connection.query<SessionWithUserRow[]>(
+    const [rows] = await connection.query<SessionWithUserRow>(
       `SELECT
          s.id,
          s.user_id,
@@ -2060,7 +2061,7 @@ export async function updateSectorCatalogEntry(payload: {
   const description = payload.description?.trim() ?? null;
 
   return withConnection(async (connection) => {
-    const [conflictRows] = await connection.query<SectorCatalogRow[]>(
+    const [conflictRows] = await connection.query<SectorCatalogRow>(
       "SELECT id FROM sector_catalog WHERE lower(name) = lower(?) AND id <> ? LIMIT 1",
       [name, id]
     );
@@ -2070,7 +2071,7 @@ export async function updateSectorCatalogEntry(payload: {
       throw duplicateError;
     }
 
-    const [rows] = await connection.query<SectorCatalogRow[]>(
+    const [rows] = await connection.query<SectorCatalogRow>(
       `UPDATE sector_catalog
        SET name = ?, description = ?
        WHERE id = ?
@@ -2232,7 +2233,7 @@ export async function createBaselineSurvey(payload: {
   }
 
   const [rows] = await withConnection((connection) =>
-    connection.query<BaselineSurveyRow[]>(
+    connection.query<BaselineSurveyRow>(
       `INSERT INTO baseline_surveys (project_id, title, tool, status, questionnaire_url)
        VALUES (?, ?, ?, ?, ?)
        RETURNING id, project_id, title, tool, status, questionnaire_url, created_at, updated_at`,
@@ -2275,7 +2276,7 @@ export async function createEnumerator(payload: {
   }
 
   const [rows] = await withConnection((connection) =>
-    connection.query<EnumeratorRow[]>(
+    connection.query<EnumeratorRow>(
       `INSERT INTO enumerators (full_name, email, phone, province)
        VALUES (?, ?, ?, ?)
        RETURNING id, full_name, email, phone, province`,
@@ -2323,7 +2324,7 @@ export async function createFieldVisit(payload: {
   }
 
   const [rows] = await withConnection((connection) =>
-    connection.query<FieldVisitReportRow[]>(
+    connection.query<FieldVisitReportRow>(
       `INSERT INTO field_visit_reports (
          project_id,
          visit_date,
@@ -2389,7 +2390,7 @@ export async function createMonthlyReport(payload: {
   }
 
   const [rows] = await withConnection((connection) =>
-    connection.query<MonthlyReportRow[]>(
+    connection.query<MonthlyReportRow>(
       `INSERT INTO monthly_reports (
          project_id,
          report_month,
@@ -2452,7 +2453,7 @@ export async function createEvaluation(payload: {
   const evaluationType = mapEvaluationType(payload.evaluationType);
 
   const [rows] = await withConnection((connection) =>
-    connection.query<EvaluationRow[]>(
+    connection.query<EvaluationRow>(
       `INSERT INTO evaluations (
          project_id,
          evaluator_name,
@@ -2509,7 +2510,7 @@ export async function createStory(payload: {
   }
 
   const [rows] = await withConnection((connection) =>
-    connection.query<StoryRow[]>(
+    connection.query<StoryRow>(
       `INSERT INTO stories (
          project_id,
          story_type,
@@ -2565,7 +2566,7 @@ export async function createFinding(payload: {
   }
 
   const [rows] = await withConnection((connection) =>
-    connection.query<FindingRow[]>(
+    connection.query<FindingRow>(
       `INSERT INTO findings (
          project_id,
          finding_type,
@@ -2627,7 +2628,7 @@ export async function createCrmAwarenessRecord(payload: {
   }
 
   const [rows] = await withConnection((connection) =>
-    connection.query<CrmAwarenessRow[]>(
+    connection.query<CrmAwarenessRow>(
       `INSERT INTO crm_awareness_records (project_id, district, awareness_date, notes)
        VALUES (?, ?, ?, ?)
        RETURNING id, project_id, district, awareness_date, notes, created_at`,
@@ -2673,7 +2674,7 @@ export async function createDistributionRecord(payload: {
   }
 
   const [rows] = await withConnection((connection) =>
-    connection.query<DistributionRow[]>(
+    connection.query<DistributionRow>(
       `INSERT INTO distribution_records (
          project_id,
          assistance_type,
@@ -2727,7 +2728,7 @@ export async function createPdmSurvey(payload: {
   }
 
   const [rows] = await withConnection((connection) =>
-    connection.query<PdmSurveyRow[]>(
+    connection.query<PdmSurveyRow>(
       `INSERT INTO pdm_surveys (
          project_id,
          tool,
@@ -2782,7 +2783,7 @@ export async function createPdmReport(payload: {
   }
 
   const [rows] = await withConnection((connection) =>
-    connection.query<PdmReportRow[]>(
+    connection.query<PdmReportRow>(
       `INSERT INTO pdm_reports (project_id, report_date, summary, recommendations, feedback_to_program)
        VALUES (?, ?, ?, ?, ?)
        RETURNING id, project_id, report_date, summary, recommendations, feedback_to_program, created_at`,
@@ -2830,7 +2831,7 @@ export async function createLesson(payload: {
   }
 
   const [rows] = await withConnection((connection) =>
-    connection.query<LessonRow[]>(
+    connection.query<LessonRow>(
       `INSERT INTO lessons (
          project_id,
          source,

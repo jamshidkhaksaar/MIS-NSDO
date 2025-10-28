@@ -1,17 +1,12 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { updateProjectRecord } from "@/lib/dashboard-repository";
 import { requireUserSession, UnauthorizedError } from "@/lib/auth-server";
 
-type RouteParams = {
-  params: {
-    id: string;
-  };
-};
-
-export async function PATCH(request: Request, { params }: RouteParams) {
+export async function PATCH(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     await requireUserSession();
     const payload = await request.json();
+    const { id } = await context.params;
 
     const parseOptionalNumber = (value: unknown): number | null | undefined => {
       if (value === null || value === undefined || value === "") {
@@ -25,7 +20,7 @@ export async function PATCH(request: Request, { params }: RouteParams) {
     };
 
     await updateProjectRecord({
-      id: params.id,
+      id,
       code: payload.code ?? "",
       name: payload.name ?? "",
       sector: payload.sector,

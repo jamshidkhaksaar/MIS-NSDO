@@ -1,22 +1,17 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import {
   deleteClusterCatalogEntry,
   updateClusterCatalogEntry,
 } from "@/lib/dashboard-repository";
 import { requireUserSession, UnauthorizedError } from "@/lib/auth-server";
 
-type RouteParams = {
-  params: {
-    id: string;
-  };
-};
-
-export async function PATCH(request: Request, { params }: RouteParams) {
+export async function PATCH(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     await requireUserSession();
     const payload = await request.json();
+    const { id } = await context.params;
     const entry = await updateClusterCatalogEntry({
-      id: params.id,
+      id,
       name: payload.name ?? "",
       description: payload.description,
     });
@@ -33,10 +28,11 @@ export async function PATCH(request: Request, { params }: RouteParams) {
   }
 }
 
-export async function DELETE(_request: Request, { params }: RouteParams) {
+export async function DELETE(_request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
     await requireUserSession();
-    await deleteClusterCatalogEntry(params.id);
+    const { id } = await context.params;
+    await deleteClusterCatalogEntry(id);
     return NextResponse.json({ success: true });
   } catch (error) {
     if (error instanceof UnauthorizedError) {

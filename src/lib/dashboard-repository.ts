@@ -2106,6 +2106,661 @@ export async function deleteSectorCatalogEntry(id: string): Promise<void> {
   });
 }
 
+export async function createBaselineSurvey(payload: {
+  projectId: string;
+  title: string;
+  tool?: string | null;
+  status?: string | null;
+  questionnaireUrl?: string | null;
+}): Promise<BaselineSurveyRecord> {
+  const projectId = Number.parseInt(payload.projectId, 10);
+  if (!Number.isFinite(projectId)) {
+    throw new Error("A valid project id is required.");
+  }
+  const title = payload.title?.trim();
+  if (!title) {
+    throw new Error("Baseline survey title is required.");
+  }
+
+  const [rows] = await withConnection((connection) =>
+    connection.query<BaselineSurveyRow[]>(
+      `INSERT INTO baseline_surveys (project_id, title, tool, status, questionnaire_url)
+       VALUES (?, ?, ?, ?, ?)
+       RETURNING id, project_id, title, tool, status, questionnaire_url, created_at, updated_at`,
+      [
+        projectId,
+        title,
+        mapBaselineTool(payload.tool ?? null),
+        mapBaselineStatus(payload.status ?? "draft"),
+        payload.questionnaireUrl?.trim() || null,
+      ]
+    )
+  );
+
+  const record = rows[0];
+  if (!record) {
+    throw new Error("Failed to create baseline survey.");
+  }
+
+  return {
+    id: record.id.toString(),
+    projectId: record.project_id.toString(),
+    title: record.title,
+    tool: mapBaselineTool(record.tool),
+    status: mapBaselineStatus(record.status),
+    questionnaireUrl: record.questionnaire_url ?? undefined,
+    createdAt: safeIsoString(record.created_at),
+    updatedAt: safeIsoString(record.updated_at),
+  };
+}
+
+export async function createEnumerator(payload: {
+  fullName: string;
+  email?: string | null;
+  phone?: string | null;
+  province?: string | null;
+}): Promise<EnumeratorRecord> {
+  const fullName = payload.fullName?.trim();
+  if (!fullName) {
+    throw new Error("Enumerator name is required.");
+  }
+
+  const [rows] = await withConnection((connection) =>
+    connection.query<EnumeratorRow[]>(
+      `INSERT INTO enumerators (full_name, email, phone, province)
+       VALUES (?, ?, ?, ?)
+       RETURNING id, full_name, email, phone, province`,
+      [
+        fullName,
+        payload.email?.trim() || null,
+        payload.phone?.trim() || null,
+        payload.province?.trim() || null,
+      ]
+    )
+  );
+
+  const record = rows[0];
+  if (!record) {
+    throw new Error("Failed to create enumerator.");
+  }
+
+  return {
+    id: record.id.toString(),
+    fullName: record.full_name,
+    email: record.email ?? undefined,
+    phone: record.phone ?? undefined,
+    province: record.province ?? undefined,
+    assignments: 0,
+  };
+}
+
+export async function createFieldVisit(payload: {
+  projectId: string;
+  visitDate: string;
+  location?: string | null;
+  positiveFindings?: string | null;
+  negativeFindings?: string | null;
+  photoUrl?: string | null;
+  gpsCoordinates?: string | null;
+  officer?: string | null;
+}): Promise<FieldVisitReportRecord> {
+  const projectId = Number.parseInt(payload.projectId, 10);
+  if (!Number.isFinite(projectId)) {
+    throw new Error("A valid project id is required.");
+  }
+  const visitDate = payload.visitDate?.trim();
+  if (!visitDate) {
+    throw new Error("Visit date is required.");
+  }
+
+  const [rows] = await withConnection((connection) =>
+    connection.query<FieldVisitReportRow[]>(
+      `INSERT INTO field_visit_reports (
+         project_id,
+         visit_date,
+         location,
+         positive_findings,
+         negative_findings,
+         photo_url,
+         gps_coordinates,
+         officer
+       )
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+       RETURNING id, project_id, visit_date, location, positive_findings, negative_findings, photo_url, gps_coordinates, officer, created_at`,
+      [
+        projectId,
+        visitDate,
+        payload.location?.trim() || null,
+        payload.positiveFindings?.trim() || null,
+        payload.negativeFindings?.trim() || null,
+        payload.photoUrl?.trim() || null,
+        payload.gpsCoordinates?.trim() || null,
+        payload.officer?.trim() || null,
+      ]
+    )
+  );
+
+  const record = rows[0];
+  if (!record) {
+    throw new Error("Failed to create field visit record.");
+  }
+
+  return {
+    id: record.id.toString(),
+    projectId: record.project_id.toString(),
+    visitDate: safeIsoString(record.visit_date),
+    location: record.location ?? undefined,
+    positiveFindings: record.positive_findings ?? undefined,
+    negativeFindings: record.negative_findings ?? undefined,
+    photoUrl: record.photo_url ?? undefined,
+    gpsCoordinates: record.gps_coordinates ?? undefined,
+    officer: record.officer ?? undefined,
+    createdAt: safeIsoString(record.created_at),
+  };
+}
+
+export async function createMonthlyReport(payload: {
+  projectId: string;
+  reportMonth: string;
+  summary?: string | null;
+  gaps?: string | null;
+  recommendations?: string | null;
+  status?: string | null;
+  reviewer?: string | null;
+  feedback?: string | null;
+  submittedAt?: string | null;
+}): Promise<MonthlyNarrativeRecord> {
+  const projectId = Number.parseInt(payload.projectId, 10);
+  if (!Number.isFinite(projectId)) {
+    throw new Error("A valid project id is required.");
+  }
+  const reportMonth = payload.reportMonth?.trim();
+  if (!reportMonth) {
+    throw new Error("Report month is required.");
+  }
+
+  const [rows] = await withConnection((connection) =>
+    connection.query<MonthlyReportRow[]>(
+      `INSERT INTO monthly_reports (
+         project_id,
+         report_month,
+         summary,
+         gaps,
+         recommendations,
+         status,
+         reviewer,
+         feedback,
+         submitted_at
+       )
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+       RETURNING id, project_id, report_month, summary, gaps, recommendations, status, reviewer, feedback, submitted_at, updated_at`,
+      [
+        projectId,
+        reportMonth,
+        payload.summary?.trim() || null,
+        payload.gaps?.trim() || null,
+        payload.recommendations?.trim() || null,
+        mapMonthlyStatus(payload.status ?? "draft"),
+        payload.reviewer?.trim() || null,
+        payload.feedback?.trim() || null,
+        payload.submittedAt?.trim() || null,
+      ]
+    )
+  );
+
+  const record = rows[0];
+  if (!record) {
+    throw new Error("Failed to create monthly report.");
+  }
+
+  return {
+    id: record.id.toString(),
+    projectId: record.project_id.toString(),
+    reportMonth: record.report_month,
+    summary: record.summary ?? undefined,
+    gaps: record.gaps ?? undefined,
+    recommendations: record.recommendations ?? undefined,
+    status: mapMonthlyStatus(record.status),
+    reviewer: record.reviewer ?? undefined,
+    feedback: record.feedback ?? undefined,
+    submittedAt: optionalIsoString(record.submitted_at),
+    updatedAt: safeIsoString(record.updated_at),
+  };
+}
+
+export async function createEvaluation(payload: {
+  projectId: string;
+  evaluationType: string;
+  evaluatorName?: string | null;
+  reportUrl?: string | null;
+  findingsSummary?: string | null;
+  completedAt?: string | null;
+}): Promise<EvaluationRecord> {
+  const projectId = Number.parseInt(payload.projectId, 10);
+  if (!Number.isFinite(projectId)) {
+    throw new Error("A valid project id is required.");
+  }
+  const evaluationType = mapEvaluationType(payload.evaluationType);
+
+  const [rows] = await withConnection((connection) =>
+    connection.query<EvaluationRow[]>(
+      `INSERT INTO evaluations (
+         project_id,
+         evaluator_name,
+         evaluation_type,
+         report_url,
+         findings_summary,
+         completed_at
+       )
+       VALUES (?, ?, ?, ?, ?, ?)
+       RETURNING id, project_id, evaluator_name, evaluation_type, report_url, findings_summary, completed_at, created_at`,
+      [
+        projectId,
+        payload.evaluatorName?.trim() || null,
+        evaluationType,
+        payload.reportUrl?.trim() || null,
+        payload.findingsSummary?.trim() || null,
+        payload.completedAt?.trim() || null,
+      ]
+    )
+  );
+
+  const record = rows[0];
+  if (!record) {
+    throw new Error("Failed to create evaluation record.");
+  }
+
+  return {
+    id: record.id.toString(),
+    projectId: record.project_id ? record.project_id.toString() : undefined,
+    evaluatorName: record.evaluator_name ?? undefined,
+    evaluationType: mapEvaluationType(record.evaluation_type),
+    reportUrl: record.report_url ?? undefined,
+    findingsSummary: record.findings_summary ?? undefined,
+    completedAt: optionalIsoString(record.completed_at),
+    createdAt: safeIsoString(record.created_at),
+  };
+}
+
+export async function createStory(payload: {
+  projectId?: string | null;
+  storyType: string;
+  title: string;
+  quote?: string | null;
+  summary?: string | null;
+  photoUrl?: string | null;
+}): Promise<StoryRecord> {
+  const projectId = payload.projectId ? Number.parseInt(payload.projectId, 10) : null;
+  if (payload.projectId && !Number.isFinite(projectId)) {
+    throw new Error("Project selection is invalid.");
+  }
+  const title = payload.title?.trim();
+  if (!title) {
+    throw new Error("Story title is required.");
+  }
+
+  const [rows] = await withConnection((connection) =>
+    connection.query<StoryRow[]>(
+      `INSERT INTO stories (
+         project_id,
+         story_type,
+         title,
+         quote,
+         summary,
+         photo_url
+       )
+       VALUES (?, ?, ?, ?, ?, ?)
+       RETURNING id, project_id, story_type, title, quote, summary, photo_url, created_at`,
+      [
+        projectId,
+        mapStoryType(payload.storyType),
+        title,
+        payload.quote?.trim() || null,
+        payload.summary?.trim() || null,
+        payload.photoUrl?.trim() || null,
+      ]
+    )
+  );
+
+  const record = rows[0];
+  if (!record) {
+    throw new Error("Failed to create story.");
+  }
+
+  return {
+    id: record.id.toString(),
+    projectId: record.project_id ? record.project_id.toString() : undefined,
+    storyType: mapStoryType(record.story_type),
+    title: record.title,
+    quote: record.quote ?? undefined,
+    summary: record.summary ?? undefined,
+    photoUrl: record.photo_url ?? undefined,
+    createdAt: safeIsoString(record.created_at),
+  };
+}
+
+export async function createFinding(payload: {
+  projectId?: string | null;
+  findingType: string;
+  category?: string | null;
+  severity: string;
+  department?: string | null;
+  status: string;
+  description?: string | null;
+  evidenceUrl?: string | null;
+  reminderDueAt?: string | null;
+}): Promise<FindingRecord> {
+  const projectId = payload.projectId ? Number.parseInt(payload.projectId, 10) : null;
+  if (payload.projectId && !Number.isFinite(projectId)) {
+    throw new Error("Project selection is invalid.");
+  }
+
+  const [rows] = await withConnection((connection) =>
+    connection.query<FindingRow[]>(
+      `INSERT INTO findings (
+         project_id,
+         finding_type,
+         category,
+         severity,
+         department,
+         status,
+         description,
+         evidence_url,
+         reminder_due_at
+       )
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+       RETURNING id, project_id, finding_type, category, severity, department, status, description, evidence_url, reminder_due_at, last_reminded_at, created_at, updated_at`,
+      [
+        projectId,
+        mapFindingType(payload.findingType),
+        payload.category?.trim() || null,
+        mapFindingSeverity(payload.severity),
+        payload.department?.trim() || null,
+        mapFindingStatus(payload.status),
+        payload.description?.trim() || null,
+        payload.evidenceUrl?.trim() || null,
+        payload.reminderDueAt?.trim() || null,
+      ]
+    )
+  );
+
+  const record = rows[0];
+  if (!record) {
+    throw new Error("Failed to create finding record.");
+  }
+
+  return {
+    id: record.id.toString(),
+    projectId: record.project_id ? record.project_id.toString() : undefined,
+    findingType: mapFindingType(record.finding_type),
+    category: record.category ?? undefined,
+    severity: mapFindingSeverity(record.severity),
+    department: record.department ?? undefined,
+    status: mapFindingStatus(record.status),
+    description: record.description ?? undefined,
+    evidenceUrl: record.evidence_url ?? undefined,
+    reminderDueAt: optionalIsoString(record.reminder_due_at),
+    lastRemindedAt: optionalIsoString(record.last_reminded_at),
+    createdAt: safeIsoString(record.created_at),
+    updatedAt: safeIsoString(record.updated_at),
+  };
+}
+
+export async function createCrmAwarenessRecord(payload: {
+  projectId?: string | null;
+  district?: string | null;
+  awarenessDate?: string | null;
+  notes?: string | null;
+}): Promise<CrmAwarenessRecord> {
+  const projectId = payload.projectId ? Number.parseInt(payload.projectId, 10) : null;
+  if (payload.projectId && !Number.isFinite(projectId)) {
+    throw new Error("Project selection is invalid.");
+  }
+
+  const [rows] = await withConnection((connection) =>
+    connection.query<CrmAwarenessRow[]>(
+      `INSERT INTO crm_awareness_records (project_id, district, awareness_date, notes)
+       VALUES (?, ?, ?, ?)
+       RETURNING id, project_id, district, awareness_date, notes, created_at`,
+      [
+        projectId,
+        payload.district?.trim() || null,
+        payload.awarenessDate?.trim() || null,
+        payload.notes?.trim() || null,
+      ]
+    )
+  );
+
+  const record = rows[0];
+  if (!record) {
+    throw new Error("Failed to create CRM awareness record.");
+  }
+
+  return {
+    id: record.id.toString(),
+    projectId: record.project_id ? record.project_id.toString() : undefined,
+    district: record.district ?? undefined,
+    awarenessDate: optionalIsoString(record.awareness_date),
+    notes: record.notes ?? undefined,
+    createdAt: safeIsoString(record.created_at),
+  };
+}
+
+export async function createDistributionRecord(payload: {
+  projectId?: string | null;
+  assistanceType: string;
+  distributionDate?: string | null;
+  location?: string | null;
+  targetBeneficiaries?: number | null;
+  notes?: string | null;
+}): Promise<DistributionRecord> {
+  const projectId = payload.projectId ? Number.parseInt(payload.projectId, 10) : null;
+  if (payload.projectId && !Number.isFinite(projectId)) {
+    throw new Error("Project selection is invalid.");
+  }
+  const assistanceType = payload.assistanceType?.trim();
+  if (!assistanceType) {
+    throw new Error("Assistance type is required.");
+  }
+
+  const [rows] = await withConnection((connection) =>
+    connection.query<DistributionRow[]>(
+      `INSERT INTO distribution_records (
+         project_id,
+         assistance_type,
+         distribution_date,
+         location,
+         target_beneficiaries,
+         notes
+       )
+       VALUES (?, ?, ?, ?, ?, ?)
+       RETURNING id, project_id, assistance_type, distribution_date, location, target_beneficiaries, notes, created_at`,
+      [
+        projectId,
+        assistanceType,
+        payload.distributionDate?.trim() || null,
+        payload.location?.trim() || null,
+        typeof payload.targetBeneficiaries === "number" ? payload.targetBeneficiaries : null,
+        payload.notes?.trim() || null,
+      ]
+    )
+  );
+
+  const record = rows[0];
+  if (!record) {
+    throw new Error("Failed to create distribution record.");
+  }
+
+  return {
+    id: record.id.toString(),
+    projectId: record.project_id ? record.project_id.toString() : undefined,
+    assistanceType: record.assistance_type,
+    distributionDate: optionalIsoString(record.distribution_date),
+    location: record.location ?? undefined,
+    targetBeneficiaries: record.target_beneficiaries ?? undefined,
+    notes: record.notes ?? undefined,
+    createdAt: safeIsoString(record.created_at),
+  };
+}
+
+export async function createPdmSurvey(payload: {
+  projectId?: string | null;
+  tool?: string | null;
+  qualityScore?: number | null;
+  quantityScore?: number | null;
+  satisfactionScore?: number | null;
+  protectionScore?: number | null;
+  completedAt?: string | null;
+}): Promise<PdmSurveyRecord> {
+  const projectId = payload.projectId ? Number.parseInt(payload.projectId, 10) : null;
+  if (payload.projectId && !Number.isFinite(projectId)) {
+    throw new Error("Project selection is invalid.");
+  }
+
+  const [rows] = await withConnection((connection) =>
+    connection.query<PdmSurveyRow[]>(
+      `INSERT INTO pdm_surveys (
+         project_id,
+         tool,
+         quality_score,
+         quantity_score,
+         satisfaction_score,
+         protection_score,
+         completed_at
+       )
+       VALUES (?, ?, ?, ?, ?, ?, ?)
+       RETURNING id, project_id, tool, quality_score, quantity_score, satisfaction_score, protection_score, completed_at, created_at`,
+      [
+        projectId,
+        payload.tool?.trim() || null,
+        typeof payload.qualityScore === "number" ? payload.qualityScore : null,
+        typeof payload.quantityScore === "number" ? payload.quantityScore : null,
+        typeof payload.satisfactionScore === "number" ? payload.satisfactionScore : null,
+        typeof payload.protectionScore === "number" ? payload.protectionScore : null,
+        payload.completedAt?.trim() || null,
+      ]
+    )
+  );
+
+  const record = rows[0];
+  if (!record) {
+    throw new Error("Failed to create PDM survey.");
+  }
+
+  return {
+    id: record.id.toString(),
+    projectId: record.project_id ? record.project_id.toString() : undefined,
+    tool: record.tool ?? undefined,
+    qualityScore: record.quality_score ?? undefined,
+    quantityScore: record.quantity_score ?? undefined,
+    satisfactionScore: record.satisfaction_score ?? undefined,
+    protectionScore: record.protection_score ?? undefined,
+    completedAt: optionalIsoString(record.completed_at),
+    createdAt: safeIsoString(record.created_at),
+  };
+}
+
+export async function createPdmReport(payload: {
+  projectId?: string | null;
+  reportDate?: string | null;
+  summary?: string | null;
+  recommendations?: string | null;
+  feedbackToProgram?: string | null;
+}): Promise<PdmReportRecord> {
+  const projectId = payload.projectId ? Number.parseInt(payload.projectId, 10) : null;
+  if (payload.projectId && !Number.isFinite(projectId)) {
+    throw new Error("Project selection is invalid.");
+  }
+
+  const [rows] = await withConnection((connection) =>
+    connection.query<PdmReportRow[]>(
+      `INSERT INTO pdm_reports (project_id, report_date, summary, recommendations, feedback_to_program)
+       VALUES (?, ?, ?, ?, ?)
+       RETURNING id, project_id, report_date, summary, recommendations, feedback_to_program, created_at`,
+      [
+        projectId,
+        payload.reportDate?.trim() || null,
+        payload.summary?.trim() || null,
+        payload.recommendations?.trim() || null,
+        payload.feedbackToProgram?.trim() || null,
+      ]
+    )
+  );
+
+  const record = rows[0];
+  if (!record) {
+    throw new Error("Failed to create PDM report.");
+  }
+
+  return {
+    id: record.id.toString(),
+    projectId: record.project_id ? record.project_id.toString() : undefined,
+    reportDate: optionalIsoString(record.report_date),
+    summary: record.summary ?? undefined,
+    recommendations: record.recommendations ?? undefined,
+    feedbackToProgram: record.feedback_to_program ?? undefined,
+    createdAt: safeIsoString(record.created_at),
+  };
+}
+
+export async function createLesson(payload: {
+  projectId?: string | null;
+  source?: string | null;
+  lesson: string;
+  department?: string | null;
+  theme?: string | null;
+  capturedAt?: string | null;
+}): Promise<LessonRecord> {
+  const projectId = payload.projectId ? Number.parseInt(payload.projectId, 10) : null;
+  if (payload.projectId && !Number.isFinite(projectId)) {
+    throw new Error("Project selection is invalid.");
+  }
+  const lesson = payload.lesson?.trim();
+  if (!lesson) {
+    throw new Error("Lesson description is required.");
+  }
+
+  const [rows] = await withConnection((connection) =>
+    connection.query<LessonRow[]>(
+      `INSERT INTO lessons (
+         project_id,
+         source,
+         lesson,
+         department,
+         theme,
+         captured_at
+       )
+       VALUES (?, ?, ?, ?, ?, ?)
+       RETURNING id, project_id, source, lesson, department, theme, captured_at, created_at`,
+      [
+        projectId,
+        payload.source?.trim() || null,
+        lesson,
+        payload.department?.trim() || null,
+        payload.theme?.trim() || null,
+        payload.capturedAt?.trim() || null,
+      ]
+    )
+  );
+
+  const record = rows[0];
+  if (!record) {
+    throw new Error("Failed to create lesson record.");
+  }
+
+  return {
+    id: record.id.toString(),
+    projectId: record.project_id ? record.project_id.toString() : undefined,
+    source: record.source ?? undefined,
+    lesson: record.lesson,
+    department: record.department ?? undefined,
+    theme: record.theme ?? undefined,
+    capturedAt: optionalIsoString(record.captured_at),
+    createdAt: safeIsoString(record.created_at),
+  };
+}
+
+
 export async function deleteSessionByTokenHash(tokenHash: string): Promise<void> {
   await withConnection(async (connection) => {
     await connection.execute("DELETE FROM user_sessions WHERE token_hash = ?", [tokenHash]);

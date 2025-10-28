@@ -7,19 +7,21 @@ import Loading from "@/app/loading";
 import { useDashboardData } from "@/context/DashboardDataContext";
 
 const NAV_LINKS = [
-  { href: "/projects", label: "Projects Home" },
-  { href: "/projects/new", label: "Add Project" },
-  { href: "/projects/catalog-modifier", label: "Cluster & Sector Modifier" },
+  { href: "/data-entry/monitoring", label: "Monitoring" },
+  { href: "/data-entry/evaluation", label: "Evaluation" },
+  { href: "/data-entry/accountability", label: "Accountability" },
+  { href: "/data-entry/lesson-learns", label: "Lesson Learns" },
 ];
 
-type ProjectsShellProps = {
+type DataEntryShellProps = {
   children: ReactNode;
 };
 
-export default function ProjectsShell({ children }: ProjectsShellProps) {
+export default function DataEntryShell({ children }: DataEntryShellProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { branding } = useDashboardData();
+
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
 
@@ -44,7 +46,7 @@ export default function ProjectsShell({ children }: ProjectsShellProps) {
       }
     };
 
-    verifySession();
+    void verifySession();
 
     return () => {
       isMounted = false;
@@ -61,15 +63,15 @@ export default function ProjectsShell({ children }: ProjectsShellProps) {
     try {
       await fetch("/api/auth/logout", { method: "POST" });
     } catch {
-      // Ignore network errors; navigation will close the session client-side.
+      // Ignore network errors, client state will update after navigation.
     } finally {
       router.push("/login");
       router.refresh();
     }
   }, [router]);
 
-  const brandDisplayName = useMemo(
-    () => branding.companyName?.trim() || "Project Workspace",
+  const brandName = useMemo(
+    () => branding.companyName?.trim() || "NSDO MEAL",
     [branding.companyName]
   );
   const brandLogo = branding.logoDataUrl;
@@ -87,7 +89,7 @@ export default function ProjectsShell({ children }: ProjectsShellProps) {
   return (
     <div className="flex min-h-screen flex-col bg-brand-soft text-brand-strong">
       <header className="border-b border-brand bg-white/80 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-4 px-6 py-6">
+        <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-6">
           <div className="flex items-center gap-3">
             <div className="flex h-12 items-center">
               {brandLogo ? (
@@ -106,28 +108,14 @@ export default function ProjectsShell({ children }: ProjectsShellProps) {
               )}
             </div>
             <div>
-              <p className="text-xs uppercase tracking-wide text-brand-soft">Project workspace</p>
-              <h1 className="text-xl font-semibold text-brand-strong">{brandDisplayName}</h1>
+              <p className="text-xs uppercase tracking-wide text-brand-soft">Data Entry Console</p>
+              <h1 className="text-xl font-semibold text-brand-strong">{brandName}</h1>
             </div>
           </div>
-          <nav className="flex flex-wrap items-center gap-3 text-sm font-semibold text-brand-muted">
-            {NAV_LINKS.map((link) => {
-              const isActive = pathname === link.href;
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`rounded-full px-4 py-2 transition ${
-                    isActive ? "btn-brand text-white" : "chip-brand"
-                  }`}
-                >
-                  {link.label}
-                </Link>
-              );
-            })}
+          <div className="flex flex-wrap items-center gap-3 text-sm font-semibold text-brand-muted">
             <Link
               href="/#publish-dashboard"
-              className="inline-flex h-10 items-center justify-center whitespace-nowrap rounded-full px-4 text-sm font-semibold text-white shadow-brand-soft transition btn-brand"
+              className="inline-flex h-10 items-center justify-center rounded-full px-4 text-white btn-brand"
             >
               Public Dashboard
             </Link>
@@ -136,21 +124,40 @@ export default function ProjectsShell({ children }: ProjectsShellProps) {
               onClick={() => {
                 void handleSignOut();
               }}
-              className="rounded-full px-4 py-2 text-white btn-brand"
+              className="inline-flex h-10 items-center justify-center rounded-full px-4 text-white btn-brand"
             >
               Sign out
             </button>
-          </nav>
+          </div>
         </div>
       </header>
 
-      <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-6 py-10">
+      <nav className="border-b border-brand bg-white/80">
+        <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-3 px-6 py-4">
+          {NAV_LINKS.map((link) => {
+            const isActive = pathname === link.href;
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                  isActive ? "btn-brand text-white" : "chip-brand"
+                }`}
+              >
+                {link.label}
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
+
+      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-8 px-6 py-10">
         {children}
       </main>
 
       <footer className="border-t border-brand bg-white py-4 text-sm text-brand-muted">
-        <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-2 px-6">
-          <span>&copy; {currentYear} {brandDisplayName}</span>
+        <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-2 px-6">
+          <span>&copy; {currentYear} {brandName}</span>
           <div className="flex flex-wrap items-center gap-3">
             <Link href="/" className="hover:text-brand-primary transition">
               Dashboard

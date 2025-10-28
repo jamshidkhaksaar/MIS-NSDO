@@ -14,11 +14,11 @@
 /coverage
 
 # next.js
-/.next/
-/out/
-/dist/
-/next-dist/
-/jk-next-dist/
+/.next
+/out
+/dist
+/next-dist
+/jk-next-dist
 
 # production
 /build

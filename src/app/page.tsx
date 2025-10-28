@@ -33,6 +33,7 @@ import {
   TelegramMapLoader,
 } from "@/components/TelegramLoader";
 import MobileQuickNav from "./(components)/MobileQuickNav";
+import ReportDialog from "./(components)/ReportDialog";
 
 type DashboardSectorKey = SectorKey | typeof ALL_SECTOR_KEY;
 
@@ -201,6 +202,7 @@ export default function Home() {
   const [selectedSector, setSelectedSector] =
     useState<DashboardSectorKey>(ALL_SECTOR_KEY);
   const [selectedProjectId, setSelectedProjectId] = useState<string>("all");
+  const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
 
   const [selectedYear, setSelectedYear] = useState<number>(() => {
     if (reportingYears.length) {
@@ -1677,7 +1679,7 @@ export default function Home() {
                     <span>Complaints</span>
                   </Link>
                   
-                  {isAdmin && (
+                  {isAdmin ? (
                     <Link
                       href="/admin"
                       onClick={closeMobileMenu}
@@ -1685,7 +1687,7 @@ export default function Home() {
                     >
                       <span>Admin</span>
                     </Link>
-                  )}
+                  ) : null}
                 </>
               ) : null}
 
@@ -1861,6 +1863,23 @@ export default function Home() {
                 </a>
               );
             })}
+            <button
+              type="button"
+              onClick={() => setIsReportDialogOpen(true)}
+              className="mt-3 flex h-10 w-10 items-center justify-center rounded-full bg-brand-primary text-white shadow-brand-soft transition hover:scale-105"
+              title="Generate PDF report"
+            >
+              <svg
+                className="h-4 w-4"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path d="M4 2.5A1.5 1.5 0 0 1 5.5 1h5.586L16 5.414V16.5A1.5 1.5 0 0 1 14.5 18h-9A1.5 1.5 0 0 1 4 16.5v-14Z" fill="currentColor" opacity="0.3" />
+                <path d="M11 1v4h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M7 11h6M7 14h6M7 8h2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
           </div>
         ) : (
           <div className="mt-3 flex flex-col gap-2">
@@ -1904,6 +1923,23 @@ export default function Home() {
                 Quick Navigation
               </p>
             </div>
+            <button
+              type="button"
+              onClick={() => setIsReportDialogOpen(true)}
+              className="mt-3 inline-flex items-center justify-center gap-2 rounded-xl border border-brand bg-white px-4 py-2 text-sm font-semibold text-brand-primary transition hover:border-brand-primary hover:bg-brand-primary hover:text-white"
+            >
+              <svg
+                className="h-4 w-4"
+                viewBox="0 0 20 20"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path d="M5.5 1h5.586L16 5.414V16.5A1.5 1.5 0 0 1 14.5 18h-9A1.5 1.5 0 0 1 4 16.5v-14A1.5 1.5 0 0 1 5.5 1Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+                <path d="M11 1v4h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M7 11h6M7 14h6M7 8h2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              PDF Report
+            </button>
           </div>
         )}
       </aside>
@@ -3482,6 +3518,26 @@ export default function Home() {
         ))}
       </main>
 
+      <div className="mx-auto mt-16 flex max-w-7xl justify-center px-3 sm:px-4 md:px-6">
+        <button
+          type="button"
+          onClick={() => setIsReportDialogOpen(true)}
+          className="inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-brand-primary to-[#3ea93d] px-6 sm:px-8 py-3 text-sm sm:text-base font-semibold text-white shadow-brand-soft transition hover:scale-[1.02]"
+        >
+          <svg
+            className="h-5 w-5"
+            viewBox="0 0 20 20"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path d="M5.5 1h5.586L16 5.414V16.5A1.5 1.5 0 0 1 14.5 18h-9A1.5 1.5 0 0 1 4 16.5v-14A1.5 1.5 0 0 1 5.5 1Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+            <path d="M11 1v4h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M7 11h6M7 14h6M7 8h2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          Download full PDF report
+        </button>
+      </div>
+
       <footer className="bg-white py-3 sm:py-4 text-brand-muted">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 sm:gap-4 px-3 sm:px-4 md:px-6 text-xs sm:text-sm">
           <span className="text-brand-soft text-center sm:text-left w-full sm:w-auto">
@@ -3510,6 +3566,14 @@ export default function Home() {
           </div>
         </div>
       </footer>
+
+      <ReportDialog
+        open={isReportDialogOpen}
+        onClose={() => setIsReportDialogOpen(false)}
+        defaultYear={selectedYear}
+        defaultProjectId={selectedProjectId !== "all" ? selectedProjectId : undefined}
+        defaultSector={selectedSector !== ALL_SECTOR_KEY ? selectedSector : undefined}
+      />
     </div>
   );
 }

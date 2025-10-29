@@ -27,6 +27,7 @@
 .DS_Store
 *.pem
 database/*.db
+/supabase/.temp/
 
 # debug
 npm-debug.log*

@@ -1,5 +1,3 @@
-PRAGMA foreign_keys = ON;
-
 -- Reporting years
 INSERT INTO reporting_years (year) VALUES (2023) ON CONFLICT(year) DO NOTHING;
 INSERT INTO reporting_years (year) VALUES (2024) ON CONFLICT(year) DO NOTHING;
@@ -60,30 +58,30 @@ ON CONFLICT(sector_key) DO UPDATE SET
   staff = excluded.staff;
 
 -- Sector provinces
-INSERT OR IGNORE INTO sector_provinces (sector_id, province)
-SELECT id, 'Kabul' FROM sectors WHERE sector_key = 'Humanitarian';
-INSERT OR IGNORE INTO sector_provinces (sector_id, province)
-SELECT id, 'Takhar' FROM sectors WHERE sector_key = 'Humanitarian';
-INSERT OR IGNORE INTO sector_provinces (sector_id, province)
-SELECT id, 'Badakhshan' FROM sectors WHERE sector_key = 'Humanitarian';
-INSERT OR IGNORE INTO sector_provinces (sector_id, province)
-SELECT id, 'Herat' FROM sectors WHERE sector_key = 'Humanitarian';
+INSERT INTO sector_provinces (sector_id, province)
+SELECT id, 'Kabul' FROM sectors WHERE sector_key = 'Humanitarian' ON CONFLICT (sector_id, province) DO NOTHING;
+INSERT INTO sector_provinces (sector_id, province)
+SELECT id, 'Takhar' FROM sectors WHERE sector_key = 'Humanitarian' ON CONFLICT (sector_id, province) DO NOTHING;
+INSERT INTO sector_provinces (sector_id, province)
+SELECT id, 'Badakhshan' FROM sectors WHERE sector_key = 'Humanitarian' ON CONFLICT (sector_id, province) DO NOTHING;
+INSERT INTO sector_provinces (sector_id, province)
+SELECT id, 'Herat' FROM sectors WHERE sector_key = 'Humanitarian' ON CONFLICT (sector_id, province) DO NOTHING;
 
-INSERT OR IGNORE INTO sector_provinces (sector_id, province)
-SELECT id, 'Parwan' FROM sectors WHERE sector_key = 'Advocacy';
-INSERT OR IGNORE INTO sector_provinces (sector_id, province)
-SELECT id, 'Kabul' FROM sectors WHERE sector_key = 'Advocacy';
-INSERT OR IGNORE INTO sector_provinces (sector_id, province)
-SELECT id, 'Baghlan' FROM sectors WHERE sector_key = 'Advocacy';
+INSERT INTO sector_provinces (sector_id, province)
+SELECT id, 'Parwan' FROM sectors WHERE sector_key = 'Advocacy' ON CONFLICT (sector_id, province) DO NOTHING;
+INSERT INTO sector_provinces (sector_id, province)
+SELECT id, 'Kabul' FROM sectors WHERE sector_key = 'Advocacy' ON CONFLICT (sector_id, province) DO NOTHING;
+INSERT INTO sector_provinces (sector_id, province)
+SELECT id, 'Baghlan' FROM sectors WHERE sector_key = 'Advocacy' ON CONFLICT (sector_id, province) DO NOTHING;
 
-INSERT OR IGNORE INTO sector_provinces (sector_id, province)
-SELECT id, 'Kunduz' FROM sectors WHERE sector_key = 'Development';
-INSERT OR IGNORE INTO sector_provinces (sector_id, province)
-SELECT id, 'Baghlan' FROM sectors WHERE sector_key = 'Development';
-INSERT OR IGNORE INTO sector_provinces (sector_id, province)
-SELECT id, 'Parwan' FROM sectors WHERE sector_key = 'Development';
-INSERT OR IGNORE INTO sector_provinces (sector_id, province)
-SELECT id, 'Badakhshan' FROM sectors WHERE sector_key = 'Development';
+INSERT INTO sector_provinces (sector_id, province)
+SELECT id, 'Kunduz' FROM sectors WHERE sector_key = 'Development' ON CONFLICT (sector_id, province) DO NOTHING;
+INSERT INTO sector_provinces (sector_id, province)
+SELECT id, 'Baghlan' FROM sectors WHERE sector_key = 'Development' ON CONFLICT (sector_id, province) DO NOTHING;
+INSERT INTO sector_provinces (sector_id, province)
+SELECT id, 'Parwan' FROM sectors WHERE sector_key = 'Development' ON CONFLICT (sector_id, province) DO NOTHING;
+INSERT INTO sector_provinces (sector_id, province)
+SELECT id, 'Badakhshan' FROM sectors WHERE sector_key = 'Development' ON CONFLICT (sector_id, province) DO NOTHING;
 
 -- Beneficiary stats
 INSERT INTO beneficiary_stats (sector_id, type_key, direct, indirect)

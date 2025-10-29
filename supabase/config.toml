@@ -1,0 +1,6 @@
+# Update project_id with your Supabase project ref (e.g., abcdefghijklmnopqrst).
+project_id = "replace-with-your-project-ref"
+
+[db]
+schema = "public"
+shadow = false

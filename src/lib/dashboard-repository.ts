@@ -115,7 +115,7 @@ type ComplaintMetadataRow = {
   province: string | null;
   district: string | null;
   project_id: number | null;
-  is_anonymous: number;
+  is_anonymous: boolean;
   auto_assigned_at: string | null;
   created_at: string;
   updated_at: string;
@@ -215,7 +215,7 @@ type BaselineReportRow = {
   id: number;
   baseline_survey_id: number;
   report_url: string | null;
-  shared_with_program: number;
+  shared_with_program: boolean;
   shared_at: string | null;
   created_at: string;
 };
@@ -739,7 +739,7 @@ export async function fetchDashboardState(): Promise<DashboardState> {
     };
 
     const [tableInfoRows] = await connection.query<{ name: string }>(
-      "SELECT name FROM sqlite_master WHERE type = 'table'"
+      "SELECT tablename AS name FROM pg_catalog.pg_tables WHERE schemaname = 'public'"
     );
     const existingTables = new Set(tableInfoRows.map((row) => row.name.toLowerCase()));
 
@@ -1672,7 +1672,7 @@ export async function insertUser(payload: {
       const existing = existingRows[0];
       const passwordHash = payload.passwordHash ?? existing.password_hash ?? null;
       await connection.execute(
-        "UPDATE users SET name = ?, role = ?, organization = ?, password_hash = ?, updated_at = datetime('now') WHERE id = ?",
+        "UPDATE users SET name = ?, role = ?, organization = ?, password_hash = ?, updated_at = NOW() WHERE id = ?",
         [name, payload.role, organization, passwordHash, existing.id]
       );
       return;
@@ -1730,11 +1730,14 @@ export async function upsertSectorDetails(sectorKey: string, details: SectorDeta
           ]
         );
       } else {
-        const [result] = await connection.execute(
-          "INSERT INTO sectors (sector_key, display_name, projects, start_date, end_date, field_activity, staff) VALUES (?, ?, ?, NULLIF(?, ''), NULLIF(?, ''), ?, ?)",
+        const [insertRows] = await connection.query<{ id: number }>(
+          "INSERT INTO sectors (sector_key, display_name, projects, start_date, end_date, field_activity, staff) VALUES (?, ?, ?, NULLIF(?, ''), NULLIF(?, ''), ?, ?) RETURNING id",
           [sectorKey, sectorKey, details.projects, details.start, details.end, details.fieldActivity, details.staff]
         );
-        sectorId = result.insertId;
+        if (!insertRows.length) {
+          throw new Error("Failed to create sector record.");
+        }
+        sectorId = insertRows[0].id;
       }
 
       await connection.execute("DELETE FROM sector_provinces WHERE sector_id = ?", [sectorId]);
@@ -1998,7 +2001,7 @@ export async function createUserSessionRecord(
   expiresAt: Date
 ): Promise<void> {
   await withConnection(async (connection) => {
-    await connection.execute("DELETE FROM user_sessions WHERE expires_at < datetime('now')");
+    await connection.execute("DELETE FROM user_sessions WHERE expires_at < NOW()");
     await connection.execute(
       "INSERT INTO user_sessions (user_id, token_hash, expires_at) VALUES (?, ?, ?)",
       [userId, tokenHash, expiresAt.toISOString()]
@@ -2020,7 +2023,7 @@ export async function findSessionByTokenHash(tokenHash: string): Promise<Session
          u.organization
        FROM user_sessions s
        INNER JOIN users u ON u.id = s.user_id
-       WHERE s.token_hash = ? AND s.expires_at > datetime('now')
+       WHERE s.token_hash = ? AND s.expires_at > NOW()
        LIMIT 1`,
       [tokenHash]
     );
@@ -2161,7 +2164,7 @@ export async function updateProjectRecord(payload: {
              objectives = ?,
              major_achievements = ?,
              staff = ?,
-             updated_at = datetime('now')
+             updated_at = NOW()
          WHERE id = ?`,
         [
           code,
@@ -2879,7 +2882,7 @@ export async function deleteSessionByTokenHash(tokenHash: string): Promise<void>
 
 export async function purgeExpiredSessions(): Promise<void> {
   await withConnection(async (connection) => {
-    await connection.execute("DELETE FROM user_sessions WHERE expires_at <= datetime('now')");
+    await connection.execute("DELETE FROM user_sessions WHERE expires_at <= NOW()");
   });
 }
 

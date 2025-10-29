@@ -1,62 +1,51 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+This project runs on Next.js App Router with typed React components.
 
-## Database Setup
+## Database Setup (Supabase / Postgres)
+1. Copy the example env file and fill in your connection string:
+   ```bash
+   cp .env.example .env.local
+   ```
+   Set `DATABASE_URL` to the Postgres URI from Supabase (or another managed Postgres).
 
-The development build now targets SQLite. Point `DB_SQLITE_PATH` (see `.env.example`) at a writable location—by default it uses `./database/dev.db`. Apply the schema and optional seed data with the `sqlite3` CLI:
+2. Update `supabase/config.toml` with your Supabase project ref. If you have the Supabase CLI installed:
+   ```bash
+   supabase login
+   supabase link --project-ref <your-project-ref>
+   ```
 
+3. Apply the schema migrations to your database:
+   ```bash
+   supabase db push
+   ```
+   The migrations live in `supabase/migrations/` and target the `public` schema.
+
+4. (Optional) Load the starter data:
+   ```bash
+   psql "$DATABASE_URL" -f supabase/seed/sample-data.sql
+   ```
+
+## Local Development
+Install dependencies (Node.js 20+) and run the dev server:
 ```bash
-sqlite3 ./database/dev.db < database/schema.sql
-sqlite3 ./database/dev.db < database/sample-data.sql
-```
-
-Copy `.env.example` to `.env.local` (the default path suits most development setups):
-
-```bash
-cp .env.example .env.local
-```
-
-## Getting Started
-
-Install dependencies and run the development server:
-
-```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Visit http://localhost:3000 to inspect the app. Turbopack hot-reloads changes by default.
 
 ## Administrative Utilities
-
-Create or update an administrator without touching the seed data by running:
-
+Provision or update an administrator directly in Postgres:
 ```bash
-DB_SQLITE_PATH=./database/dev.db \
+DATABASE_URL="postgres://user:pass@host:5432/db" \
 npm run create-admin-user -- --name "Fatima Ahmadi" --email fatima.ahmadi@nsdo.org.af --organization "NSDO HQ"
 ```
-
-If you omit the flags it will upsert a default `Administrator <it@nsdo.org.af>` user in the “NSDO IT Unit” organization with password `Kabul@321$` (stored as a bcrypt hash). Provide `--password` to override. The script looks up the email and updates the record if it already exists.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Provide `--password` to override the default and the script will upsert by email.
 
 ## Deploy on Vercel
+- Add `DATABASE_URL` (and optional `PGSSLMODE` / `PGPOOL_MAX`) to the Vercel project settings.
+- Ensure the value matches your Supabase connection string (include `sslmode=require`).
+- Run `npm run build` locally or rely on Vercel’s build for production.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Learn More
+- [Next.js Documentation](https://nextjs.org/docs)
+- [Supabase CLI Reference](https://supabase.com/docs/guides/cli)
+- [Vercel Deployment Docs](https://nextjs.org/docs/app/building-your-application/deploying)

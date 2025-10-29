@@ -1,60 +1,44 @@
-import Database from "better-sqlite3";
-import fs from "node:fs";
-import path from "node:path";
+import { Pool, type PoolClient, type PoolConfig } from "pg";
 
 type ExecuteResult = {
   insertId: number;
   affectedRows: number;
 };
 
-type Statement = {
-  all: (...params: unknown[]) => unknown[];
-  run: (...params: unknown[]) => { lastInsertRowid?: number | bigint; changes?: number };
-};
-
-type DatabaseInstance = {
-  prepare: (sql: string) => Statement;
-  exec: (sql: string) => void;
-  pragma: (command: string) => void;
-};
-
-class SQLiteConnection {
-  private db: DatabaseInstance;
-
-  constructor(database: DatabaseInstance) {
-    this.db = database;
-  }
+class PostgresConnection {
+  constructor(private readonly client: PoolClient) {}
 
   async query<T>(sql: string, params: unknown[] = []): Promise<[T[]]> {
-    const statement = this.prepare(sql);
-    const rows = statement.all(...params);
-    return [rows as T[]];
+    const { text, values } = normalizeSql(sql, params);
+    const result = await this.client.query(text, values);
+    return [result.rows as T[]];
   }
 
   async execute(sql: string, params: unknown[] = []): Promise<[ExecuteResult]> {
-    const statement = this.prepare(sql);
-    const result = statement.run(...params);
+    const { text, values } = normalizeSql(sql, params);
+    const result = await this.client.query(text, values);
+    const firstRow = (result.rows?.[0] ?? {}) as Record<string, unknown>;
+    const insertIdRaw = firstRow.id ?? firstRow.insertId ?? null;
+    const insertId = typeof insertIdRaw === "bigint" ? Number(insertIdRaw) : Number(insertIdRaw ?? 0);
     return [
       {
-        insertId: typeof result.lastInsertRowid === "bigint"
-          ? Number(result.lastInsertRowid)
-          : Number(result.lastInsertRowid ?? 0),
-        affectedRows: result.changes ?? 0,
+        insertId: Number.isNaN(insertId) ? 0 : insertId,
+        affectedRows: result.rowCount ?? 0,
       },
     ];
   }
 
   async beginTransaction(): Promise<void> {
-    this.db.exec("BEGIN");
+    await this.client.query("BEGIN");
   }
 
   async commit(): Promise<void> {
-    this.db.exec("COMMIT");
+    await this.client.query("COMMIT");
   }
 
   async rollback(): Promise<void> {
     try {
-      this.db.exec("ROLLBACK");
+      await this.client.query("ROLLBACK");
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       if (!/no transaction/i.test(message)) {
@@ -62,49 +46,100 @@ class SQLiteConnection {
       }
     }
   }
+}
 
-  private prepare(sql: string): Statement {
-    try {
-      return this.db.prepare(sql);
-    } catch (error) {
-      console.error("Failed to prepare SQL statement:", sql);
-      throw error;
+let pool: Pool | null = null;
+
+function resolveConnectionString(): string {
+  const connectionString =
+    process.env.DATABASE_URL ??
+    process.env.POSTGRES_URL ??
+    process.env.SUPABASE_DB_URL ??
+    process.env.SUPABASE_CONNECTION_STRING ??
+    process.env.SUPABASE_DB_URL_INTERNAL;
+
+  if (!connectionString?.trim()) {
+    throw new Error(
+      "Database configuration is missing. Set DATABASE_URL (or SUPABASE_DB_URL) to a valid Postgres connection string."
+    );
+  }
+
+  return connectionString.trim();
+}
+
+function shouldEnableSsl(connectionString: string): boolean {
+  const override = process.env.PGSSLMODE?.toLowerCase();
+  if (override === "disable") {
+    return false;
+  }
+  if (override === "require") {
+    return true;
+  }
+
+  try {
+    const url = new URL(connectionString);
+    const sslMode = url.searchParams.get("sslmode");
+    if (sslMode?.toLowerCase() === "require") {
+      return true;
     }
+    const host = url.hostname.toLowerCase();
+    if (host.endsWith("supabase.co") || host.endsWith("supabase.net")) {
+      return true;
+    }
+  } catch {
+    // ignore malformed URL parsing errors
   }
+
+  return false;
 }
 
-let database: DatabaseInstance | null = null;
+function getPool(): Pool {
+  if (!pool) {
+    const connectionString = resolveConnectionString();
+    const config: PoolConfig = {
+      connectionString,
+      max: process.env.PGPOOL_MAX ? Number(process.env.PGPOOL_MAX) : undefined,
+    };
 
-function resolveDatabasePath(): string {
-  const configuredPath = process.env.DB_SQLITE_PATH;
-  if (!configuredPath?.trim()) {
-    throw new Error("Database configuration is missing. Set DB_SQLITE_PATH to a writable SQLite file path.");
+    if (shouldEnableSsl(connectionString)) {
+      config.ssl = { rejectUnauthorized: false };
+    }
+
+    pool = new Pool(config);
   }
 
-  const resolvedPath = path.isAbsolute(configuredPath)
-    ? configuredPath
-    : path.resolve(process.cwd(), configuredPath);
-
-  const directory = path.dirname(resolvedPath);
-  if (!fs.existsSync(directory)) {
-    fs.mkdirSync(directory, { recursive: true });
-  }
-
-  return resolvedPath;
+  return pool;
 }
 
-function getDatabaseInstance(): DatabaseInstance {
-  if (!database) {
-    const filePath = resolveDatabasePath();
-    const instance = new (Database as unknown as { new (path: string): DatabaseInstance })(filePath);
-    instance.pragma("foreign_keys = ON");
-    database = instance;
+type NormalizedSql = { text: string; values: unknown[] };
+
+function normalizeSql(sql: string, params: unknown[]): NormalizedSql {
+  if (!params.length) {
+    return { text: sql, values: [] };
   }
-  return database;
+
+  let index = 0;
+  const text = sql.replace(/\?/g, () => {
+    index += 1;
+    return `$${index}`;
+  });
+
+  if (index !== params.length) {
+    throw new Error(
+      `Mismatched SQL parameter count. Found ${index} placeholder(s) but received ${params.length} value(s).`
+    );
+  }
+
+  return { text, values: params };
 }
 
-export async function withConnection<T>(callback: (connection: SQLiteConnection) => Promise<T>): Promise<T> {
-  const dbInstance = getDatabaseInstance();
-  const connection = new SQLiteConnection(dbInstance);
-  return callback(connection);
+export async function withConnection<T>(callback: (connection: PostgresConnection) => Promise<T>): Promise<T> {
+  const client = await getPool().connect();
+
+  try {
+    const connection = new PostgresConnection(client);
+    return await callback(connection);
+  } finally {
+    client.release();
+  }
 }

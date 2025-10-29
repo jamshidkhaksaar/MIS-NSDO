@@ -1,9 +1,7 @@
 #!/usr/bin/env node
 /* eslint-disable @typescript-eslint/no-require-imports */
 
-const fs = require("node:fs");
-const path = require("node:path");
-const Database = require("better-sqlite3");
+const { Pool } = require("pg");
 const bcrypt = require("bcryptjs");
 
 const DEFAULT_PASSWORD = "Kabul@321$";
@@ -55,6 +53,50 @@ function parseArgs(argv) {
   return options;
 }
 
+function resolveConnectionString() {
+  const connectionString =
+    process.env.DATABASE_URL ||
+    process.env.POSTGRES_URL ||
+    process.env.SUPABASE_DB_URL ||
+    process.env.SUPABASE_CONNECTION_STRING ||
+    process.env.SUPABASE_DB_URL_INTERNAL;
+
+  if (!connectionString || !connectionString.trim()) {
+    console.error(
+      "Database configuration is missing. Set DATABASE_URL (or SUPABASE_DB_URL) to a Postgres connection string."
+    );
+    process.exit(1);
+  }
+
+  return connectionString.trim();
+}
+
+function shouldEnableSsl(connectionString) {
+  const override = process.env.PGSSLMODE ? process.env.PGSSLMODE.toLowerCase() : null;
+  if (override === "disable") {
+    return false;
+  }
+  if (override === "require") {
+    return true;
+  }
+
+  try {
+    const url = new URL(connectionString);
+    const sslMode = url.searchParams.get("sslmode");
+    if (sslMode && sslMode.toLowerCase() === "require") {
+      return true;
+    }
+    const host = url.hostname.toLowerCase();
+    if (host.endsWith("supabase.co") || host.endsWith("supabase.net")) {
+      return true;
+    }
+  } catch (error) {
+    console.warn("Warning: unable to inspect database URL for SSL settings:", error.message);
+  }
+
+  return false;
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2));
 
@@ -85,38 +127,41 @@ async function main() {
     process.exit(1);
   }
 
-  const dbPathSetting = typeof process.env.DB_SQLITE_PATH === "string" && process.env.DB_SQLITE_PATH.trim().length
-    ? process.env.DB_SQLITE_PATH.trim()
-    : "./database/dev.db";
-  const dbPath = path.isAbsolute(dbPathSetting)
-    ? dbPathSetting
-    : path.resolve(process.cwd(), dbPathSetting);
-  const dbDirectory = path.dirname(dbPath);
-  if (!fs.existsSync(dbDirectory)) {
-    fs.mkdirSync(dbDirectory, { recursive: true });
+  const connectionString = resolveConnectionString();
+  const poolConfig = {
+    connectionString,
+  };
+
+  if (shouldEnableSsl(connectionString)) {
+    poolConfig.ssl = { rejectUnauthorized: false };
   }
 
-  const database = new Database(dbPath);
-  database.pragma("foreign_keys = ON");
+  const pool = new Pool(poolConfig);
+  const client = await pool.connect();
 
   try {
+    await client.query("BEGIN");
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
 
-    const existing = database
-      .prepare("SELECT id, password_hash FROM users WHERE email = ? LIMIT 1")
-      .get(email);
+    const existingResult = await client.query(
+      "SELECT id, password_hash FROM users WHERE email = $1 LIMIT 1",
+      [email]
+    );
 
-    if (existing) {
-      database
-        .prepare(
-          "UPDATE users SET name = ?, role = ?, organization = ?, password_hash = ?, updated_at = datetime('now') WHERE id = ?"
-        )
-        .run(name, role, organization, passwordHash, existing.id);
+    if (existingResult.rows.length) {
+      const existing = existingResult.rows[0];
+      await client.query(
+        "UPDATE users SET name = $1, role = $2, organization = $3, password_hash = $4, updated_at = NOW() WHERE id = $5",
+        [name, role, organization, passwordHash, existing.id]
+      );
     } else {
-      database
-        .prepare("INSERT INTO users (name, email, role, organization, password_hash) VALUES (?, ?, ?, ?, ?)")
-        .run(name, email, role, organization, passwordHash);
+      await client.query(
+        "INSERT INTO users (name, email, role, organization, password_hash) VALUES ($1, $2, $3, $4, $5)",
+        [name, email, role, organization, passwordHash]
+      );
     }
+
+    await client.query("COMMIT");
 
     console.log(
       `User ${name} <${email}> stored successfully with role "${role}".${
@@ -127,10 +172,16 @@ async function main() {
       "Reminder: Update the user's password via your identity policy if the default value is temporary."
     );
   } catch (error) {
+    try {
+      await client.query("ROLLBACK");
+    } catch (rollbackError) {
+      console.error("Failed to rollback transaction:", rollbackError);
+    }
     console.error("Failed to store user record:", error.message);
     process.exitCode = 1;
   } finally {
-    database.close();
+    client.release();
+    await pool.end();
   }
 }
 

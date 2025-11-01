@@ -1331,7 +1331,7 @@ export default function Home() {
               onClick={(e) => handleNavClick(e, "#publish-dashboard")}
               className="inline-flex h-11 min-w-[180px] items-center justify-center whitespace-nowrap rounded-full px-5 text-sm font-semibold chip-brand-soft"
             >
-              Publish Dashboard
+              Public Dashboard
             </a>
           </div>
 

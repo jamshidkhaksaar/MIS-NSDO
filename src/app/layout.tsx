@@ -3,6 +3,7 @@ import "./globals.css";
 import "./nav-overrides.css";
 import { DashboardDataProvider } from "@/context/DashboardDataContext";
 import BrandingHead from "@/ui/BrandingHead";
+import AppFooter from "@/app/components/app-footer";
 
 export const metadata: Metadata = {
   title: "MIS NSDO",
@@ -16,10 +17,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>
+      <body className="min-h-screen">
         <DashboardDataProvider>
           <BrandingHead />
-          {children}
+          <div className="flex min-h-screen flex-col">
+            <main className="flex-1">{children}</main>
+            <AppFooter />
+          </div>
         </DashboardDataProvider>
       </body>
     </html>

@@ -105,12 +105,13 @@ function shouldEnableSsl(connectionString: string): boolean {
 function getPool(): Pool {
   if (!pool) {
     const connectionString = resolveConnectionString();
+    const enableSsl = shouldEnableSsl(connectionString);
     const config: PoolConfig = {
-      connectionString,
+      connectionString: enableSsl ? sanitizeConnectionString(connectionString) : connectionString,
       max: process.env.PGPOOL_MAX ? Number(process.env.PGPOOL_MAX) : undefined,
     };
 
-    if (shouldEnableSsl(connectionString)) {
+    if (enableSsl) {
       config.ssl = { rejectUnauthorized: false };
     }
 
@@ -150,5 +151,20 @@ export async function withConnection<T>(callback: (connection: PostgresConnectio
     return await callback(connection);
   } finally {
     client.release();
+  }
+}
+
+function sanitizeConnectionString(connectionString: string): string {
+  try {
+    const url = new URL(connectionString);
+    if (url.searchParams.has("sslmode")) {
+      url.searchParams.delete("sslmode");
+    }
+    if (!url.searchParams.toString()) {
+      url.search = "";
+    }
+    return url.toString();
+  } catch {
+    return connectionString;
   }
 }

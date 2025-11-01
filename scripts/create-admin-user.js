@@ -105,6 +105,22 @@ function normalizeSslMode(value) {
   return value ? value.trim().toLowerCase() : null;
 }
 
+function sanitizeConnectionString(connectionString) {
+  try {
+    const url = new URL(connectionString);
+    if (url.searchParams.has("sslmode")) {
+      url.searchParams.delete("sslmode");
+    }
+    if (!url.searchParams.toString()) {
+      url.search = "";
+    }
+    return url.toString();
+  } catch (error) {
+    console.warn("Warning: unable to sanitize database URL for SSL settings:", error.message);
+    return connectionString;
+  }
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2));
 
@@ -136,11 +152,12 @@ async function main() {
   }
 
   const connectionString = resolveConnectionString();
+  const enableSsl = shouldEnableSsl(connectionString);
   const poolConfig = {
-    connectionString,
+    connectionString: enableSsl ? sanitizeConnectionString(connectionString) : connectionString,
   };
 
-  if (shouldEnableSsl(connectionString)) {
+  if (enableSsl) {
     poolConfig.ssl = { rejectUnauthorized: false };
   }
 

@@ -1,7 +1,9 @@
+'use client';
+
 import { useDashboardData } from "@/context/DashboardDataContext";
 import { APP_VERSION } from "@/lib/version";
 
-export default function AppFooter(): JSX.Element {
+export default function AppFooter() {
   const { branding } = useDashboardData();
   const organisation = branding.companyName?.trim() || "NSDO";
 

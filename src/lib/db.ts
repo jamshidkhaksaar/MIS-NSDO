@@ -50,6 +50,12 @@ class PostgresConnection {
 
 let pool: Pool | null = null;
 
+const TLS_REQUIRED_SSLMODES = new Set(["require", "verify-ca", "verify-full"]);
+
+function normalizeSslMode(value: string | null | undefined): string | null {
+  return value ? value.trim().toLowerCase() : null;
+}
+
 function resolveConnectionString(): string {
   const connectionString =
     process.env.DATABASE_URL ??
@@ -68,18 +74,21 @@ function resolveConnectionString(): string {
 }
 
 function shouldEnableSsl(connectionString: string): boolean {
-  const override = process.env.PGSSLMODE?.toLowerCase();
+  const override = normalizeSslMode(process.env.PGSSLMODE);
   if (override === "disable") {
     return false;
   }
-  if (override === "require") {
+  if (override && TLS_REQUIRED_SSLMODES.has(override)) {
     return true;
   }
 
   try {
     const url = new URL(connectionString);
-    const sslMode = url.searchParams.get("sslmode");
-    if (sslMode?.toLowerCase() === "require") {
+    const sslMode = normalizeSslMode(url.searchParams.get("sslmode"));
+    if (sslMode === "disable") {
+      return false;
+    }
+    if (sslMode && TLS_REQUIRED_SSLMODES.has(sslMode)) {
       return true;
     }
     const host = url.hostname.toLowerCase();

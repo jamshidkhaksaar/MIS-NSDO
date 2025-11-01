@@ -1,19 +1,35 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-Source lives in `src/app`, following the Next.js App Router layout: `layout.tsx` defines the shell, `page.tsx` hosts the default route, and feature-specific segments should sit in their own subfolders. Shared styles belong in `globals.css`. Store static assets in `public/`; keep generated artefacts out of version control.
+- Keep feature code under `src/app`; use App Router segments (`src/app/(segment)/page.tsx`) to scope domain features.
+- `src/app/layout.tsx` defines the shared shell; keep cross-cutting UI in `src/app/components/` and shared styles in `src/app/globals.css`.
+- Store reusable types in `types/`, scripts and scaffolding utilities in `scripts/`, and Supabase assets under `supabase/`.
+- Check static assets into `public/`; treat `build/`, `dist/`, `jk-next-dist/`, and `next-dist/` as generated output that should not be re-committed.
 
 ## Build, Test, and Development Commands
-Use `npm run dev` for a hot-reloading local server with Turbopack. `npm run build` creates the production bundle; run it before deploying or testing CI pipelines. Serve the optimized build with `npm run start`. Lint TypeScript and React code with `npm run lint`; fix issues before committing.
+- `npm run dev` — start the Turbopack dev server for local work.
+- `npm run build` — compile the production bundle; run before release validation.
+- `npm run start` — serve the optimized build locally.
+- `npm run lint` — enforce the Next.js ESLint configuration.
 
 ## Coding Style & Naming Conventions
-Write components as typed React function components and prefer server components unless client APIs are required. Use TypeScript interfaces for props and keep filenames kebab- or camel-cased to match the exported symbol (`hero-banner.tsx` for `HeroBanner`). Follow the default Next.js ESLint rules; maintain two-space indentation, single quotes in JSX/TSX, and keep CSS utility classes readable by grouping related Tailwind utilities.
+- Write typed React function components; default to server components until client APIs are required.
+- Use two-space indentation, single quotes in TSX/JSX, and keep Tailwind classes grouped logically.
+- Match filenames to exports (`hero-banner.tsx` → `HeroBanner`) using kebab- or camel-case; colocate segment-specific styles with their components when necessary.
+- Prefer TypeScript interfaces for props and shared contracts in `types/`.
 
 ## Testing Guidelines
-Automated tests are not yet scaffolded; when adding them, colocate unit tests beside the feature or under an eventual `src/tests` directory. Favor React Testing Library for component behaviour and add integration coverage for routing boundaries. Name test files with `.test.ts` or `.test.tsx`. Run the full suite in CI with `npm test` once introduced and keep coverage thresholds explicit in future tooling.
+- Testing is not scaffolded yet; plan new tests beside features (`feature.test.tsx`) or under `src/tests/`.
+- Use React Testing Library for component behaviour and add routing edge cases around App Router boundaries.
+- Once tests exist, run the suite with `npm test` and document required coverage thresholds.
 
 ## Commit & Pull Request Guidelines
-Adopt Conventional Commit prefixes (`feat:`, `fix:`, `chore:`) with concise, imperative summaries under 72 characters. Reference issue IDs when available. Pull requests should outline intent, implementation notes, and testing performed; include screenshots or recordings for UI changes. Keep diffs focused, update related documentation, and request reviews from owners of the affected modules.
+- Follow Conventional Commit prefixes (`feat:`, `fix:`, `chore:`) with concise, imperative subject lines under 72 characters.
+- Reference issue IDs or tickets in the subject when available.
+- PRs should call out intent, implementation notes, affected routes, and manual verification steps; include screenshots from `screenshots/` for UI updates.
+- Keep diffs narrowly scoped and update any relevant docs when behaviour changes.
 
-## Environment & Configuration Tips
-Local secrets belong in `.env.local`; never commit `.env*` files. Update `next.config.ts` when adding rewrites or environment-dependent logic and document defaults in the PR. After dependency changes, refresh lockfiles with the matching Node version to avoid unexpected Turbopack rebuild errors.
+## Security & Configuration Tips
+- Store local secrets in `.env.local` and never commit `.env*` files.
+- Document new environment variables in the PR description and mirror defaults in `next.config.ts` when applicable.
+- After dependency updates, refresh `package-lock.json` with the repository’s Node version to avoid Turbopack cache thrash.

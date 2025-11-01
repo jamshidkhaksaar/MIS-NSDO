@@ -6,6 +6,7 @@ const bcrypt = require("bcryptjs");
 
 const DEFAULT_PASSWORD = "Kabul@321$";
 const SALT_ROUNDS = 10;
+const TLS_REQUIRED_SSLMODES = new Set(["require", "verify-ca", "verify-full"]);
 
 function printUsage() {
   console.log(`
@@ -72,18 +73,21 @@ function resolveConnectionString() {
 }
 
 function shouldEnableSsl(connectionString) {
-  const override = process.env.PGSSLMODE ? process.env.PGSSLMODE.toLowerCase() : null;
+  const override = normalizeSslMode(process.env.PGSSLMODE);
   if (override === "disable") {
     return false;
   }
-  if (override === "require") {
+  if (override && TLS_REQUIRED_SSLMODES.has(override)) {
     return true;
   }
 
   try {
     const url = new URL(connectionString);
-    const sslMode = url.searchParams.get("sslmode");
-    if (sslMode && sslMode.toLowerCase() === "require") {
+    const sslMode = normalizeSslMode(url.searchParams.get("sslmode"));
+    if (sslMode === "disable") {
+      return false;
+    }
+    if (sslMode && TLS_REQUIRED_SSLMODES.has(sslMode)) {
       return true;
     }
     const host = url.hostname.toLowerCase();
@@ -95,6 +99,10 @@ function shouldEnableSsl(connectionString) {
   }
 
   return false;
+}
+
+function normalizeSslMode(value) {
+  return value ? value.trim().toLowerCase() : null;
 }
 
 async function main() {

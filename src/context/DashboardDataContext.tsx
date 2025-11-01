@@ -328,6 +328,7 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (isPublicRoute) {
+      setIsLoading(true);
       setSectors({});
       setReportingYears([]);
       setUsers([]);
@@ -342,7 +343,6 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
         resolved: 0,
       });
       setCrmAwareness([]);
-      setBranding(DEFAULT_BRANDING);
       setClusterCatalog([]);
       setSectorCatalog([]);
       setMonitoring({
@@ -389,7 +389,20 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
       });
       setUserAccessAssignments([]);
       setIntegrations([]);
-      setIsLoading(false);
+      setBranding(DEFAULT_BRANDING);
+      jsonFetch<BrandingSettings>("/api/branding")
+        .then((settings) => {
+          setBranding(settings);
+        })
+        .catch((error) => {
+          const status = (error as JsonFetchError)?.status;
+          if (status && status >= 500) {
+            console.error("Failed to load public branding", error);
+          }
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
       return;
     }
     refresh();

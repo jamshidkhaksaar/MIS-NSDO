@@ -1,6 +1,16 @@
 import { NextResponse } from "next/server";
-import { updateBranding } from "@/lib/dashboard-repository";
+import { fetchBrandingSettings, updateBranding } from "@/lib/dashboard-repository";
 import { requireUserSession, UnauthorizedError } from "@/lib/auth-server";
+
+export async function GET() {
+  try {
+    const branding = await fetchBrandingSettings();
+    return NextResponse.json(branding);
+  } catch (error) {
+    console.error("Failed to load branding", error);
+    return NextResponse.json({ message: "Failed to load branding" }, { status: 500 });
+  }
+}
 
 export async function PATCH(request: Request) {
   try {

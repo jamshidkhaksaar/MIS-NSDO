@@ -54,6 +54,7 @@ import {
   type UserAccessAssignmentRecord,
   type IntegrationRecord,
   type ComplaintStatus,
+  type BrandingSettings,
 } from "@/lib/dashboard-data";
 import { withConnection } from "@/lib/db";
 
@@ -623,6 +624,14 @@ function bufferToDataUrl(data: Buffer | null, mime: string | null): string | nul
   return `data:${mimeType};base64,${data.toString("base64")}`;
 }
 
+function mapBrandingRow(row: BrandingRow | undefined): BrandingSettings {
+  return {
+    companyName: row?.company_name ?? "NSDO",
+    logoDataUrl: bufferToDataUrl(row?.logo_data ?? null, row?.logo_mime ?? null),
+    faviconDataUrl: bufferToDataUrl(row?.favicon_data ?? null, row?.favicon_mime ?? null),
+  };
+}
+
 export async function fetchDashboardState(): Promise<DashboardState> {
   return withConnection(async (connection) => {
     const [sectorRows] = await connection.query<SectorRow>("SELECT * FROM sectors ORDER BY display_name ASC");
@@ -730,13 +739,7 @@ export async function fetchDashboardState(): Promise<DashboardState> {
       "SELECT company_name, logo_data, logo_mime, favicon_data, favicon_mime FROM branding_settings WHERE id = 1"
     );
 
-    const brandingRow = brandingRows[0];
-
-    const branding = {
-      companyName: brandingRow?.company_name ?? "NSDO",
-      logoDataUrl: bufferToDataUrl(brandingRow?.logo_data ?? null, brandingRow?.logo_mime ?? null),
-      faviconDataUrl: bufferToDataUrl(brandingRow?.favicon_data ?? null, brandingRow?.favicon_mime ?? null),
-    };
+    const branding = mapBrandingRow(brandingRows[0]);
 
     const [tableInfoRows] = await connection.query<{ name: string }>(
       "SELECT tablename AS name FROM pg_catalog.pg_tables WHERE schemaname = 'public'"
@@ -2914,5 +2917,14 @@ export async function updateBranding(payload: {
          favicon_mime = COALESCE(excluded.favicon_mime, branding_settings.favicon_mime)`,
       [companyName ?? "NSDO", logo.data, logo.mime, favicon.data, favicon.mime]
     );
+  });
+}
+
+export async function fetchBrandingSettings(): Promise<BrandingSettings> {
+  return withConnection(async (connection) => {
+    const [rows] = await connection.query<BrandingRow>(
+      "SELECT company_name, logo_data, logo_mime, favicon_data, favicon_mime FROM branding_settings WHERE id = 1"
+    );
+    return mapBrandingRow(rows[0]);
   });
 }

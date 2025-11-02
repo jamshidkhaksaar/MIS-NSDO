@@ -2,6 +2,7 @@
 
 import {
   ChangeEvent,
+  Fragment,
   useCallback,
   useEffect,
   useMemo,
@@ -2026,18 +2027,17 @@ export default function Home() {
         )}
       </aside>
       <section className="border-b border-brand bg-brand-soft">
-        <div className="mx-auto max-w-7xl px-3 sm:px-4 md:px-6 py-3 sm:py-4 flex flex-col gap-3">
-          <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4">
-            <h2 className="text-sm sm:text-base font-semibold uppercase tracking-wide text-brand-primary">
-              Working Sectors
-            </h2>
-            <div className="flex flex-wrap flex-row-reverse items-center justify-end gap-2 sm:gap-3 md:gap-4">
-              {sectorOrder.map((sector) => {
-                const isActive = selectedSector === sector;
-                const isDisabled = isProjectFiltered && sector !== ALL_SECTOR_KEY;
-                return (
+        <div className="mx-auto max-w-7xl px-3 sm:px-4 md:px-6 py-3 sm:py-4 flex flex-wrap items-center justify-between gap-3 sm:gap-4">
+          <h2 className="text-sm sm:text-base font-semibold uppercase tracking-wide text-brand-primary">
+            Working Sectors
+          </h2>
+          <div className="flex flex-wrap flex-row-reverse items-center justify-end gap-2 sm:gap-3 md:gap-4">
+            {sectorOrder.map((sector) => {
+              const isActive = selectedSector === sector;
+              const isDisabled = isProjectFiltered && sector !== ALL_SECTOR_KEY;
+              return (
+                <Fragment key={sector}>
                   <button
-                    key={sector}
                     type="button"
                     onClick={() => handleSectorClick(sector)}
                     aria-pressed={isActive}
@@ -2052,26 +2052,21 @@ export default function Home() {
                   >
                     {sector}
                   </button>
-                );
-              })}
-            </div>
+                  {sector === ALL_SECTOR_KEY && mainSectors.length
+                    ? mainSectors.map((mainSector) => (
+                        <span
+                          key={`main-${mainSector.id}`}
+                          className="rounded-full border border-brand bg-white px-3 py-2 text-sm font-semibold text-brand-primary shadow-sm"
+                          title={mainSector.description ?? mainSector.name}
+                        >
+                          {mainSector.name}
+                        </span>
+                      ))
+                    : null}
+                </Fragment>
+              );
+            })}
           </div>
-          {mainSectors.length ? (
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded-full bg-white px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-brand-soft">
-                Main Sectors
-              </span>
-              {mainSectors.map((sector) => (
-                <span
-                  key={sector.id}
-                  className="rounded-full border border-brand bg-white px-3 py-1 text-xs font-semibold text-brand-primary shadow-sm"
-                  title={sector.description ?? sector.name}
-                >
-                  {sector.name}
-                </span>
-              ))}
-            </div>
-          ) : null}
         </div>
       </section>
 

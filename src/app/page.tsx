@@ -2078,7 +2078,7 @@ export default function Home() {
           </h2>
           <div className="flex flex-wrap flex-row-reverse items-center justify-end gap-2 sm:gap-3 md:gap-4">
             {sectorOrder.map((sector) => {
-              const isActive = selectedSector === sector || (sector === ALL_SECTOR_KEY && selectedMainSectorId !== null);
+              const isActive = selectedSector === sector;
               const isDisabled = isProjectFiltered && sector !== ALL_SECTOR_KEY;
               return (
                 <Fragment key={sector}>
@@ -2203,35 +2203,40 @@ export default function Home() {
                             : [];
                         })();
                     return options.length ? (
-                      <div className="flex flex-1 min-w-[200px] sm:min-w-[220px] flex-col gap-2">
-                        <div className="space-y-2">
-                          <label className="flex items-center gap-3 rounded-lg border border-brand bg-white px-3 py-2 cursor-pointer hover:bg-brand-soft/30 transition-colors">
-                            <input
-                              type="checkbox"
-                              checked={!selectedSubSectorName}
-                              onChange={() => {
-                                setSelectedSubSectorName(null);
-                                setSelectedProjectId("all");
-                              }}
-                              className="h-4 w-4 rounded border-brand-soft text-brand-primary accent-brand-primary cursor-pointer"
-                            />
-                            <span className="text-xs sm:text-sm font-medium text-brand-strong">All sub-sectors</span>
-                          </label>
+                      <div className="relative">
+                        <select
+                          id="sub-sector-filter"
+                          value={selectedSubSectorName ?? ""}
+                          onChange={(event: ChangeEvent<HTMLSelectElement>) => {
+                            const value = event.target.value;
+                            setSelectedSubSectorName(value ? value : null);
+                            setSelectedProjectId("all");
+                          }}
+                          className="input-brand w-full appearance-none rounded-lg px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium"
+                        >
+                          <option value="">All sub-sectors</option>
                           {options.map((option) => (
-                            <label key={option.id} className="flex items-center gap-3 rounded-lg border border-brand bg-white px-3 py-2 cursor-pointer hover:bg-brand-soft/30 transition-colors">
-                              <input
-                                type="checkbox"
-                                checked={selectedSubSectorName === option.name}
-                                onChange={() => {
-                                  setSelectedSubSectorName(option.name);
-                                  setSelectedProjectId("all");
-                                }}
-                                className="h-4 w-4 rounded border-brand-soft text-brand-primary accent-brand-primary cursor-pointer"
-                              />
-                              <span className="text-xs sm:text-sm font-medium text-brand-strong">{option.name}</span>
-                            </label>
+                            <option key={option.id} value={option.name}>
+                              {option.name}
+                            </option>
                           ))}
-                        </div>
+                        </select>
+                        <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-brand-soft">
+                          <svg
+                            className="h-3 w-3"
+                            viewBox="0 0 12 12"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              d="M3 4.5L6 7.5L9 4.5"
+                              stroke="currentColor"
+                              strokeWidth="1.5"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                        </span>
                       </div>
                     ) : (
                       <p className="text-xs text-brand-soft">

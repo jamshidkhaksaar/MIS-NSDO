@@ -331,13 +331,7 @@ export default function Home() {
 
   const isAdmin = isAuthenticated && userRole === "Administrator";
 
-  const navigableSections = useMemo(
-    () =>
-      isAdmin
-        ? [...BASE_SECTION_LINKS, { href: "#admin-access", label: "Admin & Access" }]
-        : BASE_SECTION_LINKS,
-    [isAdmin]
-  );
+  const navigableSections = BASE_SECTION_LINKS;
 
   useEffect(() => {
     if (reportingYears.length && !reportingYears.includes(selectedYear)) {
@@ -3653,81 +3647,7 @@ export default function Home() {
         </section>
         )}
 
-        {isAdmin && (isLoading ? (
-          <TelegramSectionLoader cardCount={5} />
-        ) : (
-          <section
-            id="admin-access"
-            className="rounded-3xl border border-brand bg-white p-8 shadow-sm"
-          >
-            <div className="flex flex-col gap-8">
-              <div className="flex flex-wrap items-baseline justify-between gap-4">
-                <div>
-                  <h2 className="text-xl font-semibold text-brand-strong">Admin & Access</h2>
-                  <p className="text-sm text-brand-soft">
-                    Manage user roles, province/project assignments, and connected integrations.
-                  </p>
-                </div>
-                <div className="flex flex-wrap items-center gap-3 text-xs font-semibold uppercase tracking-wide text-brand-muted">
-                  <span className="rounded-full bg-brand-soft px-3 py-1">
-                    {users.length} users
-                  </span>
-                  <span className="rounded-full bg-brand-soft px-3 py-1">
-                    {integrations.length} integrations
-                  </span>
-                </div>
-              </div>
 
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                {(["Administrator", "Editor", "Viewer"] as const).map((role) => (
-                  <div key={role} className="rounded-2xl border border-brand bg-brand-soft/40 p-5 shadow-sm">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-brand-soft">
-                      {role}s
-                    </p>
-                    <p className="mt-2 text-2xl font-semibold text-brand-strong">
-                      {(adminSummary.roleCounts[role] ?? 0).toLocaleString()}
-                    </p>
-                  </div>
-                ))}
-                <div className="rounded-2xl border border-brand bg-brand-soft/40 p-5 shadow-sm">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-brand-soft">
-                    Province Assignments
-                  </p>
-                  <p className="mt-2 text-2xl font-semibold text-brand-strong">
-                    {adminSummary.provinceAssignments.toLocaleString()}
-                  </p>
-                  <p className="mt-1 text-xs text-brand-soft">Role-based provincial permissions</p>
-                </div>
-                <div className="rounded-2xl border border-brand bg-brand-soft/40 p-5 shadow-sm">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-brand-soft">
-                    Project Assignments
-                  </p>
-                  <p className="mt-2 text-2xl font-semibold text-brand-strong">
-                    {adminSummary.projectAssignments.toLocaleString()}
-                  </p>
-                  <p className="mt-1 text-xs text-brand-soft">Project-specific access grants</p>
-                </div>
-              </div>
-
-              <div className="rounded-2xl border border-brand bg-brand-soft/30 p-5 shadow-sm">
-                <h3 className="text-sm font-semibold text-brand-strong">Connected Integrations</h3>
-                <div className="mt-4 flex flex-wrap gap-3 text-xs font-semibold uppercase tracking-wide text-brand-muted">
-                  {adminSummary.integrationNames.length ? (
-                    adminSummary.integrationNames.map((name) => (
-                      <span key={name} className="rounded-full bg-white px-3 py-1 shadow-sm">
-                        {name}
-                      </span>
-                    ))
-                  ) : (
-                    <span className="rounded-full bg-white px-3 py-1 shadow-sm">
-                      Configure Kobo or API integrations to streamline data ingestion.
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-          </section>
-        ))}
       </main>
 
       <div className="mx-auto mt-16 flex max-w-7xl justify-center px-3 sm:px-4 md:px-6">

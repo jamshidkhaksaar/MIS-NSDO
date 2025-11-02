@@ -206,6 +206,7 @@ export default function Home() {
     useState<DashboardSectorKey>(ALL_SECTOR_KEY);
   const [selectedProjectId, setSelectedProjectId] = useState<string>("all");
   const [selectedSubSectors, setSelectedSubSectors] = useState<string[]>([]);
+  const [selectedMainSectorId, setSelectedMainSectorId] = useState<string | null>(null);
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
 
   const [selectedYear, setSelectedYear] = useState<number>(() => {
@@ -276,6 +277,7 @@ export default function Home() {
   }, [projects, selectedProjectId]);
 
   const toggleSubSector = useCallback((name: string) => {
+    setSelectedMainSectorId(null);
     setSelectedSubSectors((previous) => {
       if (previous.includes(name)) {
         return previous.filter((value) => value !== name);
@@ -283,6 +285,30 @@ export default function Home() {
       return [...previous, name];
     });
   }, []);
+
+  const handleMainSectorClick = useCallback(
+    (mainSectorId: string) => {
+      const children = subSectorsByMain.get(mainSectorId) ?? [];
+      const resolvedNames = children.length
+        ? Array.from(new Set(children.map((child) => child.name)))
+        : (() => {
+            const match = mainSectors.find((sector) => sector.id === mainSectorId);
+            return match ? [match.name] : [];
+          })();
+
+      if (selectedMainSectorId === mainSectorId) {
+        setSelectedMainSectorId(null);
+        setSelectedSubSectors([]);
+        return;
+      }
+
+      setSelectedMainSectorId(mainSectorId);
+      setSelectedSector(ALL_SECTOR_KEY);
+      setSelectedProjectId("all");
+      setSelectedSubSectors(resolvedNames);
+    },
+    [mainSectors, selectedMainSectorId, subSectorsByMain]
+  );
 
   const subSectorFilteredProjects = useMemo(() => {
     if (!selectedSubSectors.length) {
@@ -343,6 +369,31 @@ export default function Home() {
       setSelectedSector(ALL_SECTOR_KEY);
     }
   }, [selectedProject, selectedSector]);
+
+  useEffect(() => {
+    if (!selectedMainSectorId) {
+      return;
+    }
+    const children = subSectorsByMain.get(selectedMainSectorId) ?? [];
+    const expected = children.length
+      ? children.map((child) => child.name)
+      : (() => {
+          const match = mainSectors.find((sector) => sector.id === selectedMainSectorId);
+          return match ? [match.name] : [];
+        })();
+    const expectedSet = new Set(expected);
+    const currentSet = new Set(selectedSubSectors);
+    if (expectedSet.size !== currentSet.size) {
+      setSelectedMainSectorId(null);
+      return;
+    }
+    for (const name of expectedSet) {
+      if (!currentSet.has(name)) {
+        setSelectedMainSectorId(null);
+        break;
+      }
+    }
+  }, [selectedMainSectorId, selectedSubSectors, subSectorsByMain, mainSectors]);
 
   useEffect(() => {
     const validNames = new Set(subSectors.map((entry) => entry.name));
@@ -2053,15 +2104,25 @@ export default function Home() {
                     {sector}
                   </button>
                   {sector === ALL_SECTOR_KEY && mainSectors.length
-                    ? mainSectors.map((mainSector) => (
-                        <span
-                          key={`main-${mainSector.id}`}
-                          className="rounded-full border border-brand bg-white px-3 py-2 text-sm font-semibold text-brand-primary shadow-sm"
-                          title={mainSector.description ?? mainSector.name}
-                        >
-                          {mainSector.name}
-                        </span>
-                      ))
+                    ? mainSectors.map((mainSector) => {
+                        const isMainActive = selectedMainSectorId === mainSector.id;
+                        return (
+                          <button
+                            key={`main-${mainSector.id}`}
+                            type="button"
+                            onClick={() => handleMainSectorClick(mainSector.id)}
+                            aria-pressed={isMainActive}
+                            className={`relative min-w-[100px] sm:min-w-[140px] md:min-w-[170px] overflow-hidden rounded-full px-4 sm:px-6 md:px-7 py-2 sm:py-2.5 md:py-3 text-sm sm:text-base font-semibold text-center transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3ea93d] ${
+                              isMainActive
+                                ? "btn-brand text-white shadow-brand-soft scale-[1.05]"
+                                : "chip-brand-soft hover:scale-[1.02]"
+                            }`}
+                            title={mainSector.description ?? mainSector.name}
+                          >
+                            {mainSector.name}
+                          </button>
+                        );
+                      })
                     : null}
                 </Fragment>
               );
@@ -2204,7 +2265,10 @@ export default function Home() {
                 {selectedSubSectors.length ? (
                   <button
                     type="button"
-                    onClick={() => setSelectedSubSectors([])}
+                    onClick={() => {
+                      setSelectedMainSectorId(null);
+                      setSelectedSubSectors([]);
+                    }}
                     className="self-start text-xs font-semibold text-brand-primary hover:underline"
                   >
                     Clear selection

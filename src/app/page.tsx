@@ -27,6 +27,7 @@ import type {
   SectorKey,
 } from "@/lib/dashboard-data";
 import Loading from "./loading";
+import DashboardLoading from "./(components)/DashboardLoading";
 import {
   TelegramCardLoader,
   TelegramChartLoader,
@@ -35,6 +36,7 @@ import {
 } from "@/components/TelegramLoader";
 import MobileQuickNav from "./(components)/MobileQuickNav";
 import ReportDialog from "./(components)/ReportDialog";
+import BeneficiaryBarChart from "@/app/components/BeneficiaryBarChart";
 
 type DashboardSectorKey = SectorKey | typeof ALL_SECTOR_KEY;
 

@@ -9,6 +9,10 @@ export default function ComplaintFormPage() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [village, setVillage] = useState("");
+  const [gender, setGender] = useState("");
+  const [sourceOfComplaint, setSourceOfComplaint] = useState("");
+  const [howReported, setHowReported] = useState("");
   const [message, setMessage] = useState("");
   const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -41,6 +45,10 @@ export default function ComplaintFormPage() {
         fullName,
         email,
         phone,
+        village,
+        gender,
+        source_of_complaint: sourceOfComplaint,
+        how_reported: howReported,
         message,
       });
 
@@ -48,6 +56,10 @@ export default function ComplaintFormPage() {
       setFullName("");
       setEmail("");
       setPhone("");
+      setVillage("");
+      setGender("");
+      setSourceOfComplaint("");
+      setHowReported("");
       setMessage("");
     } catch (submissionError) {
       setError(submissionError instanceof Error ? submissionError.message : "Unable to submit complaint.");
@@ -99,7 +111,7 @@ export default function ComplaintFormPage() {
                   className="w-full rounded-lg input-brand px-4 py-2 text-sm text-brand-muted"
                 />
               </label>
-              <label className="md:col-span-2 flex flex-col gap-2 text-sm font-medium text-brand-muted">
+              <label className="flex flex-col gap-2 text-sm font-medium text-brand-muted">
                 <span className="text-xs uppercase tracking-wide text-brand-soft">Phone (optional)</span>
                 <input
                   type="tel"
@@ -108,6 +120,61 @@ export default function ComplaintFormPage() {
                   placeholder="e.g. +93 70 000 0000"
                   className="w-full rounded-lg input-brand px-4 py-2 text-sm text-brand-muted"
                 />
+              </label>
+              <label className="flex flex-col gap-2 text-sm font-medium text-brand-muted">
+                <span className="text-xs uppercase tracking-wide text-brand-soft">Village</span>
+                <input
+                  type="text"
+                  value={village}
+                  onChange={(event) => setVillage(event.target.value)}
+                  placeholder="e.g. Kanam"
+                  className="w-full rounded-lg input-brand px-4 py-2 text-sm text-brand-muted"
+                />
+              </label>
+              <label className="flex flex-col gap-2 text-sm font-medium text-brand-muted">
+                <span className="text-xs uppercase tracking-wide text-brand-soft">Gender</span>
+                <select
+                  value={gender}
+                  onChange={(event) => setGender(event.target.value)}
+                  className="w-full rounded-lg input-brand px-4 py-2 text-sm text-brand-muted"
+                >
+                  <option value="">Select...</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Other">Other</option>
+                </select>
+              </label>
+            </div>
+
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+              <label className="flex flex-col gap-2 text-sm font-medium text-brand-muted">
+                <span className="text-xs uppercase tracking-wide text-brand-soft">Source of Complaint</span>
+                <select
+                  value={sourceOfComplaint}
+                  onChange={(event) => setSourceOfComplaint(event.target.value)}
+                  className="w-full rounded-lg input-brand px-4 py-2 text-sm text-brand-muted"
+                >
+                  <option value="">Select...</option>
+                  <option value="Project beneficiary">Project beneficiary</option>
+                  <option value="Community member">Community member</option>
+                  <option value="Other">Other</option>
+                </select>
+              </label>
+              <label className="flex flex-col gap-2 text-sm font-medium text-brand-muted">
+                <span className="text-xs uppercase tracking-wide text-brand-soft">How it was Reported</span>
+                <select
+                  value={howReported}
+                  onChange={(event) => setHowReported(event.target.value)}
+                  className="w-full rounded-lg input-brand px-4 py-2 text-sm text-brand-muted"
+                >
+                  <option value="">Select...</option>
+                  <option value="In person (face to face)">In person (face to face)</option>
+                  <option value="By phone">By phone</option>
+                  <option value="Complaint box">Complaint box</option>
+                  <option value="Community meeting">Community meeting</option>
+                  <option value="Email">Email</option>
+                  <option value="AWAAZ Afghanistan">AWAAZ Afghanistan</option>
+                </select>
               </label>
             </div>
 

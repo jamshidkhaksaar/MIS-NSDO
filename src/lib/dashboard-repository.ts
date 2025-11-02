@@ -126,6 +126,16 @@ type ComplaintRow = {
   phone: string | null;
   message: string;
   submitted_at: string;
+  village: string | null;
+  gender: string | null;
+  source_of_complaint: string | null;
+  category: string | null;
+  complaint_type: string | null;
+  summary: string | null;
+  how_reported: string | null;
+  referred_to: string | null;
+  date_sent: string | null;
+  response_given: boolean | null;
 };
 
 type ComplaintMetadataRow = {
@@ -1294,7 +1304,7 @@ export async function fetchDashboardState(): Promise<DashboardState> {
     };
 
     const [complaintRows] = await connection.query<ComplaintRow>(
-      "SELECT id, full_name, email, phone, message, submitted_at FROM complaints ORDER BY submitted_at DESC"
+      "SELECT id, full_name, email, phone, message, submitted_at, village, gender, source_of_complaint, category, complaint_type, summary, how_reported, referred_to, date_sent, response_given FROM complaints ORDER BY submitted_at DESC"
     );
 
     const complaintIds = complaintRows.map((row) => row.id);
@@ -1357,6 +1367,16 @@ export async function fetchDashboardState(): Promise<DashboardState> {
         assignedOfficer: metadata?.assigned_officer ?? undefined,
         province: metadata?.province ?? undefined,
         district: metadata?.district ?? undefined,
+        village: row.village ?? undefined,
+        gender: row.gender ?? undefined,
+        source_of_complaint: row.source_of_complaint ?? undefined,
+        category: row.category ?? undefined,
+        complaint_type: row.complaint_type ?? undefined,
+        summary: row.summary ?? undefined,
+        how_reported: row.how_reported ?? undefined,
+        referred_to: row.referred_to ?? undefined,
+        date_sent: optionalIsoString(row.date_sent),
+        response_given: row.response_given ?? undefined,
         projectId: metadata?.project_id ? metadata.project_id.toString() : undefined,
         isAnonymous: Boolean(metadata?.is_anonymous),
         responses,
@@ -1688,11 +1708,24 @@ export async function insertComplaint(payload: {
   email: string;
   phone?: string;
   message: string;
+  village?: string;
+  gender?: string;
+  source_of_complaint?: string;
+  how_reported?: string;
 }): Promise<void> {
   await withConnection(async (connection) => {
     await connection.execute(
-      "INSERT INTO complaints (full_name, email, phone, message) VALUES (?, ?, ?, ?)",
-      [payload.fullName.trim(), payload.email.trim(), payload.phone?.trim() ?? null, payload.message.trim()]
+      "INSERT INTO complaints (full_name, email, phone, message, village, gender, source_of_complaint, how_reported) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+      [
+        payload.fullName.trim(),
+        payload.email.trim(),
+        payload.phone?.trim() ?? null,
+        payload.message.trim(),
+        payload.village?.trim() ?? null,
+        payload.gender?.trim() ?? null,
+        payload.source_of_complaint?.trim() ?? null,
+        payload.how_reported?.trim() ?? null,
+      ]
     );
   });
 }

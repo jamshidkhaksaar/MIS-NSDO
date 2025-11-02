@@ -140,7 +140,8 @@ type DashboardContextValue = {
   addUser: (user: { name: string; email: string; role: DashboardUserRole; organization?: string; password?: string }) => Promise<void>;
   removeUser: (userId: string) => Promise<void>;
   updateBranding: (payload: Partial<BrandingSettings>) => Promise<void>;
-  addComplaint: (complaint: { fullName: string; email: string; phone?: string; message: string }) => Promise<void>;
+  addComplaint: (complaint: Partial<ComplaintRecord>) => Promise<void>;
+  updateComplaint: (complaintId: string, updates: Partial<ComplaintRecord>) => Promise<void>;
   removeComplaint: (complaintId: string) => Promise<void>;
   registerCluster: (input: { name: string; description?: string }) => Promise<CatalogEntry>;
   registerSector: (input: { name: string; description?: string }) => Promise<CatalogEntry>;
@@ -608,10 +609,18 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
     await refresh();
   }, [refresh]);
 
-  const addComplaint = useCallback(async (complaint: { fullName: string; email: string; phone?: string; message: string }) => {
+  const addComplaint = useCallback(async (complaint: Partial<ComplaintRecord>) => {
     await jsonFetch("/api/complaints", {
       method: "POST",
       body: JSON.stringify(complaint),
+    });
+    await refresh();
+  }, [refresh]);
+
+  const updateComplaint = useCallback(async (complaintId: string, updates: Partial<ComplaintRecord>) => {
+    await jsonFetch(`/api/complaints/${complaintId}`, {
+      method: "PATCH",
+      body: JSON.stringify(updates),
     });
     await refresh();
   }, [refresh]);
@@ -681,6 +690,7 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
     removeUser,
     updateBranding,
     addComplaint,
+    updateComplaint,
     removeComplaint,
     registerCluster,
     registerSector,
@@ -726,6 +736,7 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
     removeUser,
     updateBranding,
     addComplaint,
+    updateComplaint,
     removeComplaint,
     registerCluster,
     registerSector,

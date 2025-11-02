@@ -11,6 +11,10 @@ export async function POST(request: Request) {
       email: payload.email,
       phone: payload.phone,
       message: payload.message,
+      village: payload.village,
+      gender: payload.gender,
+      source_of_complaint: payload.source_of_complaint,
+      how_reported: payload.how_reported,
     });
     return NextResponse.json({ message: "Complaint recorded" }, { status: 201 });
   } catch (error) {

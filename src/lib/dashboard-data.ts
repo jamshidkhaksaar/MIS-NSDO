@@ -182,6 +182,16 @@ export type ComplaintRecord = {
   assignedOfficer?: string;
   province?: string;
   district?: string;
+  village?: string;
+  gender?: string;
+  source_of_complaint?: string;
+  category?: string;
+  complaint_type?: string;
+  summary?: string;
+  how_reported?: string;
+  referred_to?: string;
+  date_sent?: string;
+  response_given?: boolean;
   projectId?: string;
   isAnonymous: boolean;
   responses: ComplaintResponseRecord[];

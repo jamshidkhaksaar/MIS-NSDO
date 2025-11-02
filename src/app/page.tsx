@@ -2069,49 +2069,60 @@ export default function Home() {
             Working Sectors
           </h2>
           <div className="flex flex-wrap flex-row-reverse items-center justify-end gap-2 sm:gap-3 md:gap-4">
-            {sectorOrder.map((sector) => {
-              const isActive = selectedSector === sector;
-              const isDisabled = isProjectFiltered && sector !== ALL_SECTOR_KEY;
-              console.log(`Sector: ${sector}, Selected: ${selectedSector}, IsActive: ${isActive}, IsDisabled: ${isDisabled}`);
+            <button
+              type="button"
+              onClick={() => handleSectorClick(ALL_SECTOR_KEY)}
+              aria-pressed={selectedSector === ALL_SECTOR_KEY}
+              disabled={isProjectFiltered}
+              className={`relative min-w-[100px] sm:min-w-[140px] md:min-w-[170px] overflow-hidden rounded-full px-4 sm:px-6 md:px-7 py-2 sm:py-2.5 md:py-3 text-sm sm:text-base font-semibold text-center transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3ea93d] ${
+                isProjectFiltered
+                  ? "chip-brand-soft cursor-not-allowed opacity-50"
+                  : selectedSector === ALL_SECTOR_KEY
+                  ? "btn-brand text-white shadow-brand-soft scale-[1.05]"
+                  : "chip-brand-soft hover:scale-[1.02]"
+              }`}
+            >
+              {ALL_SECTOR_KEY}
+            </button>
+            {sortedMainSectors.map((mainSector) => {
+              const isMainActive = selectedMainSectorId === mainSector.id;
               return (
-                <Fragment key={sector}>
-                  <button
-                    type="button"
-                    onClick={() => handleSectorClick(sector)}
-                    aria-pressed={isActive}
-                    disabled={isDisabled}
-                    className={`relative min-w-[100px] sm:min-w-[140px] md:min-w-[170px] overflow-hidden rounded-full px-4 sm:px-6 md:px-7 py-2 sm:py-2.5 md:py-3 text-sm sm:text-base font-semibold text-center transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3ea93d] ${
-                      isDisabled
-                        ? "chip-brand-soft cursor-not-allowed opacity-50"
-                        : isActive
-                        ? "btn-brand text-white shadow-brand-soft scale-[1.05]"
-                        : "chip-brand-soft hover:scale-[1.02]"
-                    }`}
-                  >
-                    {sector}
-                  </button>
-                  {sector === ALL_SECTOR_KEY && sortedMainSectors.length
-                    ? sortedMainSectors.map((mainSector) => {
-                        const isMainActive = selectedMainSectorId === mainSector.id;
-                        return (
-                          <button
-                            key={`main-${mainSector.id}`}
-                            type="button"
-                            onClick={() => handleMainSectorClick(mainSector.id)}
-                            aria-pressed={isMainActive}
-                            className={`relative min-w-[100px] sm:min-w-[140px] md:min-w-[170px] overflow-hidden rounded-full px-4 sm:px-6 md:px-7 py-2 sm:py-2.5 md:py-3 text-sm sm:text-base font-semibold text-center transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3ea93d] ${
-                              isMainActive
-                                ? "btn-brand text-white shadow-brand-soft scale-[1.05]"
-                                : "chip-brand-soft hover:scale-[1.02]"
-                            }`}
-                            title={mainSector.description ?? mainSector.name}
-                          >
-                            {mainSector.name}
-                          </button>
-                        );
-                      })
-                    : null}
-                </Fragment>
+                <button
+                  key={`main-${mainSector.id}`}
+                  type="button"
+                  onClick={() => handleMainSectorClick(mainSector.id)}
+                  aria-pressed={isMainActive}
+                  className={`relative min-w-[100px] sm:min-w-[140px] md:min-w-[170px] overflow-hidden rounded-full px-4 sm:px-6 md:px-7 py-2 sm:py-2.5 md:py-3 text-sm sm:text-base font-semibold text-center transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3ea93d] ${
+                    isMainActive
+                      ? "btn-brand text-white shadow-brand-soft scale-[1.05]"
+                      : "chip-brand-soft hover:scale-[1.02]"
+                  }`}
+                  title={mainSector.description ?? mainSector.name}
+                >
+                  {mainSector.name}
+                </button>
+              );
+            })}
+            {baseSectorKeys.map((sector) => {
+              const isActive = selectedSector === sector;
+              const isDisabled = isProjectFiltered;
+              return (
+                <button
+                  key={sector}
+                  type="button"
+                  onClick={() => handleSectorClick(sector)}
+                  aria-pressed={isActive}
+                  disabled={isDisabled}
+                  className={`relative min-w-[100px] sm:min-w-[140px] md:min-w-[170px] overflow-hidden rounded-full px-4 sm:px-6 md:px-7 py-2 sm:py-2.5 md:py-3 text-sm sm:text-base font-semibold text-center transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3ea93d] ${
+                    isDisabled
+                      ? "chip-brand-soft cursor-not-allowed opacity-50"
+                      : isActive
+                      ? "btn-brand text-white shadow-brand-soft scale-[1.05]"
+                      : "chip-brand-soft hover:scale-[1.02]"
+                  }`}
+                >
+                  {sector}
+                </button>
               );
             })}
           </div>

@@ -9,6 +9,7 @@ import { useDashboardData } from "@/context/DashboardDataContext";
 const NAV_LINKS = [
   { href: "/data-entry/monitoring", label: "Monitoring" },
   { href: "/data-entry/evaluation", label: "Evaluation" },
+  { href: "/data-entry/beneficiaries", label: "Beneficiaries" },
   { href: "/data-entry/accountability", label: "Accountability" },
   { href: "/data-entry/lesson-learns", label: "Lesson Learns" },
 ];

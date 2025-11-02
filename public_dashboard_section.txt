@@ -1,0 +1,526 @@
+id="publish-dashboard"
+        >
+
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 xl:gap-8">
+            <div className="space-y-6">
+              {/* Map Overview */}
+              {isLoading ? (
+                <TelegramMapLoader />
+              ) : (
+                <div className="flex flex-col overflow-hidden rounded-xl border border-brand bg-white shadow-sm">
+                <div className="flex flex-col gap-1 border-b border-brand bg-gradient-to-r from-[#e6f6ea] to-[#f7fdf9] px-6 py-4">
+                  <span className="text-base font-semibold uppercase tracking-wide text-brand-muted">
+                    Afghanistan Provincial Coverage
+                  </span>
+                  <p className="text-sm text-brand-soft">
+                    {selectedSector.toLowerCase()} sector operations • Use filters to focus on specific provinces
+                  </p>
+                  <div className="flex flex-wrap items-center gap-4 text-xs font-semibold uppercase tracking-wide text-brand-soft">
+                    <span className="rounded-full bg-white px-3 py-1 text-brand-muted shadow-sm">
+                      Year {selectedYear}
+                    </span>
+                    <span className="rounded-full bg-white px-3 py-1 text-brand-muted shadow-sm">
+                      {highlightedProvinces.length} Active Province
+                      {highlightedProvinces.length !== 1 ? "s" : ""}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex flex-1 items-center justify-center bg-brand-soft p-4">
+                  <div
+                    className="w-full max-w-3xl"
+                    style={{ aspectRatio: "4 / 3" }}
+                  >
+                    <AfghanistanMap
+                      focusedProvince={focusedProvince}
+                      highlightedProvinces={highlightedProvinces as string[]}
+                      className="h-full w-full"
+                      onProvinceSelect={handleMapProvinceSelect}
+                    />
+                  </div>
+                </div>
+              </div>
+              )}
+
+              {/* Project Status */}
+              {isLoading ? (
+                <div className="rounded-2xl border border-brand bg-white p-6 shadow-sm">
+                  <div className="animate-pulse space-y-4">
+                    <div className="h-4 w-1/3 rounded-full bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 bg-[length:200%_100%] animate-shimmer" />
+                    <div className="grid gap-4 sm:grid-cols-3">
+                      {[...Array(3)].map((_, i) => (
+                        <TelegramCardLoader key={i} />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="overflow-hidden rounded-xl border border-brand bg-white shadow-sm">
+                <div className="border-b border-brand bg-gradient-to-r from-[#e6f6ea] to-[#f7fdf9] px-6 py-4">
+                  <h3 className="text-base font-semibold uppercase tracking-wide text-brand-muted">
+                    Project Status
+                  </h3>
+                  <p className="text-sm text-brand-soft">
+                    Snapshot across current portfolio coverage.
+                  </p>
+                </div>
+                <div className="grid gap-4 p-6 sm:grid-cols-3">
+                  <div className="flex flex-col gap-1 rounded-lg border border-brand bg-brand-soft px-4 py-3">
+                    <span className="text-xs font-semibold uppercase tracking-wide text-brand-soft">
+                      Active Projects
+                    </span>
+                    <span className="text-2xl font-semibold text-brand-strong">
+                      {projectStatusCounts.active}
+                    </span>
+                    <span className="text-xs text-brand-soft">
+                      Mobilised initiatives not yet completed.
+                    </span>
+                  </div>
+                  <div className="flex flex-col gap-1 rounded-lg border border-brand bg-brand-soft px-4 py-3">
+                    <span className="text-xs font-semibold uppercase tracking-wide text-brand-soft">
+                      Completed Projects
+                    </span>
+                    <span className="text-2xl font-semibold text-brand-strong">
+                      {projectStatusCounts.completed}
+                    </span>
+                    <span className="text-xs text-brand-soft">
+                      Closed out within the reporting window.
+                    </span>
+                  </div>
+                  <div className="flex flex-col gap-1 rounded-lg border border-brand bg-brand-soft px-4 py-3">
+                    <span className="text-xs font-semibold uppercase tracking-wide text-brand-soft">
+                      Ongoing Projects
+                    </span>
+                    <span className="text-2xl font-semibold text-brand-strong">
+                      {projectStatusCounts.ongoing}
+                    </span>
+                    <span className="text-xs text-brand-soft">
+                      Currently in implementation.
+                    </span>
+                  </div>
+                </div>
+              </div>
+              )}
+            </div>
+
+            {/* Beneficiary Donut Chart */}
+            {isLoading ? (
+              <TelegramChartLoader />
+            ) : (
+              <div className="flex h-full flex-col overflow-hidden rounded-xl border border-brand bg-white shadow-sm">
+              <div className="border-b border-brand bg-gradient-to-r from-[#e6f6ea] to-[#f7fdf9] px-6 py-4">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div>
+                    <h2 className="text-base font-semibold uppercase tracking-wide text-brand-muted">
+                      Beneficiary Distribution
+                    </h2>
+                    <p className="text-sm text-brand-soft">
+                      {selectedSector} • {selectedYear}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wide text-brand-soft">
+                    <span className="rounded-full bg-white px-3 py-1 text-brand-muted shadow-sm">
+                      Direct {totalDirect.toLocaleString()}
+                    </span>
+                    <span className="rounded-full bg-white px-3 py-1 text-brand-muted shadow-sm">
+                      Indirect {totalIndirect.toLocaleString()}
+                    </span>
+                    <span className="rounded-full bg-white px-3 py-1 text-brand-muted shadow-sm">
+                      Total {totalBeneficiaries.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              </div>
+                <div className="flex flex-1 flex-col justify-between p-6">
+                  <div className="flex flex-1 items-center justify-center">
+                    <BeneficiaryDonut
+                      data={beneficiarySlices}
+                      className="h-80 w-full"
+                      showLegend={false}
+                      title={`${beneficiaryViewLabel} Beneficiaries`}
+                      subtitle={`${currentBeneficiaryTotal.toLocaleString()} people across ${highlightedProvinces.length} province${highlightedProvinces.length === 1 ? "" : "s"}`}
+                    />
+                  </div>
+                  {topBeneficiaryRows.length ? (
+                    <dl className="mt-6 grid grid-cols-2 gap-4 text-sm sm:grid-cols-4">
+                      {topBeneficiaryRows.map((row) => (
+                        <div key={row.key} className="flex flex-col gap-1 rounded-lg border border-brand bg-brand-soft px-3 py-2">
+                          <dt className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-brand-soft">
+                            <span
+                              className="inline-flex h-2.5 w-2.5 rounded-full"
+                              style={{ backgroundColor: row.color }}
+                            />
+                            {row.label}
+                          </dt>
+                          <dd className="text-base font-semibold text-brand-strong">
+                            {row.value.toLocaleString()}
+                          </dd>
+                          <dd className="text-[11px] uppercase tracking-wide text-brand-soft">
+                            {currentBeneficiaryTotal
+                              ? `${((row.value / currentBeneficiaryTotal) * 100).toFixed(1)}%`
+                              : "0%"}
+                          </dd>
+                        </div>
+                      ))}
+                    </dl>
+                  ) : (
+                    <p className="mt-6 text-center text-xs uppercase tracking-wide text-brand-soft">
+                      No beneficiary data available.
+                    </p>
+                  )}
+                </div>
+            </div>
+            )}
+          </div>
+        </section>
+
+        {/* Full-Width Sector Overview with Charts */}
+        {isLoading ? (
+          <section className="w-full">
+            <div className="overflow-hidden rounded-2xl border border-brand bg-white shadow-sm p-8">
+              <div className="animate-pulse space-y-8">
+                <div className="h-6 w-1/3 rounded-lg bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 bg-[length:200%_100%] animate-shimmer" />
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                  {[...Array(3)].map((_, i) => (
+                    <TelegramCardLoader key={i} />
+                  ))}
+                </div>
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                  {[...Array(4)].map((_, i) => (
+                    <div key={i} className="h-64 rounded-xl bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 bg-[length:200%_100%] animate-shimmer" />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </section>
+        ) : (
+          <section className="w-full">
+          <div className="overflow-hidden rounded-2xl border border-brand bg-white shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-6 border-b border-brand px-8 py-6">
+              <div>
+                <h2 className="text-2xl font-semibold text-brand-strong">
+                  {selectedSector} Sector Overview
+                </h2>
+                <p className="text-sm text-brand-soft">
+                  Snapshot of operating performance and reach • {selectedYear}
+                </p>
+              </div>
+              <div className="flex flex-1 flex-wrap items-end justify-end gap-8 text-right">
+                {beneficiaryCandles.map((candle) => {
+                  const heightPercent =
+                    candle.share > 0 ? Math.max(candle.share * 100, 16) : 4;
+                  const percentLabel =
+                    candle.key === "total"
+                      ? "100% of total"
+                      : totalBeneficiaries
+                      ? `${Math.round(candle.share * 100)}% of total`
+                      : "0% of total";
+
+                  return (
+                    <div
+                      key={candle.key}
+                      className={`flex flex-col items-center gap-2 ${
+                        candle.highlight ? "text-brand-strong" : "text-brand-soft"
+                      }`}
+                    >
+                      <div className="flex h-32 w-10 items-end justify-center">
+                        <div className="relative flex h-full w-1.5 justify-center rounded-full bg-brand-tint">
+                          <span
+                            className={`absolute bottom-0 w-1.5 rounded-full bg-gradient-to-b ${candle.color}`}
+                            style={{ height: `${heightPercent}%` }}
+                          />
+                          <span
+                            className={`absolute -top-2 hidden h-3 w-3 rounded-full bg-gradient-to-r ${candle.color} shadow-sm ${
+                              candle.share > 0 ? "sm:block" : ""
+                            }`}
+                          />
+                        </div>
+                      </div>
+                      <div
+                        className={`text-3xl font-bold ${
+                          candle.highlight ? "text-blue-600" : "text-brand-strong"
+                        }`}
+                      >
+                        {candle.value.toLocaleString()}
+                      </div>
+                      <span className="text-xs font-semibold uppercase tracking-wide text-brand-soft">
+                        {candle.label}
+                      </span>
+                      <span className="text-[11px] uppercase tracking-wide text-brand-soft">
+                        {percentLabel}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="space-y-8 px-8 py-6">
+              {/* Snapshot Row */}
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div className="rounded-xl border border-brand bg-brand-soft px-4 py-3">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-brand-soft">
+                    Active Projects
+                  </span>
+                  <div className="mt-2 text-2xl font-semibold text-brand-strong">
+                    {sectorDetail.projects}
+                  </div>
+                  <p className="mt-1 text-xs text-brand-soft">
+                    Running initiatives in {highlightedProvinces.length} province
+                    {highlightedProvinces.length !== 1 ? "s" : ""}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-brand bg-brand-soft px-4 py-3">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-brand-soft">
+                    Team Deployment
+                  </span>
+                  <div className="mt-2 text-2xl font-semibold text-brand-strong">
+                    {sectorDetail.staff}
+                  </div>
+                  <p className="mt-1 text-xs text-brand-soft">
+                    {highlightedProvinces.length
+                      ? `${Math.round(
+                          sectorDetail.staff / highlightedProvinces.length
+                        )} staff per province on average`
+                      : "Awaiting deployment coverage"}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-brand bg-brand-soft px-4 py-3">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-brand-soft">
+                    Avg. {beneficiaryViewLabel} Beneficiaries / Province
+                  </span>
+                  <div className="mt-2 text-2xl font-semibold text-brand-strong">
+                    {highlightedProvinces.length
+                      ? Math.round(
+                          currentBeneficiaryTotal / highlightedProvinces.length
+                        ).toLocaleString()
+                      : "0"}
+                  </div>
+                  <p className="mt-1 text-xs text-brand-soft">
+                    Coverage rate{" "}
+                    {allProvinces.length
+                      ? Math.round(
+                          (highlightedProvinces.length / allProvinces.length) * 100
+                        )
+                      : 0}
+                    % nationwide
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] xl:gap-8">
+                <div className="space-y-6">
+                  {/* Timeline */}
+                  <div className="rounded-xl border border-brand px-6 py-5">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h3 className="text-base font-semibold text-brand-strong">
+                          Delivery Timeline
+                        </h3>
+                        <p className="text-xs uppercase tracking-wide text-brand-soft">
+                          {sectorDetail.start} → {sectorDetail.end}
+                        </p>
+                      </div>
+                      <span className="rounded-full bg-brand-tint px-3 py-1 text-xs font-medium uppercase tracking-wide text-brand-muted">
+                        {timelineProgressLabel}
+                      </span>
+                    </div>
+                    <div className="mt-4 space-y-3">
+                      <div className="h-2 w-full rounded-full bg-brand-tint">
+                        <div
+                          className="h-2 rounded-full bg-blue-500"
+                          style={{ width: `${timelineProgressDisplay}%` }}
+                        />
+                      </div>
+                      <p className="text-sm text-brand-muted">
+                        Current focus:{" "}
+                        <span className="font-medium">{sectorDetail.fieldActivity}</span>
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Coverage */}
+                  <div className="rounded-xl border border-brand px-6 py-5">
+                    <h3 className="text-base font-semibold text-brand-strong">
+                      Geographic Coverage
+                    </h3>
+                    <p className="text-sm text-brand-soft">
+                      Operating across {highlightedProvinces.length} province
+                      {highlightedProvinces.length !== 1 ? "s" : ""}. Select filters to refine the focus area.
+                    </p>
+                    <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
+                      {highlightedProvinces.slice(0, 8).map((province) => (
+                        <span
+                          key={province}
+                          className={`rounded-lg border px-3 py-2 text-center font-medium ${
+                            focusedProvince === province
+                              ? "border-blue-500 bg-blue-50 text-blue-700"
+                              : "border-brand bg-white text-brand-muted"
+                          }`}
+                        >
+                          {province}
+                        </span>
+                      ))}
+                    </div>
+                    {highlightedProvinces.length > 8 ? (
+                      <p className="mt-3 text-xs text-brand-soft">
+                        +{highlightedProvinces.length - 8} more provinces covered
+                      </p>
+                    ) : null}
+                    <div className="mt-4 grid grid-cols-1 gap-2 text-sm">
+                      <div className="flex items-center justify-between rounded-lg border border-brand bg-brand-soft px-3 py-2">
+                        <span className="text-brand-soft">Coverage Rate</span>
+                        <span className="font-semibold text-brand-strong">
+                          {allProvinces.length
+                            ? Math.round(
+                                (highlightedProvinces.length / allProvinces.length) * 100
+                              )
+                            : 0}
+                          %
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between rounded-lg border border-brand bg-brand-soft px-3 py-2">
+                        <span className="text-brand-soft">Projects / Province</span>
+                        <span className="font-semibold text-brand-strong">
+                          {highlightedProvinces.length
+                            ? (sectorDetail.projects / highlightedProvinces.length).toFixed(1)
+                            : "0.0"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  {/* Human Resources */}
+                  <div className="rounded-xl border border-brand px-6 py-5">
+                    <h3 className="text-base font-semibold text-brand-strong">
+                      Human Resources
+                    </h3>
+                    <p className="text-sm text-brand-soft">
+                      Deployment mix for on-ground and coordination teams.
+                    </p>
+                    <div className="mt-5 space-y-4">
+                      <div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-brand-muted">Field Staff</span>
+                          <span className="font-semibold text-brand-strong">
+                            {estimatedFieldStaff}
+                          </span>
+                        </div>
+                        <div className="mt-2 h-2 w-full rounded-full bg-brand-tint">
+                          <div
+                            className="h-2 rounded-full bg-emerald-500"
+                            style={{ width: `${fieldStaffShare}%` }}
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-brand-muted">Admin Staff</span>
+                          <span className="font-semibold text-brand-strong">
+                            {estimatedAdminStaff}
+                          </span>
+                        </div>
+                        <div className="mt-2 h-2 w-full rounded-full bg-brand-tint">
+                          <div
+                            className="h-2 rounded-full bg-emerald-300"
+                            style={{ width: `${adminStaffShare}%` }}
+                          />
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between rounded-lg border border-brand bg-brand-soft px-3 py-2 text-sm">
+                        <span className="text-brand-muted">Total Team</span>
+                        <span className="font-semibold text-brand-strong">{sectorDetail.staff}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Beneficiaries */}
+                  <div className="rounded-xl border border-brand px-6 py-5">
+                    <h3 className="text-base font-semibold text-brand-strong">
+                      Beneficiary Breakdown
+                    </h3>
+                    <p className="text-sm text-brand-soft">
+                      Distribution across demographic segments for the active year.
+                    </p>
+                    <div className="mt-5 overflow-hidden rounded-xl border border-brand">
+                      <table className="min-w-full divide-y divide-emerald-100 text-sm">
+                        <thead className="bg-brand-soft text-xs font-semibold uppercase tracking-wide text-brand-soft">
+                          <tr>
+                            <th scope="col" className="px-4 py-3 text-left">
+                              Cohort
+                            </th>
+                            <th scope="col" className="px-4 py-3 text-right">
+                              Direct
+                            </th>
+                            <th scope="col" className="px-4 py-3 text-right">
+                              Indirect
+                            </th>
+                            <th scope="col" className="px-4 py-3 text-right">
+                              Total
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-emerald-50 bg-white">
+                          {beneficiaryRows.map((row) => (
+                            <tr key={row.key} className="align-middle">
+                              <th scope="row" className="px-4 py-3 text-left font-medium text-brand-muted">
+                                <span className="flex items-center gap-2">
+                                  <span
+                                    className="h-2.5 w-2.5 rounded-full"
+                                    style={{ backgroundColor: row.color }}
+                                  />
+                                  {row.label}
+                                </span>
+                              </th>
+                              <td className="px-4 py-3 text-right">
+                                <span className="block text-sm font-semibold text-brand-strong">
+                                  {row.direct.toLocaleString()}
+                                </span>
+                                <span className="block text-[10px] uppercase tracking-wide text-brand-soft">
+                                  {totalDirect ? Math.round((row.direct / totalDirect) * 100) : 0}%
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 text-right">
+                                <span className="block text-sm font-semibold text-brand-strong">
+                                  {row.indirect.toLocaleString()}
+                                </span>
+                                <span className="block text-[10px] uppercase tracking-wide text-brand-soft">
+                                  {totalIndirect ? Math.round((row.indirect / totalIndirect) * 100) : 0}%
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 text-right">
+                                <span className="block text-sm font-semibold text-brand-strong">
+                                  {(row.direct + row.indirect).toLocaleString()}
+                                </span>
+                                <span className="block text-[10px] uppercase tracking-wide text-brand-soft">
+                                  {totalBeneficiaries
+                                    ? Math.round(
+                                        ((row.direct + row.indirect) / totalBeneficiaries) * 100
+                                      )
+                                    : 0}
+                                  %
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <div className="mt-5 flex items-center justify-between rounded-lg border border-brand bg-brand-soft px-3 py-2 text-xs font-semibold uppercase tracking-wide text-brand-muted">
+                      <span>Reporting Year</span>
+                      <span>{selectedYear}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+        )}
+
+        {isLoading ? (
+          <TelegramSectionLoader cardCount={5} />
+        ) : (
+        <section
+          

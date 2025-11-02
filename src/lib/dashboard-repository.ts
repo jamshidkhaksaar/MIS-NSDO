@@ -2222,6 +2222,48 @@ export async function updateProjectRecord(payload: {
   });
 }
 
+export async function upsertProjectBeneficiaries(payload: {
+  projectId: string;
+  entries: Array<{ type: BeneficiaryTypeKey; direct: number; indirect: number }>;
+}): Promise<void> {
+  const projectId = Number.parseInt(payload.projectId, 10);
+  if (!Number.isFinite(projectId)) {
+    throw new Error("A valid project id is required.");
+  }
+
+  const normalizedEntries = new Map<BeneficiaryTypeKey, { direct: number; indirect: number }>();
+  payload.entries.forEach((entry) => {
+    if (!(BENEFICIARY_TYPE_KEYS as readonly string[]).includes(entry.type)) {
+      return;
+    }
+    const direct = Number.isFinite(entry.direct) && entry.direct >= 0 ? Math.floor(entry.direct) : 0;
+    const indirect =
+      Number.isFinite(entry.indirect) && entry.indirect >= 0 ? Math.floor(entry.indirect) : 0;
+    normalizedEntries.set(entry.type, { direct, indirect });
+  });
+
+  await withConnection(async (connection) => {
+    await connection.beginTransaction();
+    try {
+      await connection.execute("DELETE FROM project_beneficiaries WHERE project_id = ?", [projectId]);
+
+      for (const key of BENEFICIARY_TYPE_KEYS) {
+        const entry = normalizedEntries.get(key) ?? { direct: 0, indirect: 0 };
+        await connection.execute(
+          `INSERT INTO project_beneficiaries (project_id, type_key, direct, indirect)
+           VALUES (?, ?, ?, ?)`,
+          [projectId, key, entry.direct, entry.indirect]
+        );
+      }
+
+      await connection.commit();
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    }
+  });
+}
+
 export async function createBaselineSurvey(payload: {
   projectId: string;
   title: string;

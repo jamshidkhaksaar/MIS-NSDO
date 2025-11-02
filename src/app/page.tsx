@@ -223,6 +223,7 @@ export default function Home() {
   const [userRole, setUserRole] = useState<"Administrator" | "Editor" | "Viewer" | null>(null);
   const filterSentinelRef = useRef<HTMLDivElement | null>(null);
   const [isFilterPinned, setIsFilterPinned] = useState(false);
+  const [isFilterBarVisible, setIsFilterBarVisible] = useState(true);
   const [isSideNavCollapsed, setIsSideNavCollapsed] = useState(false);
   const [isNavVisible, setIsNavVisible] = useState(false);
   const [activeSection, setActiveSection] = useState<string>("");
@@ -2158,10 +2159,20 @@ export default function Home() {
       </section>
 
       <div ref={filterSentinelRef} aria-hidden="true" className="h-px w-full" />
+      <div className="mx-auto max-w-7xl px-3 sm:px-4 md:px-6">
+        <button
+          type="button"
+          onClick={() => setIsFilterBarVisible((prev) => !prev)}
+          className="mt-4 inline-flex items-center gap-2 rounded-lg border border-brand bg-white px-4 py-2 text-sm font-semibold text-brand-primary transition hover:border-brand-primary hover:bg-brand-primary hover:text-white"
+        >
+          {isFilterBarVisible ? "Hide" : "Show"} Filters
+        </button>
+      </div>
+      {isFilterBarVisible && (
       <div
         className={`z-30 border-b border-brand bg-white transition-all duration-300 ease-in-out ${
-          isFilterPinned 
-            ? "sticky top-[calc(4rem)] shadow-xl shadow-brand-soft/40" 
+          isFilterPinned
+            ? "sticky top-[calc(4rem)] shadow-xl shadow-brand-soft/40"
             : ""
         }`}
       >
@@ -2393,6 +2404,7 @@ export default function Home() {
           </div>
         </div>
       </div>
+      )}
 
       <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 sm:gap-8 px-3 sm:px-4 md:px-6 py-6 sm:py-8 md:py-12">
         {/* Dashboard Grid Section */}

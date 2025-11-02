@@ -853,11 +853,9 @@ export default function Home() {
     } catch {
       // Ignored -- fallback to client-side navigation regardless of network status.
     } finally {
-      setIsAuthenticated(false);
-      router.push("/");
-      router.refresh();
+      window.location.href = "/";
     }
-  }, [router]);
+  }, []);
 
   const activeSnapshot = sectorSnapshots[selectedSector] ?? {
     provinces: [],

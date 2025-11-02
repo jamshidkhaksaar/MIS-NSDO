@@ -57,8 +57,7 @@ export default function ComplaintsPage() {
     } catch {
       // Ignore network errors; navigation will close the session client-side.
     } finally {
-      router.push("/");
-      router.refresh();
+      window.location.href = "/";
     }
   };
 

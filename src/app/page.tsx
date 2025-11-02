@@ -2072,6 +2072,7 @@ export default function Home() {
             {sectorOrder.map((sector) => {
               const isActive = selectedSector === sector;
               const isDisabled = isProjectFiltered && sector !== ALL_SECTOR_KEY;
+              console.log(`Sector: ${sector}, Selected: ${selectedSector}, IsActive: ${isActive}, IsDisabled: ${isDisabled}`);
               return (
                 <Fragment key={sector}>
                   <button

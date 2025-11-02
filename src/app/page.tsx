@@ -852,7 +852,7 @@ export default function Home() {
       // Ignored -- fallback to client-side navigation regardless of network status.
     } finally {
       setIsAuthenticated(false);
-      router.push("/login");
+      router.push("/login?message=signing-out");
       router.refresh();
     }
   }, [router]);

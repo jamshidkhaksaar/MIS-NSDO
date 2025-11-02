@@ -55,7 +55,7 @@ export default function ComplaintsPage() {
     } catch {
       // Ignore network errors; navigation will close the session client-side.
     } finally {
-      router.push("/login");
+      router.push("/login?message=signing-out");
       router.refresh();
     }
   };

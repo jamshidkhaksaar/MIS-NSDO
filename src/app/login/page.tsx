@@ -1,10 +1,24 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useDashboardData } from "@/context/DashboardDataContext";
 import Loading from "./loading";
+
+function AuthActionLoader({ message }: { message: string }) {
+  return (
+    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 rounded-2xl bg-white/80 backdrop-blur">
+      <div className="flex h-12 w-12 items-center justify-center">
+        <div
+          className="h-12 w-12 animate-spin rounded-full border-4 border-brand border-l-transparent border-t-transparent"
+          aria-hidden
+        />
+      </div>
+      <p className="text-sm font-semibold text-brand-muted">{message}</p>
+    </div>
+  );
+}
 
 export default function LoginPage() {
   const { branding, isLoading } = useDashboardData();
@@ -12,7 +26,16 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [authMessage, setAuthMessage] = useState<string | null>(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const message = searchParams.get("message");
+    if (message === "signing-out") {
+      setAuthMessage("Signing out...");
+    }
+  }, [searchParams]);
 
   if (isLoading) {
     return <Loading />;
@@ -21,9 +44,11 @@ export default function LoginPage() {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
+    setAuthMessage("Signing in...");
 
     if (!email.trim() || !password.trim()) {
       setError("Enter your email and password to continue.");
+      setAuthMessage(null);
       return;
     }
 
@@ -42,6 +67,7 @@ export default function LoginPage() {
         const body = await response.json().catch(() => null);
         const message = body?.message ?? "Unable to sign in. Check your credentials.";
         setError(message);
+        setAuthMessage(null);
         return;
       }
 
@@ -49,6 +75,7 @@ export default function LoginPage() {
       router.refresh();
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Unexpected error while signing in.");
+      setAuthMessage(null);
     } finally {
       setIsSubmitting(false);
     }
@@ -96,17 +123,7 @@ export default function LoginPage() {
 
       <main className="mx-auto flex w-full max-w-md flex-1 items-center justify-center px-6 py-12">
         <section className="relative w-full rounded-2xl border border-brand bg-white p-8 shadow-brand-soft">
-          {isSubmitting ? (
-            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-4 rounded-2xl bg-white/80 backdrop-blur">
-              <div className="flex h-12 w-12 items-center justify-center">
-                <div
-                  className="h-12 w-12 animate-spin rounded-full border-4 border-brand border-l-transparent border-t-transparent"
-                  aria-hidden
-                />
-              </div>
-              <p className="text-sm font-semibold text-brand-muted">Signing you in...</p>
-            </div>
-          ) : null}
+          {authMessage ? <AuthActionLoader message={authMessage} /> : null}
           <h2 className="text-xl font-semibold text-brand-strong">Log in</h2>
           <p className="mt-1 text-sm text-brand-soft">
             Sign in with your MIS credentials. Contact the administrator if you need access.

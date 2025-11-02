@@ -4,6 +4,7 @@ import "./nav-overrides.css";
 import { DashboardDataProvider } from "@/context/DashboardDataContext";
 import BrandingHead from "@/ui/BrandingHead";
 import AppFooter from "@/app/components/app-footer";
+import CookieBanner from "@/app/components/CookieBanner";
 
 export const metadata: Metadata = {
   title: "MIS NSDO",
@@ -24,6 +25,7 @@ export default function RootLayout({
             <main className="flex-1">{children}</main>
             <AppFooter />
           </div>
+          <CookieBanner />
         </DashboardDataProvider>
       </body>
     </html>

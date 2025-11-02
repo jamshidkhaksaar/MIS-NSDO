@@ -1431,7 +1431,7 @@ export default function Home() {
   }
 
   return (
-    <div className="scroll-smooth flex min-h-screen flex-col text-brand-strong">
+    <div className="scroll-smooth flex min-h-screen flex-col text-brand-strong bg-white">
       <nav className="sticky top-0 z-40 border-b border-brand bg-white/90 backdrop-blur-md shadow-brand-soft">
         <div className="mx-auto flex h-16 max-w-7xl items-center gap-2 sm:gap-4 md:gap-6 px-3 sm:px-4 md:px-6 text-brand-strong">
           <div className="flex flex-1 items-center gap-2 sm:gap-3">
@@ -1451,7 +1451,7 @@ export default function Home() {
                 </div>
               )}
             </div>
-            <span className="hidden sm:inline text-xs sm:text-sm font-semibold tracking-tight text-brand-muted">
+            <span className="hidden sm:inline text-xs sm:text-sm font-semibold tracking-tight text-brand-muted animate-fade-in-down">
               {brandDisplayName}
             </span>
           </div>
@@ -1460,7 +1460,7 @@ export default function Home() {
             <a
               href="#publish-dashboard"
               onClick={(e) => handleNavClick(e, "#publish-dashboard")}
-              className="inline-flex h-11 min-w-[180px] items-center justify-center whitespace-nowrap rounded-full px-5 text-sm font-semibold chip-brand-soft"
+              className="inline-flex h-11 min-w-[180px] items-center justify-center whitespace-nowrap rounded-full px-6 text-sm font-semibold btn-brand"
             >
               Public Dashboard
             </a>

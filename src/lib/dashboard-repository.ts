@@ -38,6 +38,8 @@ import {
   type ComplaintSummaryMetrics,
   type ComplaintResponseRecord,
   type CrmAwarenessRecord,
+  type MainSectorRecord,
+  type SubSectorRecord,
   type EvaluationRecord,
   type EvaluationType,
   type StoryRecord,
@@ -82,6 +84,23 @@ type ProvinceRow = {
 };
 
 type ReportingYearRow = { year: number };
+
+type MainSectorRow = {
+  id: number;
+  name: string;
+  description: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+type SubSectorRow = {
+  id: number;
+  main_sector_id: number;
+  name: string;
+  description: string | null;
+  created_at: string;
+  updated_at: string;
+};
 
 type UserRow = {
   id: number;
@@ -422,6 +441,8 @@ type DashboardState = {
   integrations: IntegrationRecord[];
   clusterCatalog: Array<{ id: string; name: string; description?: string }>;
   sectorCatalog: Array<{ id: string; name: string; description?: string }>;
+  mainSectors: MainSectorRecord[];
+  subSectors: SubSectorRecord[];
 };
 
 function formatDate(value: string | null): string {
@@ -1610,6 +1631,32 @@ export async function fetchDashboardState(): Promise<DashboardState> {
       description: row.description ?? undefined,
     }));
 
+    const [mainSectorRows] = await connection.query<MainSectorRow>(
+      "SELECT id, name, description, created_at, updated_at FROM main_sectors ORDER BY name ASC"
+    );
+
+    const mainSectorMap = new Map<number, string>();
+    const mainSectors: MainSectorRecord[] = mainSectorRows.map((row) => {
+      mainSectorMap.set(row.id, row.name);
+      return {
+        id: row.id.toString(),
+        name: row.name,
+        description: row.description ?? undefined,
+      };
+    });
+
+    const [subSectorRows] = await connection.query<SubSectorRow>(
+      "SELECT id, main_sector_id, name, description, created_at, updated_at FROM sub_sectors ORDER BY name ASC"
+    );
+
+    const subSectors: SubSectorRecord[] = subSectorRows.map((row) => ({
+      id: row.id.toString(),
+      mainSectorId: row.main_sector_id.toString(),
+      mainSectorName: mainSectorMap.get(row.main_sector_id) ?? "",
+      name: row.name,
+      description: row.description ?? undefined,
+    }));
+
     return {
       sectors,
       reportingYears,
@@ -1630,6 +1677,8 @@ export async function fetchDashboardState(): Promise<DashboardState> {
       integrations,
       clusterCatalog,
       sectorCatalog,
+      mainSectors,
+      subSectors,
     };
   });
 }
@@ -2109,6 +2158,233 @@ export async function deleteSectorCatalogEntry(id: string): Promise<void> {
     );
     if (!result.affectedRows) {
       throw new Error("Sector entry not found.");
+    }
+  });
+}
+
+export async function insertMainSector(payload: { name: string; description?: string }): Promise<MainSectorRecord> {
+  const name = payload.name.trim();
+  if (!name) {
+    throw new Error("Main sector name is required.");
+  }
+  const description = payload.description?.trim() ?? null;
+
+  return withConnection(async (connection) => {
+    const [existing] = await connection.query<MainSectorRow>(
+      "SELECT id FROM main_sectors WHERE lower(name) = lower(?) LIMIT 1",
+      [name]
+    );
+    if (existing.length) {
+      const duplicateError = new Error("DUPLICATE_MAIN_SECTOR_NAME");
+      duplicateError.name = "CatalogDuplicateError";
+      throw duplicateError;
+    }
+
+    const [rows] = await connection.query<MainSectorRow>(
+      `INSERT INTO main_sectors (name, description, updated_at)
+       VALUES (?, ?, NOW())
+       RETURNING id, name, description`,
+      [name, description]
+    );
+    const record = rows[0];
+    if (!record) {
+      throw new Error("Failed to create main sector.");
+    }
+    return {
+      id: record.id.toString(),
+      name: record.name,
+      description: record.description ?? undefined,
+    };
+  });
+}
+
+export async function updateMainSector(payload: { id: string; name: string; description?: string }): Promise<MainSectorRecord> {
+  const id = Number.parseInt(payload.id, 10);
+  if (!Number.isFinite(id)) {
+    throw new Error("A valid main sector id is required.");
+  }
+  const name = payload.name.trim();
+  if (!name) {
+    throw new Error("Main sector name is required.");
+  }
+  const description = payload.description?.trim() ?? null;
+
+  return withConnection(async (connection) => {
+    const [conflictRows] = await connection.query<MainSectorRow>(
+      "SELECT id FROM main_sectors WHERE lower(name) = lower(?) AND id <> ? LIMIT 1",
+      [name, id]
+    );
+    if (conflictRows.length) {
+      const duplicateError = new Error("DUPLICATE_MAIN_SECTOR_NAME");
+      duplicateError.name = "CatalogDuplicateError";
+      throw duplicateError;
+    }
+
+    const [rows] = await connection.query<MainSectorRow>(
+      `UPDATE main_sectors
+       SET name = ?, description = ?, updated_at = NOW()
+       WHERE id = ?
+       RETURNING id, name, description`,
+      [name, description, id]
+    );
+    const record = rows[0];
+    if (!record) {
+      throw new Error("Main sector not found.");
+    }
+    return {
+      id: record.id.toString(),
+      name: record.name,
+      description: record.description ?? undefined,
+    };
+  });
+}
+
+export async function deleteMainSector(id: string): Promise<void> {
+  const numericId = Number.parseInt(id, 10);
+  if (!Number.isFinite(numericId)) {
+    throw new Error("A valid main sector id is required.");
+  }
+
+  await withConnection(async (connection) => {
+    const [result] = await connection.execute(
+      "DELETE FROM main_sectors WHERE id = ?",
+      [numericId]
+    );
+    if (!result.affectedRows) {
+      throw new Error("Main sector not found.");
+    }
+  });
+}
+
+export async function insertSubSector(payload: {
+  mainSectorId: string;
+  name: string;
+  description?: string;
+}): Promise<SubSectorRecord> {
+  const mainSectorId = Number.parseInt(payload.mainSectorId, 10);
+  if (!Number.isFinite(mainSectorId)) {
+    throw new Error("A valid main sector selection is required.");
+  }
+  const name = payload.name.trim();
+  if (!name) {
+    throw new Error("Sub-sector name is required.");
+  }
+  const description = payload.description?.trim() ?? null;
+
+  return withConnection(async (connection) => {
+    const [parentRows] = await connection.query<MainSectorRow>(
+      "SELECT id, name FROM main_sectors WHERE id = ?",
+      [mainSectorId]
+    );
+    const parent = parentRows[0];
+    if (!parent) {
+      throw new Error("Selected main sector was not found.");
+    }
+
+    const [existing] = await connection.query<SubSectorRow>(
+      "SELECT id FROM sub_sectors WHERE main_sector_id = ? AND lower(name) = lower(?) LIMIT 1",
+      [mainSectorId, name]
+    );
+    if (existing.length) {
+      const duplicateError = new Error("DUPLICATE_SUB_SECTOR_NAME");
+      duplicateError.name = "CatalogDuplicateError";
+      throw duplicateError;
+    }
+
+    const [rows] = await connection.query<SubSectorRow>(
+      `INSERT INTO sub_sectors (main_sector_id, name, description, updated_at)
+       VALUES (?, ?, ?, NOW())
+       RETURNING id, main_sector_id, name, description`,
+      [mainSectorId, name, description]
+    );
+    const record = rows[0];
+    if (!record) {
+      throw new Error("Failed to create sub-sector.");
+    }
+    return {
+      id: record.id.toString(),
+      mainSectorId: record.main_sector_id.toString(),
+      mainSectorName: parent.name,
+      name: record.name,
+      description: record.description ?? undefined,
+    };
+  });
+}
+
+export async function updateSubSector(payload: {
+  id: string;
+  mainSectorId: string;
+  name: string;
+  description?: string;
+}): Promise<SubSectorRecord> {
+  const id = Number.parseInt(payload.id, 10);
+  if (!Number.isFinite(id)) {
+    throw new Error("A valid sub-sector id is required.");
+  }
+  const mainSectorId = Number.parseInt(payload.mainSectorId, 10);
+  if (!Number.isFinite(mainSectorId)) {
+    throw new Error("A valid main sector selection is required.");
+  }
+  const name = payload.name.trim();
+  if (!name) {
+    throw new Error("Sub-sector name is required.");
+  }
+  const description = payload.description?.trim() ?? null;
+
+  return withConnection(async (connection) => {
+    const [parentRows] = await connection.query<MainSectorRow>(
+      "SELECT id, name FROM main_sectors WHERE id = ?",
+      [mainSectorId]
+    );
+    const parent = parentRows[0];
+    if (!parent) {
+      throw new Error("Selected main sector was not found.");
+    }
+
+    const [conflictRows] = await connection.query<SubSectorRow>(
+      "SELECT id FROM sub_sectors WHERE main_sector_id = ? AND lower(name) = lower(?) AND id <> ? LIMIT 1",
+      [mainSectorId, name, id]
+    );
+    if (conflictRows.length) {
+      const duplicateError = new Error("DUPLICATE_SUB_SECTOR_NAME");
+      duplicateError.name = "CatalogDuplicateError";
+      throw duplicateError;
+    }
+
+    const [rows] = await connection.query<SubSectorRow>(
+      `UPDATE sub_sectors
+       SET main_sector_id = ?, name = ?, description = ?, updated_at = NOW()
+       WHERE id = ?
+       RETURNING id, main_sector_id, name, description`,
+      [mainSectorId, name, description, id]
+    );
+    const record = rows[0];
+    if (!record) {
+      throw new Error("Sub-sector not found.");
+    }
+    return {
+      id: record.id.toString(),
+      mainSectorId: record.main_sector_id.toString(),
+      mainSectorName: parent.name,
+      name: record.name,
+      description: record.description ?? undefined,
+    };
+  });
+}
+
+export async function deleteSubSector(id: string): Promise<void> {
+  const numericId = Number.parseInt(id, 10);
+  if (!Number.isFinite(numericId)) {
+    throw new Error("A valid sub-sector id is required.");
+  }
+
+  await withConnection(async (connection) => {
+    const [result] = await connection.execute(
+      "DELETE FROM sub_sectors WHERE id = ?",
+      [numericId]
+    );
+    if (!result.affectedRows) {
+      throw new Error("Sub-sector not found.");
     }
   });
 }

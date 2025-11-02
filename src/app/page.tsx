@@ -189,6 +189,8 @@ export default function Home() {
     users,
     userAccessAssignments,
     integrations,
+    mainSectors,
+    subSectors,
   } = useDashboardData();
   const router = useRouter();
 
@@ -202,6 +204,7 @@ export default function Home() {
   const [selectedSector, setSelectedSector] =
     useState<DashboardSectorKey>(ALL_SECTOR_KEY);
   const [selectedProjectId, setSelectedProjectId] = useState<string>("all");
+  const [selectedSubSectors, setSelectedSubSectors] = useState<string[]>([]);
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
 
   const [selectedYear, setSelectedYear] = useState<number>(() => {
@@ -243,12 +246,62 @@ export default function Home() {
     [projects]
   );
 
+  const sortedMainSectors = useMemo(
+    () => [...mainSectors].sort((a, b) => a.name.localeCompare(b.name)),
+    [mainSectors]
+  );
+
+  const subSectorsByMain = useMemo(() => {
+    const map = new Map<string, Array<{ id: string; name: string; description?: string }>>();
+    subSectors.forEach((entry) => {
+      const list = map.get(entry.mainSectorId) ?? [];
+      list.push({ id: entry.id, name: entry.name, description: entry.description });
+      map.set(entry.mainSectorId, list);
+    });
+    map.forEach((list) => list.sort((a, b) => a.name.localeCompare(b.name)));
+    return map;
+  }, [subSectors]);
+
+  const orphanSubSectors = useMemo(
+    () => subSectors.filter((entry) => !mainSectors.some((main) => main.id === entry.mainSectorId)),
+    [mainSectors, subSectors]
+  );
+
   const selectedProject = useMemo(() => {
     if (selectedProjectId === "all") {
       return null;
     }
     return projects.find((project) => project.id === selectedProjectId) ?? null;
   }, [projects, selectedProjectId]);
+
+  const toggleSubSector = useCallback((name: string) => {
+    setSelectedSubSectors((previous) => {
+      if (previous.includes(name)) {
+        return previous.filter((value) => value !== name);
+      }
+      return [...previous, name];
+    });
+  }, []);
+
+  const subSectorFilteredProjects = useMemo(() => {
+    if (!selectedSubSectors.length) {
+      return projects;
+    }
+    const selection = new Set(selectedSubSectors.map((value) => value.toLowerCase()));
+    return projects.filter((project) =>
+      (project.standardSectors ?? []).some((value) => selection.has((value ?? "").toLowerCase()))
+    );
+  }, [projects, selectedSubSectors]);
+
+  const filteredProjectOptions = useMemo(() => {
+    if (!selectedSubSectors.length) {
+      return sortedProjects;
+    }
+    const selection = new Set(selectedSubSectors.map((value) => value.toLowerCase()));
+    return sortedProjects.filter((project) =>
+      (project.standardSectors ?? []).some((value) => selection.has((value ?? "").toLowerCase()))
+    );
+  }, [sortedProjects, selectedSubSectors]);
 
   const isBootstrapLoading = isLoading && baseSectorKeys.length === 0;
 
@@ -289,6 +342,20 @@ export default function Home() {
       setSelectedSector(ALL_SECTOR_KEY);
     }
   }, [selectedProject, selectedSector]);
+
+  useEffect(() => {
+    const validNames = new Set(subSectors.map((entry) => entry.name));
+    setSelectedSubSectors((previous) => previous.filter((name) => validNames.has(name)));
+  }, [subSectors]);
+
+  useEffect(() => {
+    if (selectedProjectId === "all") {
+      return;
+    }
+    if (!filteredProjectOptions.some((project) => project.id === selectedProjectId)) {
+      setSelectedProjectId("all");
+    }
+  }, [filteredProjectOptions, selectedProjectId]);
 
   useEffect(() => {
     let isMounted = true;
@@ -883,8 +950,8 @@ export default function Home() {
   };
 
   const filteredProjects = useMemo(
-    () => (selectedProject ? [selectedProject] : projects),
-    [projects, selectedProject]
+    () => (selectedProject ? [selectedProject] : subSectorFilteredProjects),
+    [selectedProject, subSectorFilteredProjects]
   );
   const isProjectFiltered = Boolean(selectedProject);
 
@@ -1582,6 +1649,27 @@ export default function Home() {
         </div>
       </nav>
 
+      {mainSectors.length ? (
+        <section className="border-b border-brand bg-white/80">
+          <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-2 px-3 sm:px-4 md:px-6 py-3">
+            <span className="text-xs font-semibold uppercase tracking-[0.24em] text-brand-soft">
+              Main Sectors
+            </span>
+            <div className="flex flex-wrap gap-2">
+              {mainSectors.map((sector) => (
+                <span
+                  key={sector.id}
+                  className="rounded-full border border-brand bg-brand-soft px-3 py-1 text-xs font-semibold text-brand-primary"
+                  title={sector.description ?? sector.name}
+                >
+                  {sector.name}
+                </span>
+              ))}
+            </div>
+          </div>
+        </section>
+      ) : null}
+
       <MobileQuickNav
         sections={navigableSections}
         activeSection={activeSection}
@@ -2026,7 +2114,7 @@ export default function Home() {
                     className="input-brand w-full appearance-none rounded-lg px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium"
                   >
                     <option value="all">All Projects</option>
-                    {sortedProjects.map((project) => (
+                    {filteredProjectOptions.map((project) => (
                       <option key={project.id} value={project.id}>
                         {project.name}
                       </option>
@@ -2050,6 +2138,86 @@ export default function Home() {
                   </span>
                 </div>
               </label>
+              <div className="flex flex-1 min-w-[200px] sm:min-w-[220px] flex-col gap-2 text-sm font-medium text-brand-muted">
+                <span className="text-xs font-semibold uppercase tracking-wide text-brand-soft">
+                  Sub-Sectors
+                </span>
+                {sortedMainSectors.length || orphanSubSectors.length ? (
+                  <div className="flex flex-col gap-2">
+                    {sortedMainSectors.map((main) => {
+                      const children = subSectorsByMain.get(main.id) ?? [];
+                      if (!children.length) {
+                        return null;
+                      }
+                      return (
+                        <div key={main.id} className="flex flex-wrap items-center gap-2">
+                          <span className="rounded-full bg-brand-soft px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-brand-soft">
+                            {main.name}
+                          </span>
+                          {children.map((child) => {
+                            const isSelected = selectedSubSectors.includes(child.name);
+                            return (
+                              <button
+                                key={child.id}
+                                type="button"
+                                onClick={() => toggleSubSector(child.name)}
+                                className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
+                                  isSelected
+                                    ? "btn-brand text-white shadow-brand-soft"
+                                    : "chip-brand-soft hover:scale-[1.02]"
+                                }`}
+                                title={child.description ?? main.name}
+                              >
+                                {child.name}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      );
+                    })}
+                    {orphanSubSectors.length
+                      ? (
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="rounded-full bg-brand-soft px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-brand-soft">
+                              Uncategorized
+                            </span>
+                            {orphanSubSectors.map((child) => {
+                              const isSelected = selectedSubSectors.includes(child.name);
+                              return (
+                                <button
+                                  key={child.id}
+                                  type="button"
+                                  onClick={() => toggleSubSector(child.name)}
+                                  className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
+                                    isSelected
+                                      ? "btn-brand text-white shadow-brand-soft"
+                                      : "chip-brand-soft hover:scale-[1.02]"
+                                  }`}
+                                  title={child.description ?? child.name}
+                                >
+                                  {child.name}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )
+                      : null}
+                  </div>
+                ) : (
+                  <p className="text-xs text-brand-soft">
+                    Add main and sub-sectors in the Projects workspace to enable this filter.
+                  </p>
+                )}
+                {selectedSubSectors.length ? (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedSubSectors([])}
+                    className="self-start text-xs font-semibold text-brand-primary hover:underline"
+                  >
+                    Clear selection
+                  </button>
+                ) : null}
+              </div>
               <label className="flex flex-1 min-w-[140px] sm:min-w-[160px] md:min-w-[180px] flex-col gap-2 text-sm font-medium text-brand-muted">
                 <span className="text-xs font-semibold uppercase tracking-wide text-brand-soft">
                   Reporting Year

@@ -32,6 +32,8 @@ import {
   type KnowledgeHubData,
   type UserAccessAssignmentRecord,
   type IntegrationRecord,
+  type MainSectorRecord,
+  type SubSectorRecord,
 } from "@/lib/dashboard-data";
 import { usePathname } from "next/navigation";
 
@@ -81,6 +83,34 @@ function removeCatalogEntry(list: CatalogEntry[], id: string): CatalogEntry[] {
   return list.filter((item) => item.id !== id);
 }
 
+function mergeMainSector(list: MainSectorRecord[], entry: MainSectorRecord): MainSectorRecord[] {
+  const existingIndex = list.findIndex((item) => item.id === entry.id);
+  if (existingIndex !== -1) {
+    const next = [...list];
+    next[existingIndex] = entry;
+    return next.sort((a, b) => a.name.localeCompare(b.name));
+  }
+  return [...list, entry].sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function removeMainSectorEntry(list: MainSectorRecord[], id: string): MainSectorRecord[] {
+  return list.filter((item) => item.id !== id);
+}
+
+function mergeSubSector(list: SubSectorRecord[], entry: SubSectorRecord): SubSectorRecord[] {
+  const existingIndex = list.findIndex((item) => item.id === entry.id);
+  if (existingIndex !== -1) {
+    const next = [...list];
+    next[existingIndex] = entry;
+    return next.sort((a, b) => a.name.localeCompare(b.name));
+  }
+  return [...list, entry].sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function removeSubSectorEntry(list: SubSectorRecord[], id: string): SubSectorRecord[] {
+  return list.filter((item) => item.id !== id);
+}
+
 type DashboardContextValue = {
   sectors: SectorState;
   reportingYears: number[];
@@ -94,6 +124,8 @@ type DashboardContextValue = {
   branding: BrandingSettings;
   clusterCatalog: CatalogEntry[];
   sectorCatalog: CatalogEntry[];
+  mainSectors: MainSectorRecord[];
+  subSectors: SubSectorRecord[];
   monitoring: MonitoringDashboardData;
   evaluation: EvaluationDashboardData;
   findings: FindingsDashboardData;
@@ -116,6 +148,12 @@ type DashboardContextValue = {
   updateSectorCatalogEntry: (input: { id: string; name: string; description?: string }) => Promise<CatalogEntry>;
   removeClusterCatalogEntry: (clusterId: string) => Promise<void>;
   removeSectorCatalogEntry: (sectorId: string) => Promise<void>;
+  registerMainSector: (input: { name: string; description?: string }) => Promise<MainSectorRecord>;
+  updateMainSectorEntry: (input: { id: string; name: string; description?: string }) => Promise<MainSectorRecord>;
+  removeMainSector: (mainSectorId: string) => Promise<void>;
+  registerSubSector: (input: { mainSectorId: string; name: string; description?: string }) => Promise<SubSectorRecord>;
+  updateSubSectorEntry: (input: { id: string; mainSectorId: string; name: string; description?: string }) => Promise<SubSectorRecord>;
+  removeSubSector: (subSectorId: string) => Promise<void>;
   updateProject: (input: {
     id: string;
     code: string;
@@ -160,6 +198,8 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
   const [branding, setBranding] = useState<BrandingSettings>(DEFAULT_BRANDING);
   const [clusterCatalog, setClusterCatalog] = useState<CatalogEntry[]>([]);
   const [sectorCatalog, setSectorCatalog] = useState<CatalogEntry[]>([]);
+  const [mainSectors, setMainSectors] = useState<MainSectorRecord[]>([]);
+  const [subSectors, setSubSectors] = useState<SubSectorRecord[]>([]);
   const [monitoring, setMonitoring] = useState<MonitoringDashboardData>({
     baselineSurveys: [],
     enumerators: [],
@@ -231,6 +271,8 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
         integrations: IntegrationRecord[];
         clusterCatalog: CatalogEntry[];
         sectorCatalog: CatalogEntry[];
+        mainSectors: MainSectorRecord[];
+        subSectors: SubSectorRecord[];
       }>(DASHBOARD_STATE_ENDPOINT);
 
       setSectors(state.sectors);
@@ -245,6 +287,8 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
       setCrmAwareness(state.crmAwareness);
       setClusterCatalog(state.clusterCatalog);
       setSectorCatalog(state.sectorCatalog);
+      setMainSectors(state.mainSectors ?? []);
+      setSubSectors(state.subSectors ?? []);
       setMonitoring(state.monitoring);
       setEvaluation(state.evaluation);
       setFindings(state.findings);
@@ -272,6 +316,8 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
         setCrmAwareness([]);
         setClusterCatalog([]);
         setSectorCatalog([]);
+        setMainSectors([]);
+        setSubSectors([]);
         setMonitoring({
           baselineSurveys: [],
           enumerators: [],
@@ -494,6 +540,66 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
     setSectorCatalog((previous) => removeCatalogEntry(previous, sectorId));
   }, []);
 
+  const registerMainSector = useCallback(async (input: { name: string; description?: string }) => {
+    const entry = await jsonFetch<MainSectorRecord>("/api/catalog/main-sectors", {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+    setMainSectors((previous) => mergeMainSector(previous, entry));
+    return entry;
+  }, []);
+
+  const updateMainSectorEntry = useCallback(async (input: { id: string; name: string; description?: string }) => {
+    const entry = await jsonFetch<MainSectorRecord>(`/api/catalog/main-sectors/${encodeURIComponent(input.id)}`, {
+      method: "PATCH",
+      body: JSON.stringify({ name: input.name, description: input.description }),
+    });
+    setMainSectors((previous) => mergeMainSector(previous, entry));
+    setSubSectors((previous) =>
+      previous.map((sub) =>
+        sub.mainSectorId === entry.id ? { ...sub, mainSectorName: entry.name } : sub
+      )
+    );
+    return entry;
+  }, []);
+
+  const removeMainSector = useCallback(async (mainSectorId: string) => {
+    await jsonFetch(`/api/catalog/main-sectors/${encodeURIComponent(mainSectorId)}`, {
+      method: "DELETE",
+    });
+    setMainSectors((previous) => removeMainSectorEntry(previous, mainSectorId));
+    setSubSectors((previous) => previous.filter((sub) => sub.mainSectorId !== mainSectorId));
+  }, []);
+
+  const registerSubSector = useCallback(async (input: { mainSectorId: string; name: string; description?: string }) => {
+    const entry = await jsonFetch<SubSectorRecord>("/api/catalog/sub-sectors", {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+    setSubSectors((previous) => mergeSubSector(previous, entry));
+    return entry;
+  }, []);
+
+  const updateSubSectorEntry = useCallback(async (input: { id: string; mainSectorId: string; name: string; description?: string }) => {
+    const entry = await jsonFetch<SubSectorRecord>(`/api/catalog/sub-sectors/${encodeURIComponent(input.id)}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        mainSectorId: input.mainSectorId,
+        name: input.name,
+        description: input.description,
+      }),
+    });
+    setSubSectors((previous) => mergeSubSector(previous, entry));
+    return entry;
+  }, []);
+
+  const removeSubSector = useCallback(async (subSectorId: string) => {
+    await jsonFetch(`/api/catalog/sub-sectors/${encodeURIComponent(subSectorId)}`, {
+      method: "DELETE",
+    });
+    setSubSectors((previous) => removeSubSectorEntry(previous, subSectorId));
+  }, []);
+
   const updateBranding = useCallback(async (payload: Partial<BrandingSettings>) => {
     await jsonFetch("/api/branding", {
       method: "PATCH",
@@ -555,10 +661,12 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
     complaints,
     complaintMetrics,
     crmAwareness,
-    branding,
-    clusterCatalog,
-    sectorCatalog,
-    monitoring,
+  branding,
+  clusterCatalog,
+  sectorCatalog,
+  mainSectors,
+  subSectors,
+  monitoring,
     evaluation,
     findings,
     pdm,
@@ -580,6 +688,12 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
     updateSectorCatalogEntry,
     removeClusterCatalogEntry,
     removeSectorCatalogEntry,
+    registerMainSector,
+    updateMainSectorEntry,
+    removeMainSector,
+    registerSubSector,
+    updateSubSectorEntry,
+    removeSubSector,
     updateProject,
     isLoading,
   }), [
@@ -595,6 +709,8 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
     branding,
     clusterCatalog,
     sectorCatalog,
+    mainSectors,
+    subSectors,
     monitoring,
     evaluation,
     findings,
@@ -617,6 +733,12 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
     updateSectorCatalogEntry,
     removeClusterCatalogEntry,
     removeSectorCatalogEntry,
+    registerMainSector,
+    updateMainSectorEntry,
+    removeMainSector,
+    registerSubSector,
+    updateSubSectorEntry,
+    removeSubSector,
     updateProject,
     isLoading,
   ]);

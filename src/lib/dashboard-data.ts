@@ -78,6 +78,20 @@ export type CatalogEntry = {
   description?: string;
 };
 
+export type MainSectorRecord = {
+  id: string;
+  name: string;
+  description?: string;
+};
+
+export type SubSectorRecord = {
+  id: string;
+  mainSectorId: string;
+  mainSectorName: string;
+  name: string;
+  description?: string;
+};
+
 export const PROJECT_SECTORS = [
   "Agriculture",
   "Education",

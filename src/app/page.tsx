@@ -317,12 +317,10 @@ export default function Home() {
         setSelectedMainSectorId(null);
         setSelectedSubSectorName(null);
         setSelectedProjectId("all");
-        setSelectedSector(ALL_SECTOR_KEY);
         return;
       }
 
       setSelectedMainSectorId(mainSectorId);
-      setSelectedSector(ALL_SECTOR_KEY);
       setSelectedProjectId("all");
       setSelectedSubSectorName(null);
     },
@@ -2249,19 +2247,6 @@ export default function Home() {
                     Select a main sector above to enable sub-sector filtering.
                   </p>
                 )}
-                {selectedMainSectorId ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedMainSectorId(null);
-                      setSelectedSubSectorName(null);
-                      setSelectedProjectId("all");
-                    }}
-                    className="self-start text-xs font-semibold text-brand-primary hover:underline"
-                  >
-                    Clear selection
-                  </button>
-                ) : null}
               </div>
               <label className="flex flex-1 min-w-[140px] sm:min-w-[160px] md:min-w-[180px] flex-col gap-2 text-sm font-medium text-brand-muted">
                 <span className="text-xs font-semibold uppercase tracking-wide text-brand-soft">

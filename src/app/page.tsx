@@ -1649,26 +1649,6 @@ export default function Home() {
         </div>
       </nav>
 
-      {mainSectors.length ? (
-        <section className="border-b border-brand bg-white/80">
-          <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-2 px-3 sm:px-4 md:px-6 py-3">
-            <span className="text-xs font-semibold uppercase tracking-[0.24em] text-brand-soft">
-              Main Sectors
-            </span>
-            <div className="flex flex-wrap gap-2">
-              {mainSectors.map((sector) => (
-                <span
-                  key={sector.id}
-                  className="rounded-full border border-brand bg-brand-soft px-3 py-1 text-xs font-semibold text-brand-primary"
-                  title={sector.description ?? sector.name}
-                >
-                  {sector.name}
-                </span>
-              ))}
-            </div>
-          </div>
-        </section>
-      ) : null}
 
       <MobileQuickNav
         sections={navigableSections}
@@ -2046,34 +2026,52 @@ export default function Home() {
         )}
       </aside>
       <section className="border-b border-brand bg-brand-soft">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 sm:gap-4 px-3 sm:px-4 md:px-6 py-3 sm:py-4">
-          <h2 className="text-sm sm:text-base font-semibold uppercase tracking-wide text-brand-primary">
-            Working Sectors
-          </h2>
-          <div className="flex flex-wrap flex-row-reverse items-center justify-end gap-2 sm:gap-3 md:gap-4">
-            {sectorOrder.map((sector) => {
-              const isActive = selectedSector === sector;
-              const isDisabled = isProjectFiltered && sector !== ALL_SECTOR_KEY;
-              return (
-                <button
-                  key={sector}
-                  type="button"
-                  onClick={() => handleSectorClick(sector)}
-                  aria-pressed={isActive}
-                  disabled={isDisabled}
-                  className={`relative min-w-[100px] sm:min-w-[140px] md:min-w-[170px] overflow-hidden rounded-full px-4 sm:px-6 md:px-7 py-2 sm:py-2.5 md:py-3 text-sm sm:text-base font-semibold text-center transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3ea93d] ${
-                    isDisabled
-                      ? "chip-brand-soft cursor-not-allowed opacity-50"
-                      : isActive
-                      ? "btn-brand text-white shadow-brand-soft scale-[1.05]"
-                      : "chip-brand-soft hover:scale-[1.02]"
-                  }`}
-                >
-                  {sector}
-                </button>
-              );
-            })}
+        <div className="mx-auto max-w-7xl px-3 sm:px-4 md:px-6 py-3 sm:py-4 flex flex-col gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4">
+            <h2 className="text-sm sm:text-base font-semibold uppercase tracking-wide text-brand-primary">
+              Working Sectors
+            </h2>
+            <div className="flex flex-wrap flex-row-reverse items-center justify-end gap-2 sm:gap-3 md:gap-4">
+              {sectorOrder.map((sector) => {
+                const isActive = selectedSector === sector;
+                const isDisabled = isProjectFiltered && sector !== ALL_SECTOR_KEY;
+                return (
+                  <button
+                    key={sector}
+                    type="button"
+                    onClick={() => handleSectorClick(sector)}
+                    aria-pressed={isActive}
+                    disabled={isDisabled}
+                    className={`relative min-w-[100px] sm:min-w-[140px] md:min-w-[170px] overflow-hidden rounded-full px-4 sm:px-6 md:px-7 py-2 sm:py-2.5 md:py-3 text-sm sm:text-base font-semibold text-center transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#3ea93d] ${
+                      isDisabled
+                        ? "chip-brand-soft cursor-not-allowed opacity-50"
+                        : isActive
+                        ? "btn-brand text-white shadow-brand-soft scale-[1.05]"
+                        : "chip-brand-soft hover:scale-[1.02]"
+                    }`}
+                  >
+                    {sector}
+                  </button>
+                );
+              })}
+            </div>
           </div>
+          {mainSectors.length ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="rounded-full bg-white px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-brand-soft">
+                Main Sectors
+              </span>
+              {mainSectors.map((sector) => (
+                <span
+                  key={sector.id}
+                  className="rounded-full border border-brand bg-white px-3 py-1 text-xs font-semibold text-brand-primary shadow-sm"
+                  title={sector.description ?? sector.name}
+                >
+                  {sector.name}
+                </span>
+              ))}
+            </div>
+          ) : null}
         </div>
       </section>
 

@@ -1511,6 +1511,13 @@ export default function Home() {
                           <span>Evaluation</span>
                         </Link>
                         <Link
+                          href="/data-entry/beneficiaries"
+                          onClick={() => setIsDataEntryMenuOpen(false)}
+                          className="flex w-full items-center rounded-lg px-3 py-2 menu-item-brand"
+                        >
+                          <span>Beneficiaries</span>
+                        </Link>
+                        <Link
                           href="/data-entry/accountability"
                           onClick={() => setIsDataEntryMenuOpen(false)}
                           className="flex w-full items-center rounded-lg px-3 py-2 menu-item-brand"
@@ -1653,6 +1660,13 @@ export default function Home() {
                       className="flex w-full items-center rounded-lg px-3 py-2.5 text-sm font-medium menu-item-brand"
                     >
                       <span>Evaluation</span>
+                    </Link>
+                    <Link
+                      href="/data-entry/beneficiaries"
+                      onClick={closeMobileMenu}
+                      className="flex w-full items-center rounded-lg px-3 py-2.5 text-sm font-medium menu-item-brand"
+                    >
+                      <span>Beneficiaries</span>
                     </Link>
                     <Link
                       href="/data-entry/accountability"

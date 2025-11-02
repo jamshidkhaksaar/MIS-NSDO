@@ -15,6 +15,7 @@ export default function ComplaintsPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
   const [selectedComplaintId, setSelectedComplaintId] = useState<string | null>(null);
+  const [isSigningOut, setIsSigningOut] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -50,12 +51,13 @@ export default function ComplaintsPage() {
   }, [hasCheckedAuth, isAuthenticated, router]);
 
   const handleSignOut = async () => {
+    setIsSigningOut(true);
     try {
       await fetch("/api/auth/logout", { method: "POST" });
     } catch {
       // Ignore network errors; navigation will close the session client-side.
     } finally {
-      router.push("/login?message=signing-out");
+      router.push("/");
       router.refresh();
     }
   };
@@ -88,6 +90,36 @@ export default function ComplaintsPage() {
   const handleUpdateComplaint = async (id: string, updates: Partial<ComplaintRecord>) => {
     await updateComplaint(id, updates);
   };
+
+  if (isSigningOut) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-brand-soft px-6 py-12 text-brand-strong">
+        <div className="flex flex-col items-center gap-4">
+          <svg
+            className="h-12 w-12 animate-spin text-brand-primary"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            ></circle>
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            ></path>
+          </svg>
+          <p className="text-lg font-semibold tracking-tight">Signing out...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!hasCheckedAuth || (isLoading && complaints.length === 0)) {
     return <Loading />;

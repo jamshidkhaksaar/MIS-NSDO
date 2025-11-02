@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useDashboardData } from "@/context/DashboardDataContext";
 import Loading from "./loading";
 
@@ -28,14 +28,6 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [authMessage, setAuthMessage] = useState<string | null>(null);
   const router = useRouter();
-  const searchParams = useSearchParams();
-
-  useEffect(() => {
-    const message = searchParams.get("message");
-    if (message === "signing-out") {
-      setAuthMessage("Signing out...");
-    }
-  }, [searchParams]);
 
   if (isLoading) {
     return <Loading />;

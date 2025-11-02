@@ -2337,41 +2337,29 @@ export default function Home() {
                 <span className="text-xs font-semibold uppercase tracking-wide text-brand-soft">
                   Beneficiary View
                 </span>
-                <div className="flex overflow-hidden rounded-full border border-brand bg-brand-soft">
-                  <button
-                    type="button"
-                    onClick={() => setBeneficiaryView("direct")}
-                    className={`flex-1 px-2 sm:px-3 md:px-4 py-2 text-xs sm:text-sm font-semibold ${
-                      beneficiaryView === "direct"
-                        ? "toggle-pill toggle-pill-active"
-                        : "toggle-pill"
-                    }`}
-                  >
-                    Direct
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setBeneficiaryView("indirect")}
-                    className={`flex-1 px-2 sm:px-3 md:px-4 py-2 text-xs sm:text-sm font-semibold ${
-                      beneficiaryView === "indirect"
-                        ? "toggle-pill toggle-pill-active"
-                        : "toggle-pill"
-                    }`}
-                  >
-                    Indirect
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setBeneficiaryView("total")}
-                    className={`flex-1 px-2 sm:px-3 md:px-4 py-2 text-xs sm:text-sm font-semibold ${
-                      beneficiaryView === "total"
-                        ? "toggle-pill toggle-pill-active"
-                        : "toggle-pill"
-                    }`}
-                  >
-                    Total
-                  </button>
-                </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setBeneficiaryView("direct")}
+                className={`rounded-full px-3 py-1 text-xs font-medium chip-brand ${beneficiaryView === "direct" ? "btn-brand text-white" : ""}`}
+              >
+                Direct
+              </button>
+              <button
+                type="button"
+                onClick={() => setBeneficiaryView("indirect")}
+                className={`rounded-full px-3 py-1 text-xs font-medium chip-brand ${beneficiaryView === "indirect" ? "btn-brand text-white" : ""}`}
+              >
+                Indirect
+              </button>
+              <button
+                type="button"
+                onClick={() => setBeneficiaryView("total")}
+                className={`rounded-full px-3 py-1 text-xs font-medium chip-brand ${beneficiaryView === "total" ? "btn-brand text-white" : ""}`}
+              >
+                Total
+              </button>
+            </div>
               </div>
             </div>
           </div>

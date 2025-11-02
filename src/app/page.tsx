@@ -205,8 +205,8 @@ export default function Home() {
   const [selectedSector, setSelectedSector] =
     useState<DashboardSectorKey>(ALL_SECTOR_KEY);
   const [selectedProjectId, setSelectedProjectId] = useState<string>("all");
-  const [selectedSubSectors, setSelectedSubSectors] = useState<string[]>([]);
   const [selectedMainSectorId, setSelectedMainSectorId] = useState<string | null>(null);
+  const [selectedSubSectorName, setSelectedSubSectorName] = useState<string | null>(null);
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false);
 
   const [selectedYear, setSelectedYear] = useState<number>(() => {
@@ -264,11 +264,6 @@ export default function Home() {
     return map;
   }, [subSectors]);
 
-  const orphanSubSectors = useMemo(
-    () => subSectors.filter((entry) => !mainSectors.some((main) => main.id === entry.mainSectorId)),
-    [mainSectors, subSectors]
-  );
-
   const selectedProject = useMemo(() => {
     if (selectedProjectId === "all") {
       return null;
@@ -276,59 +271,70 @@ export default function Home() {
     return projects.find((project) => project.id === selectedProjectId) ?? null;
   }, [projects, selectedProjectId]);
 
-  const toggleSubSector = useCallback((name: string) => {
-    setSelectedMainSectorId(null);
-    setSelectedSubSectors((previous) => {
-      if (previous.includes(name)) {
-        return previous.filter((value) => value !== name);
-      }
-      return [...previous, name];
-    });
-  }, []);
+  const activeSubSectorNames = useMemo(() => {
+    if (!selectedMainSectorId) {
+      return [] as string[];
+    }
+    const children = subSectorsByMain.get(selectedMainSectorId) ?? [];
+    if (selectedSubSectorName) {
+      return [selectedSubSectorName];
+    }
+    if (children.length) {
+      return Array.from(new Set(children.map((child) => child.name)));
+    }
+    const fallback = mainSectors.find((sector) => sector.id === selectedMainSectorId)?.name;
+    return fallback ? [fallback] : [];
+  }, [selectedMainSectorId, selectedSubSectorName, subSectorsByMain, mainSectors]);
+
+  const handleSubSectorChange = useCallback(
+    (event: ChangeEvent<HTMLSelectElement>) => {
+      const value = event.target.value;
+      setSelectedSubSectorName(value ? value : null);
+      setSelectedProjectId("all");
+    },
+    []
+  );
+
+  const mainSectorFilteredProjects = useMemo(() => {
+    if (!selectedMainSectorId) {
+      return projects;
+    }
+    if (!activeSubSectorNames.length) {
+      return projects;
+    }
+    const selection = new Set(activeSubSectorNames.map((value) => value.toLowerCase()));
+    return projects.filter((project) =>
+      (project.standardSectors ?? []).some((value) => selection.has((value ?? "").toLowerCase()))
+    );
+  }, [projects, selectedMainSectorId, activeSubSectorNames]);
+
+  const filteredProjectOptions = useMemo(() => {
+    if (!selectedMainSectorId) {
+      return sortedProjects;
+    }
+    const selectedList = mainSectorFilteredProjects;
+    if (!selectedList.length) {
+      return sortedProjects;
+    }
+    return selectedList.slice().sort((a, b) => a.name.localeCompare(b.name));
+  }, [selectedMainSectorId, sortedProjects, mainSectorFilteredProjects]);
 
   const handleMainSectorClick = useCallback(
     (mainSectorId: string) => {
-      const children = subSectorsByMain.get(mainSectorId) ?? [];
-      const resolvedNames = children.length
-        ? Array.from(new Set(children.map((child) => child.name)))
-        : (() => {
-            const match = mainSectors.find((sector) => sector.id === mainSectorId);
-            return match ? [match.name] : [];
-          })();
-
       if (selectedMainSectorId === mainSectorId) {
         setSelectedMainSectorId(null);
-        setSelectedSubSectors([]);
+        setSelectedSubSectorName(null);
+        setSelectedProjectId("all");
         return;
       }
 
       setSelectedMainSectorId(mainSectorId);
       setSelectedSector(ALL_SECTOR_KEY);
       setSelectedProjectId("all");
-      setSelectedSubSectors(resolvedNames);
+      setSelectedSubSectorName(null);
     },
-    [mainSectors, selectedMainSectorId, subSectorsByMain]
+    [selectedMainSectorId]
   );
-
-  const subSectorFilteredProjects = useMemo(() => {
-    if (!selectedSubSectors.length) {
-      return projects;
-    }
-    const selection = new Set(selectedSubSectors.map((value) => value.toLowerCase()));
-    return projects.filter((project) =>
-      (project.standardSectors ?? []).some((value) => selection.has((value ?? "").toLowerCase()))
-    );
-  }, [projects, selectedSubSectors]);
-
-  const filteredProjectOptions = useMemo(() => {
-    if (!selectedSubSectors.length) {
-      return sortedProjects;
-    }
-    const selection = new Set(selectedSubSectors.map((value) => value.toLowerCase()));
-    return sortedProjects.filter((project) =>
-      (project.standardSectors ?? []).some((value) => selection.has((value ?? "").toLowerCase()))
-    );
-  }, [sortedProjects, selectedSubSectors]);
 
   const isBootstrapLoading = isLoading && baseSectorKeys.length === 0;
 
@@ -375,30 +381,20 @@ export default function Home() {
       return;
     }
     const children = subSectorsByMain.get(selectedMainSectorId) ?? [];
-    const expected = children.length
-      ? children.map((child) => child.name)
-      : (() => {
-          const match = mainSectors.find((sector) => sector.id === selectedMainSectorId);
-          return match ? [match.name] : [];
-        })();
-    const expectedSet = new Set(expected);
-    const currentSet = new Set(selectedSubSectors);
-    if (expectedSet.size !== currentSet.size) {
-      setSelectedMainSectorId(null);
+    if (!selectedSubSectorName) {
+      if (!children.length) {
+        const fallback = mainSectors.find((sector) => sector.id === selectedMainSectorId);
+        if (!fallback) {
+          setSelectedMainSectorId(null);
+        }
+      }
       return;
     }
-    for (const name of expectedSet) {
-      if (!currentSet.has(name)) {
-        setSelectedMainSectorId(null);
-        break;
-      }
+    const match = children.some((child) => child.name === selectedSubSectorName);
+    if (!match) {
+      setSelectedSubSectorName(null);
     }
-  }, [selectedMainSectorId, selectedSubSectors, subSectorsByMain, mainSectors]);
-
-  useEffect(() => {
-    const validNames = new Set(subSectors.map((entry) => entry.name));
-    setSelectedSubSectors((previous) => previous.filter((name) => validNames.has(name)));
-  }, [subSectors]);
+  }, [selectedMainSectorId, selectedSubSectorName, subSectorsByMain, mainSectors]);
 
   useEffect(() => {
     if (selectedProjectId === "all") {
@@ -826,11 +822,16 @@ export default function Home() {
   }, [isMobileMenuOpen]);
 
   const handleSectorClick = (sector: DashboardSectorKey) => {
-    if (sector === selectedSector) {
+    if (sector === selectedSector && sector !== ALL_SECTOR_KEY) {
       return;
     }
     if (selectedProject && sector !== ALL_SECTOR_KEY) {
       return;
+    }
+    setSelectedMainSectorId(null);
+    setSelectedSubSectorName(null);
+    if (sector === ALL_SECTOR_KEY) {
+      setSelectedProjectId("all");
     }
     setSelectedSector(sector);
   };
@@ -1002,8 +1003,8 @@ export default function Home() {
   };
 
   const filteredProjects = useMemo(
-    () => (selectedProject ? [selectedProject] : subSectorFilteredProjects),
-    [selectedProject, subSectorFilteredProjects]
+    () => (selectedProject ? [selectedProject] : mainSectorFilteredProjects),
+    [selectedProject, mainSectorFilteredProjects]
   );
   const isProjectFiltered = Boolean(selectedProject);
 
@@ -2103,8 +2104,8 @@ export default function Home() {
                   >
                     {sector}
                   </button>
-                  {sector === ALL_SECTOR_KEY && mainSectors.length
-                    ? mainSectors.map((mainSector) => {
+                  {sector === ALL_SECTOR_KEY && sortedMainSectors.length
+                    ? sortedMainSectors.map((mainSector) => {
                         const isMainActive = selectedMainSectorId === mainSector.id;
                         return (
                           <button
@@ -2194,80 +2195,70 @@ export default function Home() {
               </label>
               <div className="flex flex-1 min-w-[200px] sm:min-w-[220px] flex-col gap-2 text-sm font-medium text-brand-muted">
                 <span className="text-xs font-semibold uppercase tracking-wide text-brand-soft">
-                  Sub-Sectors
+                  Sub-Sector
                 </span>
-                {sortedMainSectors.length || orphanSubSectors.length ? (
-                  <div className="flex flex-col gap-2">
-                    {sortedMainSectors.map((main) => {
-                      const children = subSectorsByMain.get(main.id) ?? [];
-                      if (!children.length) {
-                        return null;
-                      }
-                      return (
-                        <div key={main.id} className="flex flex-wrap items-center gap-2">
-                          <span className="rounded-full bg-brand-soft px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-brand-soft">
-                            {main.name}
-                          </span>
-                          {children.map((child) => {
-                            const isSelected = selectedSubSectors.includes(child.name);
-                            return (
-                              <button
-                                key={child.id}
-                                type="button"
-                                onClick={() => toggleSubSector(child.name)}
-                                className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
-                                  isSelected
-                                    ? "btn-brand text-white shadow-brand-soft"
-                                    : "chip-brand-soft hover:scale-[1.02]"
-                                }`}
-                                title={child.description ?? main.name}
-                              >
-                                {child.name}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      );
-                    })}
-                    {orphanSubSectors.length
-                      ? (
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="rounded-full bg-brand-soft px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-brand-soft">
-                              Uncategorized
-                            </span>
-                            {orphanSubSectors.map((child) => {
-                              const isSelected = selectedSubSectors.includes(child.name);
-                              return (
-                                <button
-                                  key={child.id}
-                                  type="button"
-                                  onClick={() => toggleSubSector(child.name)}
-                                  className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
-                                    isSelected
-                                      ? "btn-brand text-white shadow-brand-soft"
-                                      : "chip-brand-soft hover:scale-[1.02]"
-                                  }`}
-                                  title={child.description ?? child.name}
-                                >
-                                  {child.name}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        )
-                      : null}
-                  </div>
+                {selectedMainSectorId ? (
+                  (() => {
+                    const children = subSectorsByMain.get(selectedMainSectorId) ?? [];
+                    const hasChildren = children.length > 0;
+                    const options = hasChildren
+                      ? children
+                      : (() => {
+                          const fallback = mainSectors.find((sector) => sector.id === selectedMainSectorId);
+                          return fallback
+                            ? [{ id: `fallback-${fallback.id}`, name: fallback.name, description: fallback.description }]
+                            : [];
+                        })();
+                    return options.length ? (
+                      <div className="relative">
+                        <select
+                          id="sub-sector-filter"
+                          value={selectedSubSectorName ?? ""}
+                          onChange={handleSubSectorChange}
+                          className="input-brand w-full appearance-none rounded-lg px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium"
+                        >
+                          <option value="">All sub-sectors</option>
+                          {options.map((option) => (
+                            <option key={option.id} value={option.name}>
+                              {option.name}
+                            </option>
+                          ))}
+                        </select>
+                        <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-brand-soft">
+                          <svg
+                            className="h-3 w-3"
+                            viewBox="0 0 12 12"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              d="M3 4.5L6 7.5L9 4.5"
+                              stroke="currentColor"
+                              strokeWidth="1.5"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                        </span>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-brand-soft">
+                        No sub-sectors are linked to this main sector yet.
+                      </p>
+                    );
+                  })()
                 ) : (
                   <p className="text-xs text-brand-soft">
-                    Add main and sub-sectors in the Projects workspace to enable this filter.
+                    Select a main sector above to enable sub-sector filtering.
                   </p>
                 )}
-                {selectedSubSectors.length ? (
+                {selectedMainSectorId ? (
                   <button
                     type="button"
                     onClick={() => {
                       setSelectedMainSectorId(null);
-                      setSelectedSubSectors([]);
+                      setSelectedSubSectorName(null);
+                      setSelectedProjectId("all");
                     }}
                     className="self-start text-xs font-semibold text-brand-primary hover:underline"
                   >

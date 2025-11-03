@@ -61,6 +61,7 @@ import {
 } from "@/lib/dashboard-data";
 import { withConnection } from "@/lib/db";
 import { decodeLocationToken, mergeProjectLocations } from "@/lib/project-locations";
+import { deleteBrandingAsset, getBrandingAssetPublicUrl, uploadBrandingAsset } from "@/lib/storage";
 
 type SectorRow = {
   id: number;
@@ -116,8 +117,12 @@ type UserRow = {
 
 type BrandingRow = {
   company_name: string;
+  logo_storage_path: string | null;
+  logo_url: string | null;
   logo_data: Buffer | null;
   logo_mime: string | null;
+  favicon_storage_path: string | null;
+  favicon_url: string | null;
   favicon_data: Buffer | null;
   favicon_mime: string | null;
 };
@@ -440,8 +445,8 @@ type DashboardState = {
   projectPhases: ProjectPhaseRecord[];
   branding: {
     companyName: string;
-    logoDataUrl: string | null;
-    faviconDataUrl: string | null;
+    logoUrl: string | null;
+    faviconUrl: string | null;
   };
   complaints: ComplaintRecord[];
   complaintMetrics: ComplaintSummaryMetrics;
@@ -665,10 +670,12 @@ function bufferToDataUrl(data: Buffer | null, mime: string | null): string | nul
 }
 
 function mapBrandingRow(row: BrandingRow | undefined): BrandingSettings {
+  const fallbackLogo = bufferToDataUrl(row?.logo_data ?? null, row?.logo_mime ?? null);
+  const fallbackFavicon = bufferToDataUrl(row?.favicon_data ?? null, row?.favicon_mime ?? null);
   return {
     companyName: row?.company_name ?? "NSDO",
-    logoDataUrl: bufferToDataUrl(row?.logo_data ?? null, row?.logo_mime ?? null),
-    faviconDataUrl: bufferToDataUrl(row?.favicon_data ?? null, row?.favicon_mime ?? null),
+    logoUrl: row?.logo_url ?? fallbackLogo,
+    faviconUrl: row?.favicon_url ?? fallbackFavicon,
   };
 }
 
@@ -776,7 +783,17 @@ export async function fetchDashboardState(): Promise<DashboardState> {
     }));
 
     const [brandingRows] = await connection.query<BrandingRow>(
-      "SELECT company_name, logo_data, logo_mime, favicon_data, favicon_mime FROM branding_settings WHERE id = 1"
+      `SELECT company_name,
+              logo_storage_path,
+              logo_url,
+              logo_data,
+              logo_mime,
+              favicon_storage_path,
+              favicon_url,
+              favicon_data,
+              favicon_mime
+       FROM branding_settings
+       WHERE id = 1`
     );
 
     const branding = mapBrandingRow(brandingRows[0]);
@@ -3418,35 +3435,150 @@ export async function updateBranding(payload: {
   faviconDataUrl?: string | null;
 }): Promise<void> {
   const { companyName, logoDataUrl, faviconDataUrl } = payload;
+
   const parseDataUrl = (value: string | null | undefined) => {
-    if (!value) return { data: null, mime: null };
+    if (value === null || value === undefined) {
+      return null;
+    }
     const match = value.match(/^data:(.+);base64,(.*)$/);
-    if (!match) return { data: null, mime: null };
-    return { data: Buffer.from(match[2], "base64"), mime: match[1] };
+    if (!match || !match[1] || !match[2]) {
+      throw new Error("Branding assets must be provided as base64 data URLs.");
+    }
+    const buffer = Buffer.from(match[2], "base64");
+    if (!buffer.length) {
+      throw new Error("Branding asset data is empty.");
+    }
+    return { buffer, mime: match[1].trim() || "application/octet-stream" };
   };
 
-  const logo = parseDataUrl(logoDataUrl);
-  const favicon = parseDataUrl(faviconDataUrl);
+  const logoPayload = parseDataUrl(logoDataUrl);
+  const faviconPayload = parseDataUrl(faviconDataUrl);
 
   await withConnection(async (connection) => {
-    await connection.execute(
-      `INSERT INTO branding_settings (id, company_name, logo_data, logo_mime, favicon_data, favicon_mime)
-       VALUES (1, ?, ?, ?, ?, ?)
-       ON CONFLICT(id) DO UPDATE SET
-         company_name = excluded.company_name,
-         logo_data = COALESCE(excluded.logo_data, branding_settings.logo_data),
-         logo_mime = COALESCE(excluded.logo_mime, branding_settings.logo_mime),
-         favicon_data = COALESCE(excluded.favicon_data, branding_settings.favicon_data),
-         favicon_mime = COALESCE(excluded.favicon_mime, branding_settings.favicon_mime)`,
-      [companyName ?? "NSDO", logo.data, logo.mime, favicon.data, favicon.mime]
-    );
+    await connection.beginTransaction();
+    try {
+      const [rows] = await connection.query<BrandingRow>(
+        `SELECT company_name,
+                logo_storage_path,
+                logo_url,
+                logo_data,
+                logo_mime,
+                favicon_storage_path,
+                favicon_url,
+                favicon_data,
+                favicon_mime
+         FROM branding_settings
+         WHERE id = 1
+         FOR UPDATE`
+      );
+
+      const existing = rows[0];
+
+      let nextCompanyName = existing?.company_name ?? "NSDO";
+      if (typeof companyName === "string") {
+        const trimmed = companyName.trim();
+        nextCompanyName = trimmed || "NSDO";
+      }
+
+      let nextLogoPath = existing?.logo_storage_path ?? null;
+      let nextLogoUrl = existing?.logo_url ?? null;
+      if (nextLogoPath && !nextLogoUrl) {
+        try {
+          nextLogoUrl = getBrandingAssetPublicUrl(nextLogoPath);
+        } catch {
+          nextLogoUrl = null;
+        }
+      }
+
+      if (logoDataUrl !== undefined) {
+        if (logoPayload === null) {
+          await deleteBrandingAsset(nextLogoPath);
+          nextLogoPath = null;
+          nextLogoUrl = null;
+        } else {
+          const upload = await uploadBrandingAsset("logo", logoPayload.buffer, logoPayload.mime);
+          if (nextLogoPath && nextLogoPath !== upload.path) {
+            await deleteBrandingAsset(nextLogoPath);
+          }
+          nextLogoPath = upload.path;
+          nextLogoUrl = upload.publicUrl;
+        }
+      }
+
+      let nextFaviconPath = existing?.favicon_storage_path ?? null;
+      let nextFaviconUrl = existing?.favicon_url ?? null;
+      if (nextFaviconPath && !nextFaviconUrl) {
+        try {
+          nextFaviconUrl = getBrandingAssetPublicUrl(nextFaviconPath);
+        } catch {
+          nextFaviconUrl = null;
+        }
+      }
+
+      if (faviconDataUrl !== undefined) {
+        if (faviconPayload === null) {
+          await deleteBrandingAsset(nextFaviconPath);
+          nextFaviconPath = null;
+          nextFaviconUrl = null;
+        } else {
+          const upload = await uploadBrandingAsset("favicon", faviconPayload.buffer, faviconPayload.mime);
+          if (nextFaviconPath && nextFaviconPath !== upload.path) {
+            await deleteBrandingAsset(nextFaviconPath);
+          }
+          nextFaviconPath = upload.path;
+          nextFaviconUrl = upload.publicUrl;
+        }
+      }
+
+      await connection.execute(
+        `INSERT INTO branding_settings (
+            id,
+            company_name,
+            logo_storage_path,
+            logo_url,
+            favicon_storage_path,
+            favicon_url,
+            logo_data,
+            logo_mime,
+            favicon_data,
+            favicon_mime
+         )
+         VALUES (1, ?, ?, ?, ?, ?, NULL, NULL, NULL, NULL)
+         ON CONFLICT(id) DO UPDATE SET
+           company_name = excluded.company_name,
+           logo_storage_path = excluded.logo_storage_path,
+           logo_url = excluded.logo_url,
+           favicon_storage_path = excluded.favicon_storage_path,
+           favicon_url = excluded.favicon_url,
+           logo_data = NULL,
+           logo_mime = NULL,
+           favicon_data = NULL,
+           favicon_mime = NULL`,
+        [nextCompanyName, nextLogoPath, nextLogoUrl, nextFaviconPath, nextFaviconUrl]
+      );
+
+      await connection.commit();
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    }
   });
 }
 
 export async function fetchBrandingSettings(): Promise<BrandingSettings> {
   return withConnection(async (connection) => {
     const [rows] = await connection.query<BrandingRow>(
-      "SELECT company_name, logo_data, logo_mime, favicon_data, favicon_mime FROM branding_settings WHERE id = 1"
+      `SELECT company_name,
+              logo_storage_path,
+              logo_url,
+              logo_data,
+              logo_mime,
+              favicon_storage_path,
+              favicon_url,
+              favicon_data,
+              favicon_mime
+       FROM branding_settings
+       WHERE id = 1`
     );
     return mapBrandingRow(rows[0]);
   });

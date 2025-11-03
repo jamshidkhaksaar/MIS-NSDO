@@ -72,7 +72,7 @@ export default function ProjectsShell({ children }: ProjectsShellProps) {
     () => branding.companyName?.trim() || "Project Workspace",
     [branding.companyName]
   );
-  const brandLogo = branding.logoDataUrl;
+  const brandLogo = branding.logoUrl;
 
   const currentYear = useMemo(() => new Date().getFullYear(), []);
 

@@ -1431,7 +1431,7 @@ export default function Home() {
   const adminStaffShare = totalStaff ? Math.max(0, 100 - fieldStaffShare) : 0;
 
   const brandDisplayName = branding.companyName?.trim() || "Brand Placeholder";
-  const brandLogo = branding.logoDataUrl;
+  const brandLogo = branding.logoUrl;
 
   if (isSigningOut) {
     return (

@@ -247,14 +247,14 @@ export const STANDARD_SECTOR_GROUPS = [
 
 export type BrandingSettings = {
   companyName: string;
-  logoDataUrl: string | null;
-  faviconDataUrl: string | null;
+  logoUrl: string | null;
+  faviconUrl: string | null;
 };
 
 export const DEFAULT_BRANDING: BrandingSettings = {
   companyName: "NSDO",
-  logoDataUrl: null,
-  faviconDataUrl: null,
+  logoUrl: null,
+  faviconUrl: null,
 };
 
 export type ComplaintRecord = {

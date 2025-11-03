@@ -74,7 +74,7 @@ export default function LoginPage() {
   };
 
   const brandName = branding.companyName?.trim() || "Brand";
-  const brandLogo = branding.logoDataUrl;
+  const brandLogo = branding.logoUrl;
 
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-br from-[#e6f6ea] to-[#f7fdf9]">

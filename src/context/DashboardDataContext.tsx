@@ -139,7 +139,7 @@ type DashboardContextValue = {
   removeReportingYear: (year: number) => Promise<void>;
   addUser: (user: { name: string; email: string; role: DashboardUserRole; organization?: string; password?: string }) => Promise<void>;
   removeUser: (userId: string) => Promise<void>;
-  updateBranding: (payload: Partial<BrandingSettings>) => Promise<void>;
+  updateBranding: (payload: BrandingUpdatePayload) => Promise<void>;
   addComplaint: (complaint: Partial<ComplaintRecord>) => Promise<void>;
   updateComplaint: (complaintId: string, updates: Partial<ComplaintRecord>) => Promise<void>;
   removeComplaint: (complaintId: string) => Promise<void>;
@@ -197,6 +197,12 @@ type DashboardContextValue = {
     standardSectors?: string[];
   }) => Promise<{ id: string }>;
   isLoading: boolean;
+};
+
+type BrandingUpdatePayload = {
+  companyName?: string;
+  logoDataUrl?: string | null;
+  faviconDataUrl?: string | null;
 };
 
 const DashboardDataContext = createContext<DashboardContextValue | null>(null);
@@ -621,7 +627,7 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
     setSubSectors((previous) => removeSubSectorEntry(previous, subSectorId));
   }, []);
 
-  const updateBranding = useCallback(async (payload: Partial<BrandingSettings>) => {
+  const updateBranding = useCallback(async (payload: BrandingUpdatePayload) => {
     await jsonFetch("/api/branding", {
       method: "PATCH",
       body: JSON.stringify(payload),

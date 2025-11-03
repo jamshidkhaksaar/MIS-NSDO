@@ -542,7 +542,7 @@ export default function AdminDashboard() {
                       <p className="text-sm font-semibold text-brand-muted">Logo</p>
                       <p className="text-xs text-brand-soft">PNG, JPG, or SVG under 2 MB</p>
                     </div>
-                    {branding.logoDataUrl ? (
+                    {branding.logoUrl ? (
                       <button
                         type="button"
                         onClick={() => void handleAssetReset('logo')}
@@ -554,9 +554,9 @@ export default function AdminDashboard() {
                   </div>
                   <div className="mt-4 flex flex-col items-center justify-center gap-4">
                     <div className="flex h-20 w-32 items-center justify-center rounded-xl border border-dashed border-brand-soft bg-white p-4">
-                      {branding.logoDataUrl ? (
+                      {branding.logoUrl ? (
                         <img
-                          src={branding.logoDataUrl}
+                          src={branding.logoUrl}
                           alt={`${branding.companyName} logo`}
                           className="max-h-16 object-contain"
                         />
@@ -585,7 +585,7 @@ export default function AdminDashboard() {
                         Square image (PNG, SVG, ICO) under 2 MB
                       </p>
                     </div>
-                    {branding.faviconDataUrl ? (
+                    {branding.faviconUrl ? (
                       <button
                         type="button"
                         onClick={() => void handleAssetReset('favicon')}
@@ -597,9 +597,9 @@ export default function AdminDashboard() {
                   </div>
                   <div className="mt-4 flex flex-col items-center justify-center gap-4">
                     <div className="flex h-20 w-20 items-center justify-center rounded-xl border border-dashed border-brand-soft bg-white p-4">
-                      {branding.faviconDataUrl ? (
+                      {branding.faviconUrl ? (
                         <img
-                          src={branding.faviconDataUrl}
+                          src={branding.faviconUrl}
                           alt={`${branding.companyName} favicon`}
                           className="h-10 w-10 object-contain"
                         />
@@ -640,9 +640,9 @@ export default function AdminDashboard() {
               <div className="rounded-2xl border border-brand-soft bg-white p-5 shadow-brand-soft/40">
                 <div className="flex items-center gap-4">
                   <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-dashed border-brand-soft bg-brand-soft/40">
-                    {branding.faviconDataUrl ? (
+                    {branding.faviconUrl ? (
                       <img
-                        src={branding.faviconDataUrl}
+                        src={branding.faviconUrl}
                         alt={`${branding.companyName} favicon preview`}
                         className="h-8 w-8 object-contain"
                       />
@@ -662,9 +662,9 @@ export default function AdminDashboard() {
                   </div>
                 </div>
                 <div className="mt-4 flex items-center justify-center rounded-2xl border border-dashed border-brand-soft bg-brand-soft/20 p-4">
-                  {branding.logoDataUrl ? (
+                  {branding.logoUrl ? (
                     <img
-                      src={branding.logoDataUrl}
+                      src={branding.logoUrl}
                       alt={`${branding.companyName} logo preview`}
                       className="max-h-16 object-contain"
                     />

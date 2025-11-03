@@ -75,7 +75,7 @@ export default function DataEntryShell({ children }: DataEntryShellProps) {
     () => branding.companyName?.trim() || "NSDO MEAL",
     [branding.companyName]
   );
-  const brandLogo = branding.logoDataUrl;
+  const brandLogo = branding.logoUrl;
 
   const currentYear = useMemo(() => new Date().getFullYear(), []);
 

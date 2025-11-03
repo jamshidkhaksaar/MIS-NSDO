@@ -48,6 +48,26 @@ function dataUrlToBuffer(dataUrl: string | null | undefined): Buffer | null {
   return Buffer.from(base64Data, "base64");
 }
 
+async function resolveBrandingLogoBuffer(branding: BrandingSettings | null): Promise<Buffer | null> {
+  const logoUrl = branding?.logoUrl;
+  if (!logoUrl) {
+    return null;
+  }
+  if (logoUrl.startsWith("data:")) {
+    return dataUrlToBuffer(logoUrl);
+  }
+  try {
+    const response = await fetch(logoUrl);
+    if (!response.ok) {
+      return null;
+    }
+    const arrayBuffer = await response.arrayBuffer();
+    return Buffer.from(arrayBuffer);
+  } catch {
+    return null;
+  }
+}
+
 function createEmptyBreakdown(): BeneficiaryBreakdown {
   const direct: BeneficiaryBreakdown["direct"] = {} as BeneficiaryBreakdown["direct"];
   const indirect: BeneficiaryBreakdown["indirect"] = {} as BeneficiaryBreakdown["indirect"];
@@ -189,9 +209,14 @@ function prepareReportData(state: DashboardState, filters: ReportFilters): Repor
   };
 }
 
-function drawHeader(doc: PdfDoc, branding: BrandingSettings | null, pageNumber: number, totalPages?: number) {
-  const { companyName, logoDataUrl } = branding ?? {};
-  const logoBuffer = dataUrlToBuffer(logoDataUrl);
+function drawHeader(
+  doc: PdfDoc,
+  branding: BrandingSettings | null,
+  logoBuffer: Buffer | null,
+  pageNumber: number,
+  totalPages?: number
+) {
+  const companyName = branding?.companyName || "NSDO";
 
   if (logoBuffer) {
     try {
@@ -201,7 +226,7 @@ function drawHeader(doc: PdfDoc, branding: BrandingSettings | null, pageNumber: 
     }
   }
 
-  doc.font("Helvetica-Bold").fontSize(16).text(companyName || "NSDO", logoBuffer ? 110 : doc.page.margins.left, doc.page.margins.top - 20, {
+  doc.font("Helvetica-Bold").fontSize(16).text(companyName, logoBuffer ? 110 : doc.page.margins.left, doc.page.margins.top - 20, {
     align: "left",
   });
 
@@ -431,6 +456,7 @@ function applyFiltersSummary(doc: PdfDoc, filters: ReportFilters) {
 }
 
 export async function buildDashboardReport(state: DashboardState, filters: ReportFilters): Promise<Buffer> {
+  const brandingLogoBuffer = await resolveBrandingLogoBuffer(state.branding);
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({
       size: "A4",
@@ -448,7 +474,7 @@ export async function buildDashboardReport(state: DashboardState, filters: Repor
     doc.on("end", () => resolve(Buffer.concat(chunks)));
 
     let pageNumber = 1;
-    drawHeader(doc, state.branding, pageNumber);
+    drawHeader(doc, state.branding, brandingLogoBuffer, pageNumber);
 
     doc.font("Helvetica-Bold").fontSize(20).text("MIS Programme Report", { align: "center" });
     doc.moveDown(0.3);
@@ -505,7 +531,7 @@ export async function buildDashboardReport(state: DashboardState, filters: Repor
 
     doc.addPage();
     pageNumber += 1;
-    drawHeader(doc, state.branding, pageNumber);
+    drawHeader(doc, state.branding, brandingLogoBuffer, pageNumber);
 
     addSectionTitle(doc, "Evaluation & learning");
     addEvaluationSection(doc, reportData.evaluation);

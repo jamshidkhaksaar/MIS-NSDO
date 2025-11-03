@@ -62,7 +62,7 @@ export default function ComplaintsPage() {
   };
 
   const brandDisplayName = branding.companyName?.trim() || "Brand Portal";
-  const brandLogo = branding.logoDataUrl;
+  const brandLogo = branding.logoUrl;
   const orderedComplaints = useMemo(
     () =>
       [...complaints].sort((a, b) => {

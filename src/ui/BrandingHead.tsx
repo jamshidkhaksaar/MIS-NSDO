@@ -14,7 +14,7 @@ export default function BrandingHead() {
       return;
     }
 
-    const targetHref = branding.faviconDataUrl ?? DEFAULT_FAVICON_PATH;
+    const targetHref = branding.faviconUrl ?? DEFAULT_FAVICON_PATH;
     let faviconLink = document.querySelector<HTMLLinkElement>("link[data-app-favicon]");
 
     if (!faviconLink) {
@@ -27,7 +27,7 @@ export default function BrandingHead() {
     if (faviconLink.getAttribute("href") !== targetHref) {
       faviconLink.setAttribute("href", targetHref);
     }
-  }, [branding.faviconDataUrl]);
+  }, [branding.faviconUrl]);
 
   useEffect(() => {
     if (typeof document === "undefined") {

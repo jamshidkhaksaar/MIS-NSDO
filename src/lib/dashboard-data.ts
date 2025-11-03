@@ -100,7 +100,9 @@ export const PRIMARY_BENEFICIARY_TYPE_KEYS = BENEFICIARY_TYPE_KEYS.filter(
   (key) => BENEFICIARY_TYPE_META[key].includeInTotals
 ) as readonly BeneficiaryTypeKey[];
 
-export const BENEFICIARY_DETAIL_MAP: Record<BeneficiaryTypeKey, BeneficiaryTypeKey[]> = {
+export const BENEFICIARY_DETAIL_MAP: Partial<
+  Record<BeneficiaryTypeKey, readonly BeneficiaryTypeKey[]>
+> = {
   returnees: ["returneesWomen", "returneesMen", "returneesChildren"],
 };
 

@@ -1,6 +1,4 @@
 #!/usr/bin/env node
-/* eslint-disable @typescript-eslint/no-require-imports */
-
 const { Pool } = require("pg");
 const bcrypt = require("bcryptjs");
 

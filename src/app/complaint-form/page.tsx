@@ -63,6 +63,7 @@ export default function ComplaintFormPage() {
         source_of_complaint: isAnonymous ? "" : sourceOfComplaint,
         how_reported: isAnonymous ? "" : howReported,
         message,
+        isAnonymous,
       });
 
       setNotice("Your complaint has been logged. Thank you for sharing your feedback.");

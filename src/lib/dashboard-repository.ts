@@ -1712,21 +1712,39 @@ export async function insertComplaint(payload: {
   gender?: string;
   source_of_complaint?: string;
   how_reported?: string;
+  isAnonymous?: boolean;
 }): Promise<void> {
   await withConnection(async (connection) => {
-    await connection.execute(
-      "INSERT INTO complaints (full_name, email, phone, message, village, gender, source_of_complaint, how_reported) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-      [
-        payload.fullName.trim(),
-        payload.email.trim(),
-        payload.phone?.trim() ?? null,
-        payload.message.trim(),
-        payload.village?.trim() ?? null,
-        payload.gender?.trim() ?? null,
-        payload.source_of_complaint?.trim() ?? null,
-        payload.how_reported?.trim() ?? null,
-      ]
-    );
+    await connection.beginTransaction();
+    try {
+      const [result] = await connection.execute(
+        "INSERT INTO complaints (full_name, email, phone, message, village, gender, source_of_complaint, how_reported) VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING id",
+        [
+          payload.fullName.trim(),
+          payload.email.trim(),
+          payload.phone?.trim() ?? null,
+          payload.message.trim(),
+          payload.village?.trim() ?? null,
+          payload.gender?.trim() ?? null,
+          payload.source_of_complaint?.trim() ?? null,
+          payload.how_reported?.trim() ?? null,
+        ]
+      );
+      const complaintId = result.insertId;
+      if (!complaintId) {
+        throw new Error("Failed to persist complaint record");
+      }
+
+      await connection.execute(
+        "INSERT INTO complaint_metadata (complaint_id, is_anonymous) VALUES (?, ?) ON CONFLICT (complaint_id) DO UPDATE SET is_anonymous = EXCLUDED.is_anonymous, updated_at = NOW()",
+        [complaintId, Boolean(payload.isAnonymous)]
+      );
+
+      await connection.commit();
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    }
   });
 }
 

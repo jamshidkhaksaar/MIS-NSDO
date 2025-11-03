@@ -176,6 +176,26 @@ type DashboardContextValue = {
     clusters?: string[];
     standardSectors?: string[];
   }) => Promise<void>;
+  createProject: (input: {
+    code: string;
+    name: string;
+    sector?: string;
+    donor?: string;
+    country?: string;
+    start?: string;
+    end?: string;
+    budget?: number | null;
+    focalPoint?: string;
+    goal?: string;
+    objectives?: string;
+    majorAchievements?: string;
+    staff?: number | null;
+    provinces?: string[];
+    districts?: string[];
+    communities?: string[];
+    clusters?: string[];
+    standardSectors?: string[];
+  }) => Promise<{ id: string }>;
   isLoading: boolean;
 };
 
@@ -632,6 +652,34 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
     await refresh();
   }, [refresh]);
 
+  const createProject = useCallback(async (input: {
+    code: string;
+    name: string;
+    sector?: string;
+    donor?: string;
+    country?: string;
+    start?: string;
+    end?: string;
+    budget?: number | null;
+    focalPoint?: string;
+    goal?: string;
+    objectives?: string;
+    majorAchievements?: string;
+    staff?: number | null;
+    provinces?: string[];
+    districts?: string[];
+    communities?: string[];
+    clusters?: string[];
+    standardSectors?: string[];
+  }) => {
+    const result = await jsonFetch<{ id: string }>("/api/projects", {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+    await refresh();
+    return result;
+  }, [refresh]);
+
   const updateProject = useCallback(async (input: {
     id: string;
     code: string;
@@ -670,12 +718,12 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
     complaints,
     complaintMetrics,
     crmAwareness,
-  branding,
-  clusterCatalog,
-  sectorCatalog,
-  mainSectors,
-  subSectors,
-  monitoring,
+    branding,
+    clusterCatalog,
+    sectorCatalog,
+    mainSectors,
+    subSectors,
+    monitoring,
     evaluation,
     findings,
     pdm,
@@ -705,6 +753,7 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
     updateSubSectorEntry,
     removeSubSector,
     updateProject,
+    createProject,
     isLoading,
   }), [
     sectors,
@@ -751,6 +800,7 @@ export function DashboardDataProvider({ children }: { children: ReactNode }) {
     updateSubSectorEntry,
     removeSubSector,
     updateProject,
+    createProject,
     isLoading,
   ]);
 

@@ -1,3 +1,5 @@
+import type { ProjectProvinceLocations } from "./project-locations";
+
 export const BENEFICIARY_TYPE_KEYS = [
   "childrenGirls",
   "childrenBoys",
@@ -211,6 +213,7 @@ export type DashboardProject = {
   provinces: string[];
   districts: string[];
   communities: string[];
+  locationDetails: ProjectProvinceLocations[];
   goal: string;
   objectives: string;
   majorAchievements: string;

@@ -59,6 +59,7 @@ import {
   type BrandingSettings,
 } from "@/lib/dashboard-data";
 import { withConnection } from "@/lib/db";
+import { decodeLocationToken, mergeProjectLocations } from "@/lib/project-locations";
 
 type SectorRow = {
   id: number;
@@ -940,9 +941,15 @@ export async function fetchDashboardState(): Promise<DashboardState> {
     });
 
     const districtMap = new Map<number, string[]>();
+    const districtTokenMap = new Map<number, string[]>();
     projectDistrictRows.forEach((row) => {
+      const tokens = districtTokenMap.get(row.project_id) ?? [];
+      tokens.push(row.district);
+      districtTokenMap.set(row.project_id, tokens);
+
+      const { value } = decodeLocationToken(row.district);
       const list = districtMap.get(row.project_id) ?? [];
-      list.push(row.district);
+      list.push(value);
       districtMap.set(row.project_id, list);
     });
     districtMap.forEach((list, key) => {
@@ -953,9 +960,15 @@ export async function fetchDashboardState(): Promise<DashboardState> {
     });
 
     const communityMap = new Map<number, string[]>();
+    const communityTokenMap = new Map<number, string[]>();
     projectCommunityRows.forEach((row) => {
+      const tokens = communityTokenMap.get(row.project_id) ?? [];
+      tokens.push(row.community);
+      communityTokenMap.set(row.project_id, tokens);
+
+      const { value } = decodeLocationToken(row.community);
       const list = communityMap.get(row.project_id) ?? [];
-      list.push(row.community);
+      list.push(value);
       communityMap.set(row.project_id, list);
     });
     communityMap.forEach((list, key) => {
@@ -1068,6 +1081,9 @@ export async function fetchDashboardState(): Promise<DashboardState> {
       const beneficiaries = cloneBreakdownData(projectBeneficiaryMap.get(projectId));
       const documents = projectDocumentMap.get(projectId) ?? [];
       const phases = projectPhaseMap.get(projectId) ?? [];
+      const districtTokens = districtTokenMap.get(projectId) ?? [];
+      const communityTokens = communityTokenMap.get(projectId) ?? [];
+      const locationDetails = mergeProjectLocations(provinces, districtTokens, communityTokens);
 
       return {
         id: projectId.toString(),
@@ -1079,6 +1095,7 @@ export async function fetchDashboardState(): Promise<DashboardState> {
         provinces,
         districts,
         communities,
+        locationDetails,
         goal: row.goal ?? "",
         objectives: row.objectives ?? "",
         majorAchievements: row.major_achievements ?? "",
@@ -2438,6 +2455,111 @@ export async function deleteSubSector(id: string): Promise<void> {
       throw new Error("Sub-sector not found.");
     }
   });
+}
+
+export async function createProjectRecord(payload: {
+  code: string;
+  name: string;
+  sector?: string | null;
+  donor?: string | null;
+  country?: string | null;
+  start?: string | null;
+  end?: string | null;
+  budget?: number | null;
+  focalPoint?: string | null;
+  goal?: string | null;
+  objectives?: string | null;
+  majorAchievements?: string | null;
+  staff?: number | null;
+  provinces?: string[];
+  districts?: string[];
+  communities?: string[];
+  clusters?: string[];
+  standardSectors?: string[];
+}): Promise<{ id: string }> {
+  const code = payload.code?.trim();
+  if (!code) {
+    throw new Error("Project code is required.");
+  }
+
+  const title = payload.name?.trim();
+  if (!title) {
+    throw new Error("Project name is required.");
+  }
+
+  let projectId = 0;
+
+  await withConnection(async (connection) => {
+    await connection.beginTransaction();
+    try {
+      const [insertResult] = await connection.execute(
+        `INSERT INTO projects (
+           code,
+           title,
+           donor,
+           sector,
+           country,
+           start_date,
+           end_date,
+           budget,
+           focal_point,
+           goal,
+           objectives,
+           major_achievements,
+           staff
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
+        [
+          code,
+          title,
+          payload.donor?.trim() || null,
+          payload.sector?.trim() || null,
+          payload.country?.trim() || null,
+          payload.start?.trim() || null,
+          payload.end?.trim() || null,
+          typeof payload.budget === "number" ? payload.budget : null,
+          payload.focalPoint?.trim() || null,
+          payload.goal?.trim() || null,
+          payload.objectives?.trim() || null,
+          payload.majorAchievements?.trim() || null,
+          typeof payload.staff === "number" ? payload.staff : null,
+        ]
+      );
+
+      projectId = insertResult.insertId;
+      if (!projectId) {
+        throw new Error("Failed to create project record.");
+      }
+
+      const insertValues = async (table: string, column: string, values: string[] | undefined) => {
+        if (!values?.length) {
+          return;
+        }
+        for (const rawValue of values) {
+          const value = rawValue?.trim();
+          if (!value) {
+            continue;
+          }
+          await connection.execute(
+            `INSERT INTO ${table} (project_id, ${column}) VALUES (?, ?)`,
+            [projectId, value]
+          );
+        }
+      };
+
+      await insertValues("project_provinces", "province", payload.provinces);
+      await insertValues("project_districts", "district", payload.districts);
+      await insertValues("project_communities", "community", payload.communities);
+      await insertValues("project_clusters", "cluster", payload.clusters);
+      await insertValues("project_standard_sectors", "standard_sector", payload.standardSectors);
+
+      await connection.commit();
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    }
+  });
+
+  return { id: projectId.toString() };
 }
 
 export async function updateProjectRecord(payload: {

@@ -2,8 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import MultiSelectDropdown from "../new/(components)/MultiSelectDropdown";
+import LocationSelector from "../new/(components)/LocationSelector";
 import { useDashboardData } from "@/context/DashboardDataContext";
 import { PROJECT_SECTORS } from "@/lib/dashboard-data";
+import {
+  encodeProjectLocations,
+  mergeProjectLocations,
+  type ProjectProvinceLocations,
+} from "@/lib/project-locations";
 
 type FeedbackState = {
   message: string | null;
@@ -24,9 +30,7 @@ type ProjectFormState = {
   goal: string;
   objectives: string;
   majorAchievements: string;
-  provincesText: string;
-  districtsText: string;
-  communitiesText: string;
+  locations: ProjectProvinceLocations[];
   clusters: string[];
   standardSectors: string[];
 };
@@ -45,20 +49,10 @@ const EMPTY_FORM: ProjectFormState = {
   goal: "",
   objectives: "",
   majorAchievements: "",
-  provincesText: "",
-  districtsText: "",
-  communitiesText: "",
+  locations: [],
   clusters: [],
   standardSectors: [],
 };
-
-const splitList = (value: string) =>
-  value
-    .split(",")
-    .map((item) => item.trim())
-    .filter((item) => item.length);
-
-const formatList = (values: string[]) => values.join(", ");
 
 export default function RegisteredProjectsPage() {
   const {
@@ -120,6 +114,15 @@ export default function RegisteredProjectsPage() {
       setFormState(EMPTY_FORM);
       return;
     }
+    const locationDetailsSource =
+      selectedProject.locationDetails && selectedProject.locationDetails.length
+        ? selectedProject.locationDetails
+        : mergeProjectLocations(
+            selectedProject.provinces,
+            selectedProject.districts,
+            selectedProject.communities
+          );
+
     setFormState({
       code: selectedProject.code,
       name: selectedProject.name,
@@ -134,9 +137,11 @@ export default function RegisteredProjectsPage() {
       goal: selectedProject.goal ?? "",
       objectives: selectedProject.objectives ?? "",
       majorAchievements: selectedProject.majorAchievements ?? "",
-      provincesText: formatList(selectedProject.provinces ?? []),
-      districtsText: formatList(selectedProject.districts ?? []),
-      communitiesText: formatList(selectedProject.communities ?? []),
+      locations: locationDetailsSource.map((entry) => ({
+        province: entry.province,
+        districts: [...entry.districts],
+        villages: [...entry.villages],
+      })),
       clusters: selectedProject.clusters ?? [],
       standardSectors: selectedProject.standardSectors ?? [],
     });
@@ -229,6 +234,8 @@ export default function RegisteredProjectsPage() {
       return parsed;
     };
 
+    const locationPayload = encodeProjectLocations(formState.locations);
+
     const payload = {
       id: selectedProject.id,
       code: formState.code.trim(),
@@ -244,9 +251,9 @@ export default function RegisteredProjectsPage() {
       objectives: formState.objectives.trim() || undefined,
       majorAchievements: formState.majorAchievements.trim() || undefined,
       staff: null as number | null,
-      provinces: splitList(formState.provincesText),
-      districts: splitList(formState.districtsText),
-      communities: splitList(formState.communitiesText),
+      provinces: locationPayload.provinces,
+      districts: locationPayload.districts,
+      communities: locationPayload.communities,
       clusters: formState.clusters,
       standardSectors: formState.standardSectors,
     };
@@ -553,52 +560,16 @@ export default function RegisteredProjectsPage() {
                   </div>
                 </div>
 
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <label className="block text-sm font-medium text-brand-muted" htmlFor="project-provinces">
-                      Provinces
-                    </label>
-                    <textarea
-                      id="project-provinces"
-                      value={formState.provincesText}
-                      onChange={(event) =>
-                        setFormState((previous) => ({ ...previous, provincesText: event.target.value }))
-                      }
-                      className="input-brand mt-1 block w-full rounded-lg"
-                      rows={3}
-                      placeholder="Separate entries with commas"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-brand-muted" htmlFor="project-districts">
-                      Districts
-                    </label>
-                    <textarea
-                      id="project-districts"
-                      value={formState.districtsText}
-                      onChange={(event) =>
-                        setFormState((previous) => ({ ...previous, districtsText: event.target.value }))
-                      }
-                      className="input-brand mt-1 block w-full rounded-lg"
-                      rows={3}
-                      placeholder="Separate entries with commas"
-                    />
-                  </div>
-                  <div className="sm:col-span-2">
-                    <label className="block text-sm font-medium text-brand-muted" htmlFor="project-communities">
-                      Communities
-                    </label>
-                    <textarea
-                      id="project-communities"
-                      value={formState.communitiesText}
-                      onChange={(event) =>
-                        setFormState((previous) => ({ ...previous, communitiesText: event.target.value }))
-                      }
-                      className="input-brand mt-1 block w-full rounded-lg"
-                      rows={3}
-                      placeholder="Separate entries with commas"
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-brand-muted">
+                    Project locations
+                  </label>
+                  <LocationSelector
+                    value={formState.locations}
+                    onChange={(locations) =>
+                      setFormState((previous) => ({ ...previous, locations }))
+                    }
+                  />
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2">

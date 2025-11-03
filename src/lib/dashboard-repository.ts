@@ -2492,6 +2492,11 @@ export async function createProjectRecord(payload: {
   await withConnection(async (connection) => {
     await connection.beginTransaction();
     try {
+      const staffValue =
+        typeof payload.staff === "number" && Number.isFinite(payload.staff)
+          ? Math.max(0, Math.floor(payload.staff))
+          : 0;
+
       const [insertResult] = await connection.execute(
         `INSERT INTO projects (
            code,
@@ -2521,7 +2526,7 @@ export async function createProjectRecord(payload: {
           payload.goal?.trim() || null,
           payload.objectives?.trim() || null,
           payload.majorAchievements?.trim() || null,
-          typeof payload.staff === "number" ? payload.staff : null,
+          staffValue,
         ]
       );
 
@@ -2601,6 +2606,11 @@ export async function updateProjectRecord(payload: {
   await withConnection(async (connection) => {
     await connection.beginTransaction();
     try {
+      const staffValue =
+        typeof payload.staff === "number" && Number.isFinite(payload.staff)
+          ? Math.max(0, Math.floor(payload.staff))
+          : 0;
+
       const [updateResult] = await connection.execute(
         `UPDATE projects
          SET code = ?,
@@ -2631,7 +2641,7 @@ export async function updateProjectRecord(payload: {
           payload.goal?.trim() || null,
           payload.objectives?.trim() || null,
           payload.majorAchievements?.trim() || null,
-          typeof payload.staff === "number" ? payload.staff : null,
+          staffValue,
           projectId,
         ]
       );

@@ -8,23 +8,100 @@ export const BENEFICIARY_TYPE_KEYS = [
   "households",
   "idps",
   "returnees",
+  "returneesWomen",
+  "returneesMen",
+  "returneesChildren",
   "pwds",
 ] as const;
 
 export type BeneficiaryTypeKey = (typeof BENEFICIARY_TYPE_KEYS)[number];
 
-export const BENEFICIARY_TYPE_META: Record<
-  BeneficiaryTypeKey,
-  { label: string; group: string; color: string }
-> = {
-  childrenGirls: { label: "Children • Girls", group: "Children", color: "#f472b6" },
-  childrenBoys: { label: "Children • Boys", group: "Children", color: "#38bdf8" },
-  adultsWomen: { label: "Adults • Women", group: "Adults", color: "#ec4899" },
-  adultsMen: { label: "Adults • Men", group: "Adults", color: "#2563eb" },
-  households: { label: "Households", group: "Households", color: "#22c55e" },
-  idps: { label: "IDPs", group: "IDPs", color: "#0ea5e9" },
-  returnees: { label: "Returnees", group: "Returnees", color: "#a855f7" },
-  pwds: { label: "PwDs", group: "PwDs", color: "#f59e0b" },
+export type BeneficiaryTypeMeta = {
+  label: string;
+  group: string;
+  color: string;
+  includeInTotals: boolean;
+  parentKey?: BeneficiaryTypeKey;
+};
+
+export const BENEFICIARY_TYPE_META: Record<BeneficiaryTypeKey, BeneficiaryTypeMeta> = {
+  childrenGirls: {
+    label: "Children • Girls",
+    group: "Children",
+    color: "#f472b6",
+    includeInTotals: true,
+  },
+  childrenBoys: {
+    label: "Children • Boys",
+    group: "Children",
+    color: "#38bdf8",
+    includeInTotals: true,
+  },
+  adultsWomen: {
+    label: "Adults • Women",
+    group: "Adults",
+    color: "#ec4899",
+    includeInTotals: true,
+  },
+  adultsMen: {
+    label: "Adults • Men",
+    group: "Adults",
+    color: "#2563eb",
+    includeInTotals: true,
+  },
+  households: {
+    label: "Households",
+    group: "Households",
+    color: "#22c55e",
+    includeInTotals: true,
+  },
+  idps: {
+    label: "IDPs",
+    group: "IDPs",
+    color: "#0ea5e9",
+    includeInTotals: true,
+  },
+  returnees: {
+    label: "Returnees (Total)",
+    group: "Returnees",
+    color: "#a855f7",
+    includeInTotals: true,
+  },
+  returneesWomen: {
+    label: "Returnees • Women",
+    group: "Returnees",
+    color: "#c084fc",
+    includeInTotals: false,
+    parentKey: "returnees",
+  },
+  returneesMen: {
+    label: "Returnees • Men",
+    group: "Returnees",
+    color: "#7c3aed",
+    includeInTotals: false,
+    parentKey: "returnees",
+  },
+  returneesChildren: {
+    label: "Returnees • Children",
+    group: "Returnees",
+    color: "#a8a29e",
+    includeInTotals: false,
+    parentKey: "returnees",
+  },
+  pwds: {
+    label: "PwDs",
+    group: "PwDs",
+    color: "#f59e0b",
+    includeInTotals: true,
+  },
+};
+
+export const PRIMARY_BENEFICIARY_TYPE_KEYS = BENEFICIARY_TYPE_KEYS.filter(
+  (key) => BENEFICIARY_TYPE_META[key].includeInTotals
+) as readonly BeneficiaryTypeKey[];
+
+export const BENEFICIARY_DETAIL_MAP: Record<BeneficiaryTypeKey, BeneficiaryTypeKey[]> = {
+  returnees: ["returneesWomen", "returneesMen", "returneesChildren"],
 };
 
 export const BENEFICIARY_GROUPS = [
@@ -32,7 +109,11 @@ export const BENEFICIARY_GROUPS = [
   { key: "adults", label: "Adults", members: ["adultsWomen", "adultsMen"] },
   { key: "households", label: "Households", members: ["households"] },
   { key: "idps", label: "IDPs", members: ["idps"] },
-  { key: "returnees", label: "Returnees", members: ["returnees"] },
+  {
+    key: "returnees",
+    label: "Returnees",
+    members: ["returnees", "returneesWomen", "returneesMen", "returneesChildren"],
+  },
   { key: "pwds", label: "PwDs", members: ["pwds"] },
 ] as const;
 

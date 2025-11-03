@@ -1,11 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import ProjectSelect from "../(components)/ProjectSelect";
 import { useDashboardData } from "@/context/DashboardDataContext";
 import {
+  BENEFICIARY_DETAIL_MAP,
   BENEFICIARY_TYPE_KEYS,
   BENEFICIARY_TYPE_META,
+  PRIMARY_BENEFICIARY_TYPE_KEYS,
   type BeneficiaryTypeKey,
 } from "@/lib/dashboard-data";
 
@@ -36,6 +38,9 @@ export default function BeneficiariesDataEntryPage() {
   const [formState, setFormState] = useState<BeneficiaryInputState>(
     createEmptyState()
   );
+  const [expandedBreakdowns, setExpandedBreakdowns] = useState<
+    Partial<Record<BeneficiaryTypeKey, boolean>>
+  >({});
 
   const selectedProject = useMemo(
     () => projects.find((project) => project.id === selectedProjectId) ?? null,
@@ -45,6 +50,7 @@ export default function BeneficiariesDataEntryPage() {
   useEffect(() => {
     if (!selectedProject) {
       setFormState(createEmptyState());
+      setExpandedBreakdowns({});
       return;
     }
 
@@ -58,12 +64,27 @@ export default function BeneficiariesDataEntryPage() {
       };
     });
     setFormState(nextState);
+
+    const breakdownState: Partial<Record<BeneficiaryTypeKey, boolean>> = {};
+    PRIMARY_BENEFICIARY_TYPE_KEYS.forEach((key) => {
+      const detailKeys = BENEFICIARY_DETAIL_MAP[key] ?? [];
+      if (!detailKeys.length) {
+        return;
+      }
+      const hasDetailValues = detailKeys.some((detailKey) => {
+        const direct = selectedProject.beneficiaries.direct[detailKey] ?? 0;
+        const indirect = selectedProject.beneficiaries.indirect[detailKey] ?? 0;
+        return direct > 0 || indirect > 0;
+      });
+      breakdownState[key] = hasDetailValues;
+    });
+    setExpandedBreakdowns(breakdownState);
   }, [selectedProject]);
 
   const totals = useMemo(() => {
     let direct = 0;
     let indirect = 0;
-    BENEFICIARY_TYPE_KEYS.forEach((key) => {
+    PRIMARY_BENEFICIARY_TYPE_KEYS.forEach((key) => {
       direct += Number.parseInt(formState[key].direct || "0", 10) || 0;
       indirect += Number.parseInt(formState[key].indirect || "0", 10) || 0;
     });
@@ -82,6 +103,27 @@ export default function BeneficiariesDataEntryPage() {
           },
         }));
       },
+    []
+  );
+
+  const handleToggleBreakdown = useCallback(
+    (key: BeneficiaryTypeKey) => (event: React.ChangeEvent<HTMLInputElement>) => {
+      const isEnabled = event.target.checked;
+      setExpandedBreakdowns((previous) => ({ ...previous, [key]: isEnabled }));
+      if (!isEnabled) {
+        const detailKeys = BENEFICIARY_DETAIL_MAP[key] ?? [];
+        if (!detailKeys.length) {
+          return;
+        }
+        setFormState((previous) => {
+          const nextState = { ...previous };
+          detailKeys.forEach((detailKey) => {
+            nextState[detailKey] = { direct: "0", indirect: "0" };
+          });
+          return nextState;
+        });
+      }
+    },
     []
   );
 
@@ -192,54 +234,118 @@ export default function BeneficiariesDataEntryPage() {
                 <th className="px-4 py-3 text-left">Cohort</th>
                 <th className="px-4 py-3 text-right">Direct</th>
                 <th className="px-4 py-3 text-right">Indirect</th>
+                <th className="px-4 py-3 text-right">Breakdown</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-brand-soft/60 bg-white">
-              {BENEFICIARY_TYPE_KEYS.map((key) => {
+              {PRIMARY_BENEFICIARY_TYPE_KEYS.map((key) => {
                 const meta = BENEFICIARY_TYPE_META[key];
+                const detailKeys = BENEFICIARY_DETAIL_MAP[key] ?? [];
+                const isExpanded = Boolean(expandedBreakdowns[key]);
                 return (
-                  <tr key={key} className="align-middle">
-                    <th
-                      scope="row"
-                      className="px-4 py-3 text-left font-medium text-brand-muted"
-                    >
-                      <div className="flex items-center gap-3">
-                        <span
-                          className="inline-flex h-2.5 w-2.5 rounded-full"
-                          style={{ backgroundColor: meta.color }}
-                          aria-hidden="true"
-                        />
-                        <div>
-                          <p>{meta.label}</p>
-                          <p className="text-xs uppercase tracking-wide text-brand-soft">
-                            {meta.group}
-                          </p>
+                  <Fragment key={key}>
+                    <tr className="align-middle hover:bg-brand-soft/30">
+                      <th
+                        scope="row"
+                        className="px-4 py-3 text-left font-medium text-brand-muted"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span
+                            className="inline-flex h-2.5 w-2.5 rounded-full"
+                            style={{ backgroundColor: meta.color }}
+                            aria-hidden="true"
+                          />
+                          <div>
+                            <p>{meta.label}</p>
+                            <p className="text-xs uppercase tracking-wide text-brand-soft">
+                              {meta.group}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    </th>
-                    <td className="px-4 py-3 text-right">
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        value={formState[key].direct}
-                        onChange={handleInputChange(key, "direct")}
-                        className="input-brand w-full rounded-lg text-right"
-                        disabled={!selectedProjectId}
-                      />
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        value={formState[key].indirect}
-                        onChange={handleInputChange(key, "indirect")}
-                        className="input-brand w-full rounded-lg text-right"
-                        disabled={!selectedProjectId}
-                      />
-                    </td>
-                  </tr>
+                      </th>
+                      <td className="px-4 py-3 text-right">
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          value={formState[key].direct}
+                          onChange={handleInputChange(key, "direct")}
+                          className="input-brand w-full rounded-lg text-right"
+                          disabled={!selectedProjectId}
+                        />
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          value={formState[key].indirect}
+                          onChange={handleInputChange(key, "indirect")}
+                          className="input-brand w-full rounded-lg text-right"
+                          disabled={!selectedProjectId}
+                        />
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        {detailKeys.length ? (
+                          <label className="inline-flex items-center gap-2 text-xs font-medium text-brand-muted">
+                            <input
+                              type="checkbox"
+                              className="h-4 w-4 rounded border-brand-soft text-brand-primary focus:ring-brand-primary"
+                              checked={isExpanded}
+                              onChange={handleToggleBreakdown(key)}
+                              disabled={!selectedProjectId}
+                            />
+                            Track breakdown
+                          </label>
+                        ) : null}
+                      </td>
+                    </tr>
+                    {detailKeys.length && isExpanded
+                      ? detailKeys.map((detailKey) => {
+                          const detailMeta = BENEFICIARY_TYPE_META[detailKey];
+                          return (
+                            <tr key={detailKey} className="bg-brand-soft/10">
+                              <th
+                                scope="row"
+                                className="px-8 py-3 text-left text-sm font-medium text-brand-muted"
+                              >
+                                <div className="flex items-center gap-3">
+                                  <span
+                                    className="inline-flex h-2.5 w-2.5 rounded-full"
+                                    style={{ backgroundColor: detailMeta.color }}
+                                    aria-hidden="true"
+                                  />
+                                  <span>{detailMeta.label}</span>
+                                </div>
+                              </th>
+                              <td className="px-4 py-3 text-right">
+                                <input
+                                  type="text"
+                                  inputMode="numeric"
+                                  pattern="[0-9]*"
+                                  value={formState[detailKey].direct}
+                                  onChange={handleInputChange(detailKey, "direct")}
+                                  className="input-brand w-full rounded-lg text-right"
+                                  disabled={!selectedProjectId}
+                                />
+                              </td>
+                              <td className="px-4 py-3 text-right">
+                                <input
+                                  type="text"
+                                  inputMode="numeric"
+                                  pattern="[0-9]*"
+                                  value={formState[detailKey].indirect}
+                                  onChange={handleInputChange(detailKey, "indirect")}
+                                  className="input-brand w-full rounded-lg text-right"
+                                  disabled={!selectedProjectId}
+                                />
+                              </td>
+                              <td />
+                            </tr>
+                          );
+                        })
+                      : null}
+                  </Fragment>
                 );
               })}
             </tbody>

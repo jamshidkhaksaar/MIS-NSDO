@@ -132,21 +132,26 @@ const FINDING_SEVERITY_ORDER = ["critical", "major", "minor"] as const;
 const FINDING_STATUS_ORDER = ["pending", "in_progress", "solved"] as const;
 
 const createEmptyBreakdown = (): BeneficiaryBreakdown => {
-  const direct: Record<typeof BENEFICIARY_TYPE_KEYS[number], number> = {} as Record<
-    typeof BENEFICIARY_TYPE_KEYS[number],
+  const direct: Record<(typeof BENEFICIARY_TYPE_KEYS)[number], number> = {} as Record<
+    (typeof BENEFICIARY_TYPE_KEYS)[number],
     number
   >;
-  const indirect: Record<typeof BENEFICIARY_TYPE_KEYS[number], number> = {} as Record<
-    typeof BENEFICIARY_TYPE_KEYS[number],
+  const indirect: Record<(typeof BENEFICIARY_TYPE_KEYS)[number], number> = {} as Record<
+    (typeof BENEFICIARY_TYPE_KEYS)[number],
     number
+  >;
+  const include: Record<(typeof BENEFICIARY_TYPE_KEYS)[number], boolean> = {} as Record<
+    (typeof BENEFICIARY_TYPE_KEYS)[number],
+    boolean
   >;
 
   BENEFICIARY_TYPE_KEYS.forEach((key) => {
     direct[key] = 0;
     indirect[key] = 0;
+    include[key] = false;
   });
 
-  return { direct, indirect };
+  return { direct, indirect, include };
 };
 
 const cloneBreakdown = (source: BeneficiaryBreakdown | undefined): BeneficiaryBreakdown => {
@@ -158,6 +163,9 @@ const cloneBreakdown = (source: BeneficiaryBreakdown | undefined): BeneficiaryBr
   BENEFICIARY_TYPE_KEYS.forEach((key) => {
     clone.direct[key] = source.direct?.[key] ?? 0;
     clone.indirect[key] = source.indirect?.[key] ?? 0;
+    const includeValue = source.include?.[key];
+    clone.include[key] =
+      typeof includeValue === "boolean" ? includeValue : BENEFICIARY_TYPE_META[key].includeInTotals;
   });
 
   return clone;
@@ -662,9 +670,15 @@ export default function Home() {
       sector.provinces.forEach((province) => provinceSet.add(province));
 
       BENEFICIARY_TYPE_KEYS.forEach((category) => {
-        aggregatedBeneficiaries.direct[category] += sector.beneficiaries.direct?.[category] ?? 0;
-        aggregatedBeneficiaries.indirect[category] +=
-          sector.beneficiaries.indirect?.[category] ?? 0;
+        const isIncluded =
+          sector.beneficiaries.include?.[category] ?? BENEFICIARY_TYPE_META[category].includeInTotals;
+        if (isIncluded) {
+          aggregatedBeneficiaries.direct[category] += sector.beneficiaries.direct?.[category] ?? 0;
+          aggregatedBeneficiaries.indirect[category] +=
+            sector.beneficiaries.indirect?.[category] ?? 0;
+        }
+        aggregatedBeneficiaries.include[category] =
+          aggregatedBeneficiaries.include[category] || isIncluded;
       });
 
       totalProjects += sector.projects;
@@ -877,11 +891,17 @@ export default function Home() {
         key: category,
         label: BENEFICIARY_TYPE_META[category].label,
         color: BENEFICIARY_TYPE_META[category].color,
-        includeInTotals: BENEFICIARY_TYPE_META[category].includeInTotals,
+        includeInTotals:
+          activeSnapshot.beneficiaries.include?.[category] ??
+          BENEFICIARY_TYPE_META[category].includeInTotals,
         direct: activeSnapshot.beneficiaries.direct?.[category] ?? 0,
         indirect: activeSnapshot.beneficiaries.indirect?.[category] ?? 0,
       })),
-    [activeSnapshot.beneficiaries.direct, activeSnapshot.beneficiaries.indirect]
+    [
+      activeSnapshot.beneficiaries.direct,
+      activeSnapshot.beneficiaries.indirect,
+      activeSnapshot.beneficiaries.include,
+    ]
   );
 
   const displayBeneficiaryRows = useMemo(
@@ -905,19 +925,27 @@ export default function Home() {
   const totalDirect = useMemo(
     () =>
       PRIMARY_BENEFICIARY_TYPE_KEYS.reduce(
-        (sum, category) => sum + (activeSnapshot.beneficiaries.direct?.[category] ?? 0),
+        (sum, category) =>
+          (activeSnapshot.beneficiaries.include?.[category] ??
+          BENEFICIARY_TYPE_META[category].includeInTotals)
+            ? sum + (activeSnapshot.beneficiaries.direct?.[category] ?? 0)
+            : sum,
         0
       ),
-    [activeSnapshot.beneficiaries.direct]
+    [activeSnapshot.beneficiaries.direct, activeSnapshot.beneficiaries.include]
   );
 
   const totalIndirect = useMemo(
     () =>
       PRIMARY_BENEFICIARY_TYPE_KEYS.reduce(
-        (sum, category) => sum + (activeSnapshot.beneficiaries.indirect?.[category] ?? 0),
+        (sum, category) =>
+          (activeSnapshot.beneficiaries.include?.[category] ??
+          BENEFICIARY_TYPE_META[category].includeInTotals)
+            ? sum + (activeSnapshot.beneficiaries.indirect?.[category] ?? 0)
+            : sum,
         0
       ),
-    [activeSnapshot.beneficiaries.indirect]
+    [activeSnapshot.beneficiaries.indirect, activeSnapshot.beneficiaries.include]
   );
 
   const totalBeneficiaries = totalDirect + totalIndirect;

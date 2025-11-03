@@ -2,6 +2,7 @@ import {
   ALL_SECTOR_FIELD_ACTIVITY,
   ALL_SECTOR_KEY,
   BENEFICIARY_TYPE_KEYS,
+  BENEFICIARY_TYPE_META,
   BeneficiaryBreakdown,
   BeneficiaryTypeKey,
   SectorDetails,
@@ -77,6 +78,7 @@ type BeneficiaryRow = {
   type_key: string;
   direct: number;
   indirect: number;
+  include_in_totals: boolean;
 };
 
 type ProvinceRow = {
@@ -190,6 +192,7 @@ type ProjectBeneficiaryRow = {
   type_key: string;
   direct: number;
   indirect: number;
+  include_in_totals: boolean;
 };
 
 type ProjectDocumentRow = {
@@ -470,11 +473,13 @@ function formatDate(value: string | null): string {
 function createEmptyBreakdown(): BeneficiaryBreakdown {
   const direct: Record<BeneficiaryTypeKey, number> = {} as Record<BeneficiaryTypeKey, number>;
   const indirect: Record<BeneficiaryTypeKey, number> = {} as Record<BeneficiaryTypeKey, number>;
+  const include: Record<BeneficiaryTypeKey, boolean> = {} as Record<BeneficiaryTypeKey, boolean>;
   BENEFICIARY_TYPE_KEYS.forEach((key) => {
     direct[key] = 0;
     indirect[key] = 0;
+    include[key] = false;
   });
-  return { direct, indirect };
+  return { direct, indirect, include };
 }
 
 function cloneBreakdownData(source: BeneficiaryBreakdown | undefined): BeneficiaryBreakdown {
@@ -485,6 +490,9 @@ function cloneBreakdownData(source: BeneficiaryBreakdown | undefined): Beneficia
   BENEFICIARY_TYPE_KEYS.forEach((key) => {
     clone.direct[key] = source.direct?.[key] ?? 0;
     clone.indirect[key] = source.indirect?.[key] ?? 0;
+    const includeValue = source.include?.[key];
+    clone.include[key] =
+      typeof includeValue === "boolean" ? includeValue : BENEFICIARY_TYPE_META[key].includeInTotals;
   });
   return clone;
 }
@@ -673,7 +681,7 @@ export async function fetchDashboardState(): Promise<DashboardState> {
     if (sectorIds.length) {
       const placeholders = sectorIds.map(() => "?").join(", ");
       const [rows] = await connection.query<BeneficiaryRow>(
-        `SELECT sector_id, type_key, direct, indirect FROM beneficiary_stats WHERE sector_id IN (${placeholders})`,
+        `SELECT sector_id, type_key, direct, indirect, include_in_totals FROM beneficiary_stats WHERE sector_id IN (${placeholders})`,
         sectorIds
       );
       beneficiaryRows = rows;
@@ -697,14 +705,12 @@ export async function fetchDashboardState(): Promise<DashboardState> {
         .filter((b) => b.sector_id === row.id)
         .forEach((b) => {
           const type = b.type_key as BeneficiaryTypeKey;
-          if (!breakdown.direct[type]) {
-            breakdown.direct[type] = 0;
-          }
-          if (!breakdown.indirect[type]) {
-            breakdown.indirect[type] = 0;
-          }
           breakdown.direct[type] = b.direct ?? 0;
           breakdown.indirect[type] = b.indirect ?? 0;
+          breakdown.include[type] =
+            typeof b.include_in_totals === "boolean"
+              ? b.include_in_totals
+              : BENEFICIARY_TYPE_META[type].includeInTotals;
         });
 
       const provinces = provinceRows
@@ -730,6 +736,8 @@ export async function fetchDashboardState(): Promise<DashboardState> {
         BENEFICIARY_TYPE_KEYS.forEach((key) => {
           aggregate.direct[key] += details.beneficiaries.direct[key];
           aggregate.indirect[key] += details.beneficiaries.indirect[key];
+          aggregate.include[key] =
+            aggregate.include[key] || details.beneficiaries.include[key];
         });
       });
 
@@ -899,7 +907,7 @@ export async function fetchDashboardState(): Promise<DashboardState> {
 
       if (hasProjectBeneficiaries) {
         [projectBeneficiaryRows] = await connection.query<ProjectBeneficiaryRow>(
-          `SELECT project_id, type_key, direct, indirect
+          `SELECT project_id, type_key, direct, indirect, include_in_totals
            FROM project_beneficiaries
            WHERE project_id IN (${placeholders})`,
           projectIds
@@ -1016,6 +1024,10 @@ export async function fetchDashboardState(): Promise<DashboardState> {
       const type = row.type_key as BeneficiaryTypeKey;
       breakdown.direct[type] = row.direct ?? 0;
       breakdown.indirect[type] = row.indirect ?? 0;
+      breakdown.include[type] =
+        typeof row.include_in_totals === "boolean"
+          ? row.include_in_totals
+          : BENEFICIARY_TYPE_META[type].includeInTotals;
       projectBeneficiaryMap.set(row.project_id, breakdown);
     });
 
@@ -1876,12 +1888,13 @@ export async function upsertSectorDetails(sectorKey: string, details: SectorDeta
       await connection.execute("DELETE FROM beneficiary_stats WHERE sector_id = ?", [sectorId]);
       for (const key of BENEFICIARY_TYPE_KEYS) {
         await connection.execute(
-          "INSERT INTO beneficiary_stats (sector_id, type_key, direct, indirect) VALUES (?, ?, ?, ?)",
+          "INSERT INTO beneficiary_stats (sector_id, type_key, direct, indirect, include_in_totals) VALUES (?, ?, ?, ?, ?)",
           [
             sectorId,
             key,
             details.beneficiaries.direct[key],
             details.beneficiaries.indirect[key],
+            details.beneficiaries.include[key],
           ]
         );
       }
@@ -2683,14 +2696,17 @@ export async function updateProjectRecord(payload: {
 
 export async function upsertProjectBeneficiaries(payload: {
   projectId: string;
-  entries: Array<{ type: BeneficiaryTypeKey; direct: number; indirect: number }>;
+  entries: Array<{ type: BeneficiaryTypeKey; direct: number; indirect: number; includeInTotals: boolean }>;
 }): Promise<void> {
   const projectId = Number.parseInt(payload.projectId, 10);
   if (!Number.isFinite(projectId)) {
     throw new Error("A valid project id is required.");
   }
 
-  const normalizedEntries = new Map<BeneficiaryTypeKey, { direct: number; indirect: number }>();
+  const normalizedEntries = new Map<
+    BeneficiaryTypeKey,
+    { direct: number; indirect: number; includeInTotals: boolean }
+  >();
   payload.entries.forEach((entry) => {
     if (!(BENEFICIARY_TYPE_KEYS as readonly string[]).includes(entry.type)) {
       return;
@@ -2698,7 +2714,8 @@ export async function upsertProjectBeneficiaries(payload: {
     const direct = Number.isFinite(entry.direct) && entry.direct >= 0 ? Math.floor(entry.direct) : 0;
     const indirect =
       Number.isFinite(entry.indirect) && entry.indirect >= 0 ? Math.floor(entry.indirect) : 0;
-    normalizedEntries.set(entry.type, { direct, indirect });
+    const includeInTotals = Boolean(entry.includeInTotals);
+    normalizedEntries.set(entry.type, { direct, indirect, includeInTotals });
   });
 
   await withConnection(async (connection) => {
@@ -2707,11 +2724,16 @@ export async function upsertProjectBeneficiaries(payload: {
       await connection.execute("DELETE FROM project_beneficiaries WHERE project_id = ?", [projectId]);
 
       for (const key of BENEFICIARY_TYPE_KEYS) {
-        const entry = normalizedEntries.get(key) ?? { direct: 0, indirect: 0 };
+        const entry =
+          normalizedEntries.get(key) ?? {
+            direct: 0,
+            indirect: 0,
+            includeInTotals: BENEFICIARY_TYPE_META[key].includeInTotals,
+          };
         await connection.execute(
-          `INSERT INTO project_beneficiaries (project_id, type_key, direct, indirect)
-           VALUES (?, ?, ?, ?)`,
-          [projectId, key, entry.direct, entry.indirect]
+          `INSERT INTO project_beneficiaries (project_id, type_key, direct, indirect, include_in_totals)
+           VALUES (?, ?, ?, ?, ?)`,
+          [projectId, key, entry.direct, entry.indirect, entry.includeInTotals]
         );
       }
 

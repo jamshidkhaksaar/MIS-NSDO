@@ -1,0 +1,5 @@
+ALTER TABLE project_beneficiaries
+  ADD COLUMN IF NOT EXISTS include_in_totals BOOLEAN NOT NULL DEFAULT TRUE;
+
+ALTER TABLE beneficiary_stats
+  ADD COLUMN IF NOT EXISTS include_in_totals BOOLEAN NOT NULL DEFAULT TRUE;

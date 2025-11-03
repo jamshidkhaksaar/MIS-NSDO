@@ -1,6 +1,7 @@
 import PDFDocument from "pdfkit";
 import {
   BENEFICIARY_TYPE_KEYS,
+  BENEFICIARY_TYPE_META,
   PRIMARY_BENEFICIARY_TYPE_KEYS,
   type BeneficiaryBreakdown,
   type DashboardProject,
@@ -50,11 +51,13 @@ function dataUrlToBuffer(dataUrl: string | null | undefined): Buffer | null {
 function createEmptyBreakdown(): BeneficiaryBreakdown {
   const direct: BeneficiaryBreakdown["direct"] = {} as BeneficiaryBreakdown["direct"];
   const indirect: BeneficiaryBreakdown["indirect"] = {} as BeneficiaryBreakdown["indirect"];
+  const include: BeneficiaryBreakdown["include"] = {} as BeneficiaryBreakdown["include"];
   BENEFICIARY_TYPE_KEYS.forEach((key) => {
     direct[key] = 0;
     indirect[key] = 0;
+    include[key] = false;
   });
-  return { direct, indirect };
+  return { direct, indirect, include };
 }
 
 function filterProjects(projects: DashboardProject[], filters: ReportFilters): DashboardProject[] {
@@ -108,8 +111,13 @@ function aggregateBeneficiaries(projects: DashboardProject[]): BeneficiaryBreakd
   const total = createEmptyBreakdown();
   projects.forEach((project) => {
     BENEFICIARY_TYPE_KEYS.forEach((type) => {
-      total.direct[type] += project.beneficiaries.direct[type] ?? 0;
-      total.indirect[type] += project.beneficiaries.indirect[type] ?? 0;
+      const includeInTotals =
+        project.beneficiaries.include?.[type] ?? BENEFICIARY_TYPE_META[type].includeInTotals;
+      if (includeInTotals) {
+        total.direct[type] += project.beneficiaries.direct[type] ?? 0;
+        total.indirect[type] += project.beneficiaries.indirect[type] ?? 0;
+      }
+      total.include[type] = total.include[type] || includeInTotals;
     });
   });
   return total;
@@ -246,8 +254,19 @@ function drawBeneficiaryChart(doc: PdfDoc, beneficiaries: BeneficiaryBreakdown) 
   const barHeight = 14;
   const gap = 6;
 
+  const visibleTypes = BENEFICIARY_TYPE_KEYS.filter(
+    (type) => beneficiaries.include?.[type] ?? BENEFICIARY_TYPE_META[type].includeInTotals
+  );
+
+  if (!visibleTypes.length) {
+    doc.fontSize(10).fillColor("#555555").text("No beneficiary data available.", chartX, chartY);
+    doc.fillColor("#111111");
+    doc.moveDown();
+    return;
+  }
+
   let maxValue = 0;
-  BENEFICIARY_TYPE_KEYS.forEach((type) => {
+  visibleTypes.forEach((type) => {
     maxValue = Math.max(maxValue, beneficiaries.direct[type], beneficiaries.indirect[type]);
   });
   if (maxValue === 0) {
@@ -258,12 +277,13 @@ function drawBeneficiaryChart(doc: PdfDoc, beneficiaries: BeneficiaryBreakdown) 
   }
 
   let currentY = chartY;
-  BENEFICIARY_TYPE_KEYS.forEach((type) => {
+  visibleTypes.forEach((type) => {
     const directValue = beneficiaries.direct[type];
     const indirectValue = beneficiaries.indirect[type];
+    const label = BENEFICIARY_TYPE_META[type].label ?? type;
 
-    doc.fontSize(9).fillColor("#333333").text(type, chartX, currentY);
-    const labelWidth = doc.widthOfString(type) + 10;
+    doc.fontSize(9).fillColor("#333333").text(label, chartX, currentY);
+    const labelWidth = doc.widthOfString(label) + 10;
     const barMaxWidth = chartWidth - labelWidth - 80;
 
     const directWidth = (directValue / maxValue) * barMaxWidth;
@@ -442,13 +462,19 @@ export async function buildDashboardReport(state: DashboardState, filters: Repor
 
     drawKeyValue(doc, "Total beneficiaries (direct)", formatNumber(
       PRIMARY_BENEFICIARY_TYPE_KEYS.reduce(
-        (acc, key) => acc + reportData.beneficiaries.direct[key],
+        (acc, key) =>
+          (reportData.beneficiaries.include?.[key] ?? BENEFICIARY_TYPE_META[key].includeInTotals)
+            ? acc + reportData.beneficiaries.direct[key]
+            : acc,
         0
       )
     ));
     drawKeyValue(doc, "Total beneficiaries (indirect)", formatNumber(
       PRIMARY_BENEFICIARY_TYPE_KEYS.reduce(
-        (acc, key) => acc + reportData.beneficiaries.indirect[key],
+        (acc, key) =>
+          (reportData.beneficiaries.include?.[key] ?? BENEFICIARY_TYPE_META[key].includeInTotals)
+            ? acc + reportData.beneficiaries.indirect[key]
+            : acc,
         0
       )
     ));

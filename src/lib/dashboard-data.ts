@@ -124,6 +124,7 @@ export type BeneficiaryGroupKey = (typeof BENEFICIARY_GROUPS)[number]["key"];
 export type BeneficiaryBreakdown = {
   direct: Record<BeneficiaryTypeKey, number>;
   indirect: Record<BeneficiaryTypeKey, number>;
+  include: Record<BeneficiaryTypeKey, boolean>;
 };
 
 export type SectorKey = "Humanitarian" | "Advocacy" | "Development";

@@ -1,13 +1,11 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import ProjectSelect from "../(components)/ProjectSelect";
 import { useDashboardData } from "@/context/DashboardDataContext";
 import {
-  BENEFICIARY_DETAIL_MAP,
   BENEFICIARY_TYPE_KEYS,
   BENEFICIARY_TYPE_META,
-  PRIMARY_BENEFICIARY_TYPE_KEYS,
   type BeneficiaryTypeKey,
 } from "@/lib/dashboard-data";
 
@@ -17,6 +15,11 @@ type BeneficiaryInputState = Record<
   BeneficiaryTypeKey,
   { direct: string; indirect: string }
 >;
+
+type BeneficiaryEntry = {
+  key: BeneficiaryTypeKey;
+  includeInTotals: boolean;
+};
 
 const createEmptyState = (): BeneficiaryInputState =>
   BENEFICIARY_TYPE_KEYS.reduce(
@@ -38,9 +41,8 @@ export default function BeneficiariesDataEntryPage() {
   const [formState, setFormState] = useState<BeneficiaryInputState>(
     createEmptyState()
   );
-  const [expandedBreakdowns, setExpandedBreakdowns] = useState<
-    Partial<Record<BeneficiaryTypeKey, boolean>>
-  >({});
+  const [entries, setEntries] = useState<BeneficiaryEntry[]>([]);
+  const [pendingKey, setPendingKey] = useState<BeneficiaryTypeKey | "">("");
 
   const selectedProject = useMemo(
     () => projects.find((project) => project.id === selectedProjectId) ?? null,
@@ -50,7 +52,8 @@ export default function BeneficiariesDataEntryPage() {
   useEffect(() => {
     if (!selectedProject) {
       setFormState(createEmptyState());
-      setExpandedBreakdowns({});
+      setEntries([]);
+      setPendingKey("");
       return;
     }
 
@@ -65,31 +68,55 @@ export default function BeneficiariesDataEntryPage() {
     });
     setFormState(nextState);
 
-    const breakdownState: Partial<Record<BeneficiaryTypeKey, boolean>> = {};
-    PRIMARY_BENEFICIARY_TYPE_KEYS.forEach((key) => {
-      const detailKeys = BENEFICIARY_DETAIL_MAP[key] ?? [];
-      if (!detailKeys.length) {
-        return;
+    const includeState = selectedProject.beneficiaries.include;
+    const detectedEntries = BENEFICIARY_TYPE_KEYS.reduce<BeneficiaryEntry[]>((accumulator, key) => {
+      const directValue = selectedProject.beneficiaries.direct[key] ?? 0;
+      const indirectValue = selectedProject.beneficiaries.indirect[key] ?? 0;
+      const includeValue =
+        includeState && Object.prototype.hasOwnProperty.call(includeState, key)
+          ? Boolean(includeState[key])
+          : BENEFICIARY_TYPE_META[key].includeInTotals;
+      if (directValue > 0 || indirectValue > 0 || includeValue) {
+        accumulator.push({
+          key,
+          includeInTotals: includeValue,
+        });
       }
-      const hasDetailValues = detailKeys.some((detailKey) => {
-        const direct = selectedProject.beneficiaries.direct[detailKey] ?? 0;
-        const indirect = selectedProject.beneficiaries.indirect[detailKey] ?? 0;
-        return direct > 0 || indirect > 0;
-      });
-      breakdownState[key] = hasDetailValues;
-    });
-    setExpandedBreakdowns(breakdownState);
+      return accumulator;
+    }, []);
+    setEntries(detectedEntries);
   }, [selectedProject]);
+
+  const availableKeys = useMemo(
+    () =>
+      BENEFICIARY_TYPE_KEYS.filter(
+        (key) => !entries.some((entry) => entry.key === key)
+      ),
+    [entries]
+  );
+
+  useEffect(() => {
+    if (!availableKeys.length) {
+      setPendingKey("");
+      return;
+    }
+    if (!pendingKey || !availableKeys.includes(pendingKey)) {
+      setPendingKey(availableKeys[0]);
+    }
+  }, [availableKeys, pendingKey]);
 
   const totals = useMemo(() => {
     let direct = 0;
     let indirect = 0;
-    PRIMARY_BENEFICIARY_TYPE_KEYS.forEach((key) => {
+    entries.forEach(({ key, includeInTotals }) => {
+      if (!includeInTotals) {
+        return;
+      }
       direct += Number.parseInt(formState[key].direct || "0", 10) || 0;
       indirect += Number.parseInt(formState[key].indirect || "0", 10) || 0;
     });
     return { direct, indirect, total: direct + indirect };
-  }, [formState]);
+  }, [entries, formState]);
 
   const handleInputChange = useCallback(
     (key: BeneficiaryTypeKey, field: "direct" | "indirect") =>
@@ -106,26 +133,43 @@ export default function BeneficiariesDataEntryPage() {
     []
   );
 
-  const handleToggleBreakdown = useCallback(
-    (key: BeneficiaryTypeKey) => (event: React.ChangeEvent<HTMLInputElement>) => {
-      const isEnabled = event.target.checked;
-      setExpandedBreakdowns((previous) => ({ ...previous, [key]: isEnabled }));
-      if (!isEnabled) {
-        const detailKeys = BENEFICIARY_DETAIL_MAP[key] ?? [];
-        if (!detailKeys.length) {
-          return;
-        }
-        setFormState((previous) => {
-          const nextState = { ...previous };
-          detailKeys.forEach((detailKey) => {
-            nextState[detailKey] = { direct: "0", indirect: "0" };
-          });
-          return nextState;
-        });
-      }
-    },
+  const handleIncludeToggle = useCallback(
+    (key: BeneficiaryTypeKey) =>
+      (event: React.ChangeEvent<HTMLInputElement>) => {
+        const isIncluded = event.target.checked;
+        setEntries((previous) =>
+          previous.map((entry) =>
+            entry.key === key ? { ...entry, includeInTotals: isIncluded } : entry
+          )
+        );
+      },
     []
   );
+
+  const handleRemoveEntry = useCallback((key: BeneficiaryTypeKey) => {
+    setEntries((previous) => previous.filter((entry) => entry.key !== key));
+    setFormState((previous) => ({
+      ...previous,
+      [key]: { direct: "0", indirect: "0" },
+    }));
+  }, []);
+
+  const handleAddEntry = useCallback(() => {
+    if (!pendingKey) {
+      return;
+    }
+    setEntries((previous) => [
+      ...previous,
+      {
+        key: pendingKey,
+        includeInTotals: true,
+      },
+    ]);
+    setFormState((previous) => ({
+      ...previous,
+      [pendingKey]: previous[pendingKey] ?? { direct: "0", indirect: "0" },
+    }));
+  }, [pendingKey]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -140,12 +184,15 @@ export default function BeneficiariesDataEntryPage() {
     setIsSubmitting(true);
     setFeedback({ tone: "positive", message: null });
 
+    const includeLookup = new Map(entries.map((entry) => [entry.key, entry.includeInTotals]));
+
     const payload = {
       projectId: selectedProjectId,
       beneficiaries: BENEFICIARY_TYPE_KEYS.map((key) => ({
         type: key,
         direct: Number.parseInt(formState[key].direct || "0", 10) || 0,
         indirect: Number.parseInt(formState[key].indirect || "0", 10) || 0,
+        includeInTotals: includeLookup.get(key) ?? false,
       })),
     };
 
@@ -228,128 +275,120 @@ export default function BeneficiariesDataEntryPage() {
 
       <form className="space-y-6" onSubmit={handleSubmit}>
         <div className="overflow-hidden rounded-3xl border border-brand">
-          <table className="min-w-full divide-y divide-brand-soft text-sm">
-            <thead className="bg-brand-soft text-xs font-semibold uppercase tracking-wide text-brand-soft">
-              <tr>
-                <th className="px-4 py-3 text-left">Cohort</th>
-                <th className="px-4 py-3 text-right">Direct</th>
-                <th className="px-4 py-3 text-right">Indirect</th>
-                <th className="px-4 py-3 text-right">Breakdown</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-brand-soft/60 bg-white">
-              {PRIMARY_BENEFICIARY_TYPE_KEYS.map((key) => {
+          <div className="space-y-4 bg-white p-6">
+            {entries.length ? (
+              entries.map(({ key, includeInTotals }) => {
                 const meta = BENEFICIARY_TYPE_META[key];
-                const detailKeys = BENEFICIARY_DETAIL_MAP[key] ?? [];
-                const isExpanded = Boolean(expandedBreakdowns[key]);
                 return (
-                  <Fragment key={key}>
-                    <tr className="align-middle hover:bg-brand-soft/30">
-                      <th
-                        scope="row"
-                        className="px-4 py-3 text-left font-medium text-brand-muted"
-                      >
-                        <div className="flex items-center gap-3">
-                          <span
-                            className="inline-flex h-2.5 w-2.5 rounded-full"
-                            style={{ backgroundColor: meta.color }}
-                            aria-hidden="true"
-                          />
-                          <div>
-                            <p>{meta.label}</p>
-                            <p className="text-xs uppercase tracking-wide text-brand-soft">
-                              {meta.group}
-                            </p>
-                          </div>
+                  <div
+                    key={key}
+                    className="rounded-2xl border border-brand-soft p-4 shadow-brand-soft/40"
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <span
+                          className="inline-flex h-2.5 w-2.5 rounded-full"
+                          style={{ backgroundColor: meta.color }}
+                          aria-hidden="true"
+                        />
+                        <div>
+                          <p className="font-semibold text-brand-muted">{meta.label}</p>
+                          <p className="text-xs uppercase tracking-wide text-brand-soft">
+                            {meta.group}
+                          </p>
                         </div>
-                      </th>
-                      <td className="px-4 py-3 text-right">
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveEntry(key)}
+                        className="text-xs font-semibold uppercase tracking-wide text-brand-primary hover:text-brand-strong"
+                        disabled={!selectedProjectId}
+                      >
+                        Remove
+                      </button>
+                    </div>
+
+                    <div className="mt-4 grid gap-4 sm:grid-cols-3">
+                      <label className="flex flex-col gap-2 text-xs font-semibold uppercase tracking-wide text-brand-soft">
+                        Direct Reach
                         <input
                           type="text"
                           inputMode="numeric"
                           pattern="[0-9]*"
                           value={formState[key].direct}
                           onChange={handleInputChange(key, "direct")}
-                          className="input-brand w-full rounded-lg text-right"
+                          className="input-brand w-full rounded-lg text-right text-sm"
                           disabled={!selectedProjectId}
                         />
-                      </td>
-                      <td className="px-4 py-3 text-right">
+                      </label>
+                      <label className="flex flex-col gap-2 text-xs font-semibold uppercase tracking-wide text-brand-soft">
+                        Indirect Reach
                         <input
                           type="text"
                           inputMode="numeric"
                           pattern="[0-9]*"
                           value={formState[key].indirect}
                           onChange={handleInputChange(key, "indirect")}
-                          className="input-brand w-full rounded-lg text-right"
+                          className="input-brand w-full rounded-lg text-right text-sm"
                           disabled={!selectedProjectId}
                         />
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        {detailKeys.length ? (
-                          <label className="inline-flex items-center gap-2 text-xs font-medium text-brand-muted">
-                            <input
-                              type="checkbox"
-                              className="h-4 w-4 rounded border-brand-soft text-brand-primary focus:ring-brand-primary"
-                              checked={isExpanded}
-                              onChange={handleToggleBreakdown(key)}
-                              disabled={!selectedProjectId}
-                            />
-                            Track breakdown
-                          </label>
-                        ) : null}
-                      </td>
-                    </tr>
-                    {detailKeys.length && isExpanded
-                      ? detailKeys.map((detailKey) => {
-                          const detailMeta = BENEFICIARY_TYPE_META[detailKey];
-                          return (
-                            <tr key={detailKey} className="bg-brand-soft/10">
-                              <th
-                                scope="row"
-                                className="px-8 py-3 text-left text-sm font-medium text-brand-muted"
-                              >
-                                <div className="flex items-center gap-3">
-                                  <span
-                                    className="inline-flex h-2.5 w-2.5 rounded-full"
-                                    style={{ backgroundColor: detailMeta.color }}
-                                    aria-hidden="true"
-                                  />
-                                  <span>{detailMeta.label}</span>
-                                </div>
-                              </th>
-                              <td className="px-4 py-3 text-right">
-                                <input
-                                  type="text"
-                                  inputMode="numeric"
-                                  pattern="[0-9]*"
-                                  value={formState[detailKey].direct}
-                                  onChange={handleInputChange(detailKey, "direct")}
-                                  className="input-brand w-full rounded-lg text-right"
-                                  disabled={!selectedProjectId}
-                                />
-                              </td>
-                              <td className="px-4 py-3 text-right">
-                                <input
-                                  type="text"
-                                  inputMode="numeric"
-                                  pattern="[0-9]*"
-                                  value={formState[detailKey].indirect}
-                                  onChange={handleInputChange(detailKey, "indirect")}
-                                  className="input-brand w-full rounded-lg text-right"
-                                  disabled={!selectedProjectId}
-                                />
-                              </td>
-                              <td />
-                            </tr>
-                          );
-                        })
-                      : null}
-                  </Fragment>
+                      </label>
+                      <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-brand-soft">
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 rounded border-brand-soft text-brand-primary focus:ring-brand-primary"
+                          checked={includeInTotals}
+                          onChange={handleIncludeToggle(key)}
+                          disabled={!selectedProjectId}
+                        />
+                        Include in totals
+                      </label>
+                    </div>
+                  </div>
                 );
-              })}
-            </tbody>
-          </table>
+              })
+            ) : (
+              <div className="rounded-2xl border border-dashed border-brand-soft bg-brand-soft/20 p-6 text-center text-sm text-brand-muted">
+                No beneficiary categories added yet. Select a category below to start
+                capturing reach.
+              </div>
+            )}
+
+            <div className="flex flex-wrap items-center gap-3 border-t border-brand-soft pt-4">
+              <select
+                value={pendingKey}
+                onChange={(event) =>
+                  setPendingKey(event.target.value as BeneficiaryTypeKey | "")
+                }
+                className="input-brand w-full max-w-xs rounded-full text-sm"
+                disabled={!selectedProjectId || !availableKeys.length}
+              >
+                {!availableKeys.length ? (
+                  <option value="">All categories added</option>
+                ) : (
+                  <>
+                    <option value="">Select category</option>
+                    {availableKeys.map((key) => {
+                      const optionMeta = BENEFICIARY_TYPE_META[key];
+                      return (
+                        <option key={key} value={key}>
+                          {optionMeta.label}
+                        </option>
+                      );
+                    })}
+                  </>
+                )}
+              </select>
+              <button
+                type="button"
+                onClick={handleAddEntry}
+                disabled={!selectedProjectId || !pendingKey}
+                className="inline-flex h-10 items-center justify-center rounded-full bg-brand-primary px-4 text-sm font-semibold text-white shadow-brand-soft transition disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Add category
+              </button>
+            </div>
+          </div>
         </div>
 
         {feedback.message ? (

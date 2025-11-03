@@ -501,6 +501,182 @@ export default function AdminDashboard() {
           </div>
         </section>
 
+        <section className="rounded-3xl border border-brand bg-white p-8 shadow-brand-soft">
+          <div className="flex flex-wrap items-baseline justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-semibold text-brand-strong">Branding & Identity</h2>
+              <p className="text-sm text-brand-soft">
+                Update the MIS display name, logo, and favicon shown across the dashboard.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,0.55fr)_minmax(0,0.45fr)]">
+            <div className="space-y-6">
+              <label className="flex flex-col gap-2 text-sm font-medium text-brand-muted">
+                <span className="text-xs uppercase tracking-wide text-brand-soft">
+                  MIS display name
+                </span>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <input
+                    type="text"
+                    value={companyNameInput}
+                    onChange={(event) => setCompanyNameInput(event.target.value)}
+                    placeholder="e.g. NSDO MIS"
+                    className="w-full rounded-lg input-brand px-4 py-2 text-sm text-brand-muted sm:flex-1"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleCompanyNameSave}
+                    className="rounded-full bg-brand-primary px-5 py-2 text-sm font-semibold text-white shadow-brand-soft transition hover:bg-brand-strong"
+                  >
+                    Save name
+                  </button>
+                </div>
+              </label>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="rounded-2xl border border-brand-soft/80 bg-brand-soft/30 p-5">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-brand-muted">Logo</p>
+                      <p className="text-xs text-brand-soft">PNG, JPG, or SVG under 2 MB</p>
+                    </div>
+                    {branding.logoDataUrl ? (
+                      <button
+                        type="button"
+                        onClick={() => void handleAssetReset('logo')}
+                        className="text-xs font-semibold uppercase tracking-wide text-brand-primary hover:text-brand-strong"
+                      >
+                        Reset
+                      </button>
+                    ) : null}
+                  </div>
+                  <div className="mt-4 flex flex-col items-center justify-center gap-4">
+                    <div className="flex h-20 w-32 items-center justify-center rounded-xl border border-dashed border-brand-soft bg-white p-4">
+                      {branding.logoDataUrl ? (
+                        <img
+                          src={branding.logoDataUrl}
+                          alt={`${branding.companyName} logo`}
+                          className="max-h-16 object-contain"
+                        />
+                      ) : (
+                        <span className="text-xs text-brand-soft">No logo uploaded</span>
+                      )}
+                    </div>
+                    <label className="inline-flex items-center justify-center rounded-full bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wide text-brand-primary shadow-brand-soft transition hover:bg-brand-soft">
+                      <input
+                        ref={logoInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleAssetChange('logo')}
+                        className="hidden"
+                      />
+                      Upload logo
+                    </label>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-brand-soft/80 bg-brand-soft/30 p-5">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-brand-muted">Favicon</p>
+                      <p className="text-xs text-brand-soft">
+                        Square image (PNG, SVG, ICO) under 2 MB
+                      </p>
+                    </div>
+                    {branding.faviconDataUrl ? (
+                      <button
+                        type="button"
+                        onClick={() => void handleAssetReset('favicon')}
+                        className="text-xs font-semibold uppercase tracking-wide text-brand-primary hover:text-brand-strong"
+                      >
+                        Reset
+                      </button>
+                    ) : null}
+                  </div>
+                  <div className="mt-4 flex flex-col items-center justify-center gap-4">
+                    <div className="flex h-20 w-20 items-center justify-center rounded-xl border border-dashed border-brand-soft bg-white p-4">
+                      {branding.faviconDataUrl ? (
+                        <img
+                          src={branding.faviconDataUrl}
+                          alt={`${branding.companyName} favicon`}
+                          className="h-10 w-10 object-contain"
+                        />
+                      ) : (
+                        <span className="text-xs text-brand-soft text-center">No favicon uploaded</span>
+                      )}
+                    </div>
+                    <label className="inline-flex items-center justify-center rounded-full bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wide text-brand-primary shadow-brand-soft transition hover:bg-brand-soft">
+                      <input
+                        ref={faviconInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleAssetChange('favicon')}
+                        className="hidden"
+                      />
+                      Upload favicon
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              {brandError ? (
+                <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                  {brandError}
+                </div>
+              ) : null}
+              {brandNotice ? (
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                  {brandNotice}
+                </div>
+              ) : null}
+            </div>
+
+            <div className="space-y-4 rounded-2xl border border-brand-soft/60 bg-brand-soft/20 p-5">
+              <p className="text-xs font-semibold uppercase tracking-wide text-brand-soft">
+                Preview
+              </p>
+              <div className="rounded-2xl border border-brand-soft bg-white p-5 shadow-brand-soft/40">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-dashed border-brand-soft bg-brand-soft/40">
+                    {branding.faviconDataUrl ? (
+                      <img
+                        src={branding.faviconDataUrl}
+                        alt={`${branding.companyName} favicon preview`}
+                        className="h-8 w-8 object-contain"
+                      />
+                    ) : (
+                      <span className="text-[10px] font-semibold uppercase tracking-wide text-brand-soft">
+                        MIS
+                      </span>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-base font-semibold text-brand-strong">
+                      {companyNameInput || branding.companyName || 'MIS Workspace'}
+                    </p>
+                    <p className="text-xs text-brand-soft">
+                      Updates appear immediately after saving.
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-4 flex items-center justify-center rounded-2xl border border-dashed border-brand-soft bg-brand-soft/20 p-4">
+                  {branding.logoDataUrl ? (
+                    <img
+                      src={branding.logoDataUrl}
+                      alt={`${branding.companyName} logo preview`}
+                      className="max-h-16 object-contain"
+                    />
+                  ) : (
+                    <span className="text-xs text-brand-soft">Your logo will appear here.</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section
           id="admin-access"
           className="rounded-3xl border border-brand bg-white p-8 shadow-sm"

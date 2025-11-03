@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useState, useEffect } from "react";
 import Link from "next/link";
 import { useDashboardData } from "@/context/DashboardDataContext";
 
@@ -18,6 +18,18 @@ export default function ComplaintFormPage() {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAnonymous, setIsAnonymous] = useState(false);
+
+  useEffect(() => {
+    if (isAnonymous) {
+      setFullName("");
+      setEmail("");
+      setPhone("");
+      setVillage("");
+      setGender("");
+      setSourceOfComplaint("");
+      setHowReported("");
+    }
+  }, [isAnonymous]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();

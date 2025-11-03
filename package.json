@@ -10,8 +10,8 @@
     "create-admin-user": "node scripts/create-admin-user.js"
   },
   "dependencies": {
-    "bcryptjs": "^2.4.3",
     "@types/pg": "^8.15.6",
+    "bcryptjs": "^2.4.3",
     "next": "15.5.4",
     "pdfkit": "^0.17.2",
     "pg": "^8.16.3",
@@ -22,6 +22,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@playwright/test": "^1.56.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

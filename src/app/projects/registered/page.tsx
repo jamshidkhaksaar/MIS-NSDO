@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import MultiSelectDropdown from "../new/(components)/MultiSelectDropdown";
 import LocationSelector from "../new/(components)/LocationSelector";
 import { useDashboardData } from "@/context/DashboardDataContext";
-import { PROJECT_SECTORS } from "@/lib/dashboard-data";
 import {
   encodeProjectLocations,
   mergeProjectLocations,
@@ -20,7 +19,7 @@ type ProjectFormState = {
   code: string;
   name: string;
   donor: string;
-  sector: string;
+  mainSector: string;
   country: string;
   start: string;
   end: string;
@@ -31,15 +30,17 @@ type ProjectFormState = {
   objectives: string;
   majorAchievements: string;
   locations: ProjectProvinceLocations[];
+  subSectors: string[];
   clusters: string[];
-  standardSectors: string[];
 };
+
+const normalize = (value: string) => value.trim();
 
 const EMPTY_FORM: ProjectFormState = {
   code: "",
   name: "",
   donor: "",
-  sector: "",
+  mainSector: "",
   country: "Afghanistan",
   start: "",
   end: "",
@@ -50,8 +51,8 @@ const EMPTY_FORM: ProjectFormState = {
   objectives: "",
   majorAchievements: "",
   locations: [],
+  subSectors: [],
   clusters: [],
-  standardSectors: [],
 };
 
 export default function RegisteredProjectsPage() {
@@ -60,7 +61,8 @@ export default function RegisteredProjectsPage() {
     updateProject,
     isLoading,
     clusterCatalog,
-    sectorCatalog,
+    mainSectors,
+    subSectors,
   } = useDashboardData();
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -127,7 +129,7 @@ export default function RegisteredProjectsPage() {
       code: selectedProject.code,
       name: selectedProject.name,
       donor: selectedProject.donor ?? "",
-      sector: selectedProject.sector ?? "",
+      mainSector: selectedProject.sector ?? "",
       country: selectedProject.country ?? "Afghanistan",
       start: selectedProject.start ?? "",
       end: selectedProject.end ?? "",
@@ -143,68 +145,108 @@ export default function RegisteredProjectsPage() {
         villages: [...entry.villages],
       })),
       clusters: selectedProject.clusters ?? [],
-      standardSectors: selectedProject.standardSectors ?? [],
+      subSectors: selectedProject.standardSectors ?? [],
     });
     setFeedback({ message: null, tone: "positive" });
   }, [selectedProject]);
 
+  const mainSectorOptions = useMemo(() => {
+    const optionMap = new Map<string, string>();
+    mainSectors.forEach((sector) => {
+      const name = normalize(sector.name);
+      if (name.length) {
+        optionMap.set(name.toLowerCase(), name);
+      }
+    });
+    projects.forEach((project) => {
+      const name = normalize(project.sector ?? "");
+      if (name.length) {
+        optionMap.set(name.toLowerCase(), name);
+      }
+    });
+    if (formState.mainSector.trim()) {
+      const current = normalize(formState.mainSector);
+      optionMap.set(current.toLowerCase(), current);
+    }
+    return Array.from(optionMap.values()).sort((a, b) => a.localeCompare(b));
+  }, [formState.mainSector, mainSectors, projects]);
+
+  const selectedMainSectorRecord = useMemo(() => {
+    const target = formState.mainSector.trim().toLowerCase();
+    if (!target) {
+      return null;
+    }
+    return (
+      mainSectors.find(
+        (sector) => normalize(sector.name).toLowerCase() === target
+      ) ?? null
+    );
+  }, [formState.mainSector, mainSectors]);
+
+  const subSectorOptions = useMemo(() => {
+    if (!selectedMainSectorRecord) {
+      return [];
+    }
+    const optionMap = new Map<string, string>();
+    subSectors
+      .filter((entry) => entry.mainSectorId === selectedMainSectorRecord.id)
+      .forEach((entry) => {
+        const name = normalize(entry.name);
+        if (name.length) {
+          optionMap.set(name.toLowerCase(), name);
+        }
+      });
+    formState.subSectors.forEach((name) => {
+      const trimmed = normalize(name);
+      if (trimmed.length && !optionMap.has(trimmed.toLowerCase())) {
+        optionMap.set(trimmed.toLowerCase(), trimmed);
+      }
+    });
+    return Array.from(optionMap.values())
+      .sort((a, b) => a.localeCompare(b))
+      .map((name) => ({ value: name, label: name }));
+  }, [formState.subSectors, selectedMainSectorRecord, subSectors]);
+
   const clusterOptions = useMemo(() => {
     const optionMap = new Map<string, { value: string; label: string }>();
     clusterCatalog.forEach((entry) => {
-      if (entry.name.trim()) {
-        optionMap.set(entry.name.trim().toLowerCase(), { value: entry.name.trim(), label: entry.name.trim() });
+      const name = normalize(entry.name);
+      if (name.length) {
+        optionMap.set(name.toLowerCase(), { value: name, label: name });
       }
     });
     projects.forEach((project) => {
       project.clusters.forEach((cluster) => {
-        const trimmed = cluster.trim();
-        if (trimmed && !optionMap.has(trimmed.toLowerCase())) {
-          optionMap.set(trimmed.toLowerCase(), { value: trimmed, label: trimmed });
+        const name = normalize(cluster);
+        if (name.length && !optionMap.has(name.toLowerCase())) {
+          optionMap.set(name.toLowerCase(), { value: name, label: name });
         }
       });
+    });
+    formState.clusters.forEach((cluster) => {
+      const name = normalize(cluster);
+      if (name.length && !optionMap.has(name.toLowerCase())) {
+        optionMap.set(name.toLowerCase(), { value: name, label: name });
+      }
     });
     return Array.from(optionMap.values()).sort((a, b) => a.label.localeCompare(b.label));
-  }, [clusterCatalog, projects]);
+  }, [clusterCatalog, formState.clusters, projects]);
 
-  const standardSectorOptions = useMemo(() => {
-    const set = new Map<string, { value: string; label: string }>();
-    PROJECT_SECTORS.forEach((sector) => {
-      set.set(sector.toLowerCase(), { value: sector, label: sector });
-    });
-    sectorCatalog.forEach((entry) => {
-      const trimmed = entry.name.trim();
-      if (trimmed) {
-        set.set(trimmed.toLowerCase(), { value: trimmed, label: trimmed });
+  useEffect(() => {
+    if (!selectedMainSectorRecord) {
+      if (formState.subSectors.length) {
+        setFormState((previous) => ({ ...previous, subSectors: [] }));
       }
-    });
-    projects.forEach((project) => {
-      project.standardSectors.forEach((sector) => {
-        const trimmed = sector.trim();
-        if (trimmed) {
-          set.set(trimmed.toLowerCase(), { value: trimmed, label: trimmed });
-        }
-      });
-    });
-    return Array.from(set.values()).sort((a, b) => a.label.localeCompare(b.label));
-  }, [projects, sectorCatalog]);
-
-  const availableSectors = useMemo(() => {
-    const sectorSet = new Map<string, string>();
-    projects.forEach((project) => {
-      if (project.sector?.trim()) {
-        sectorSet.set(project.sector.trim().toLowerCase(), project.sector.trim());
-      }
-    });
-    PROJECT_SECTORS.forEach((sector) => {
-      sectorSet.set(sector.toLowerCase(), sector);
-    });
-    sectorCatalog.forEach((entry) => {
-      if (entry.name.trim()) {
-        sectorSet.set(entry.name.trim().toLowerCase(), entry.name.trim());
-      }
-    });
-    return Array.from(sectorSet.values()).sort((a, b) => a.localeCompare(b));
-  }, [projects, sectorCatalog]);
+      return;
+    }
+    const valid = new Set(subSectorOptions.map((option) => option.value.toLowerCase()));
+    const filtered = formState.subSectors.filter((name) =>
+      valid.has(name.trim().toLowerCase())
+    );
+    if (filtered.length !== formState.subSectors.length) {
+      setFormState((previous) => ({ ...previous, subSectors: filtered }));
+    }
+  }, [formState.subSectors, selectedMainSectorRecord, subSectorOptions]);
 
   const handleReset = () => {
     if (!selectedProject) {
@@ -236,12 +278,20 @@ export default function RegisteredProjectsPage() {
 
     const locationPayload = encodeProjectLocations(formState.locations);
 
+    const trimmedMainSector = formState.mainSector.trim();
+    const trimmedSubSectors = Array.from(
+      new Set(formState.subSectors.map((entry) => normalize(entry)).filter(Boolean))
+    );
+    const trimmedClusters = Array.from(
+      new Set(formState.clusters.map((entry) => normalize(entry)).filter(Boolean))
+    );
+
     const payload = {
       id: selectedProject.id,
       code: formState.code.trim(),
       name: formState.name.trim(),
       donor: formState.donor.trim() || undefined,
-      sector: formState.sector.trim() || undefined,
+      sector: trimmedMainSector || undefined,
       country: formState.country.trim() || undefined,
       start: formState.start || undefined,
       end: formState.end || undefined,
@@ -254,8 +304,8 @@ export default function RegisteredProjectsPage() {
       provinces: locationPayload.provinces,
       districts: locationPayload.districts,
       communities: locationPayload.communities,
-      clusters: formState.clusters,
-      standardSectors: formState.standardSectors,
+      clusters: trimmedClusters,
+      standardSectors: trimmedSubSectors,
     };
 
     try {
@@ -437,22 +487,24 @@ export default function RegisteredProjectsPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-brand-muted" htmlFor="project-sector">
-                      Sector
+                    <label className="block text-sm font-medium text-brand-muted" htmlFor="project-main-sector">
+                      Main sector
                     </label>
-                    <input
-                      id="project-sector"
-                      list="project-sector-options"
-                      value={formState.sector}
-                      onChange={(event) => setFormState((previous) => ({ ...previous, sector: event.target.value }))}
+                    <select
+                      id="project-main-sector"
+                      value={formState.mainSector}
+                      onChange={(event) =>
+                        setFormState((previous) => ({ ...previous, mainSector: event.target.value }))
+                      }
                       className="input-brand mt-1 block w-full rounded-lg"
-                      placeholder="Choose or type a sector"
-                    />
-                    <datalist id="project-sector-options">
-                      {availableSectors.map((sector) => (
-                        <option key={sector} value={sector} />
+                    >
+                      <option value="">Select main sector</option>
+                      {mainSectorOptions.map((sector) => (
+                        <option key={sector} value={sector}>
+                          {sector}
+                        </option>
                       ))}
-                    </datalist>
+                    </select>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-brand-muted" htmlFor="project-country">
@@ -541,21 +593,25 @@ export default function RegisteredProjectsPage() {
 
                 <div className="grid gap-4 lg:grid-cols-2">
                   <div className="space-y-2">
+                    <label className="block text-sm font-medium text-brand-muted">Sub-sectors</label>
+                    <MultiSelectDropdown
+                      options={subSectorOptions}
+                      selected={formState.subSectors}
+                      onChange={(values) => setFormState((previous) => ({ ...previous, subSectors: values }))}
+                      placeholder={
+                        selectedMainSectorRecord
+                          ? "Select sub-sectors"
+                          : "Select a main sector first"
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
                     <label className="block text-sm font-medium text-brand-muted">Clusters</label>
                     <MultiSelectDropdown
                       options={clusterOptions}
                       selected={formState.clusters}
                       onChange={(values) => setFormState((previous) => ({ ...previous, clusters: values }))}
                       placeholder="Select clusters"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="block text-sm font-medium text-brand-muted">Standard sectors</label>
-                    <MultiSelectDropdown
-                      options={standardSectorOptions}
-                      selected={formState.standardSectors}
-                      onChange={(values) => setFormState((previous) => ({ ...previous, standardSectors: values }))}
-                      placeholder="Select sectors"
                     />
                   </div>
                 </div>

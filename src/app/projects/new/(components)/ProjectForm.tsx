@@ -1,31 +1,17 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import MultiSelectDropdown from "./MultiSelectDropdown";
 import LocationSelector from "./LocationSelector";
 import { useDashboardData } from "@/context/DashboardDataContext";
 import { encodeProjectLocations, type ProjectProvinceLocations } from "@/lib/project-locations";
 
-const DEFAULT_SECTOR_OPTIONS = [
-  { value: "Health", label: "Health" },
-  { value: "Education", label: "Education" },
-  { value: "WASH", label: "WASH" },
-  { value: "Protection", label: "Protection" },
-  { value: "Agriculture", label: "Agriculture" },
-];
-
-const DEFAULT_CLUSTER_OPTIONS = [
-  { value: "Food Security", label: "Food Security" },
-  { value: "Emergency Shelter", label: "Emergency Shelter" },
-  { value: "Coordination", label: "Coordination" },
-  { value: "Nutrition", label: "Nutrition" },
-];
-
 type FormData = {
   projectCode: string;
   projectName: string;
   donorName: string;
-  sectors: string[];
+  mainSector: string;
+  subSectors: string[];
   clusters: string[];
   startDate: string;
   endDate: string;
@@ -33,13 +19,16 @@ type FormData = {
   locations: ProjectProvinceLocations[];
 };
 
+const normalize = (value: string) => value.trim();
+
 export default function ProjectForm() {
-  const { sectorCatalog, clusterCatalog, createProject } = useDashboardData();
+  const { clusterCatalog, createProject, mainSectors, subSectors } = useDashboardData();
   const [formData, setFormData] = useState<FormData>({
     projectCode: "",
     projectName: "",
     donorName: "",
-    sectors: [],
+    mainSector: "",
+    subSectors: [],
     clusters: [],
     startDate: "",
     endDate: "",
@@ -50,93 +39,151 @@ export default function ProjectForm() {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const sectorOptions = useMemo(() => {
-    const entries = new Map<string, { value: string; label: string }>();
+  const mainSectorOptions = useMemo(
+    () =>
+      mainSectors
+        .map((sector) => ({
+          id: sector.id,
+          name: normalize(sector.name),
+        }))
+        .filter((sector) => sector.name.length)
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    [mainSectors]
+  );
 
-    sectorCatalog.forEach((entry) => {
-      const trimmedName = entry.name.trim();
-      if (!trimmedName) {
-        return;
+  const selectedMainSector = useMemo(() => {
+    if (!formData.mainSector.trim()) {
+      return null;
+    }
+    const target = formData.mainSector.trim().toLowerCase();
+    return (
+      mainSectorOptions.find((option) => option.name.toLowerCase() === target) ?? null
+    );
+  }, [formData.mainSector, mainSectorOptions]);
+
+  const subSectorOptions = useMemo(() => {
+    if (!selectedMainSector) {
+      return [];
+    }
+    const available = subSectors
+      .filter((entry) => entry.mainSectorId === selectedMainSector.id)
+      .map((entry) => normalize(entry.name))
+      .filter((name) => name.length);
+
+    const optionMap = new Map<string, string>();
+    available.forEach((name) => optionMap.set(name.toLowerCase(), name));
+    formData.subSectors.forEach((name) => {
+      const trimmed = normalize(name);
+      if (trimmed.length && !optionMap.has(trimmed.toLowerCase())) {
+        optionMap.set(trimmed.toLowerCase(), trimmed);
       }
-      const key = trimmedName.toLowerCase();
-      entries.set(key, { value: trimmedName, label: trimmedName });
     });
 
-    DEFAULT_SECTOR_OPTIONS.forEach((option) => {
-      const key = option.label.toLowerCase();
-      if (!entries.has(key)) {
-        entries.set(key, option);
-      }
-    });
-
-    return Array.from(entries.values()).sort((a, b) => a.label.localeCompare(b.label));
-  }, [sectorCatalog]);
+    return Array.from(optionMap.values())
+      .sort((a, b) => a.localeCompare(b))
+      .map((name) => ({ value: name, label: name }));
+  }, [formData.subSectors, selectedMainSector, subSectors]);
 
   const clusterOptions = useMemo(() => {
-    const entries = new Map<string, { value: string; label: string }>();
-
+    const optionMap = new Map<string, { value: string; label: string }>();
     clusterCatalog.forEach((entry) => {
-      const trimmedName = entry.name.trim();
-      if (!trimmedName) {
-        return;
-      }
-      const key = trimmedName.toLowerCase();
-      entries.set(key, { value: trimmedName, label: trimmedName });
-    });
-
-    DEFAULT_CLUSTER_OPTIONS.forEach((option) => {
-      const key = option.label.toLowerCase();
-      if (!entries.has(key)) {
-        entries.set(key, option);
+      const trimmed = normalize(entry.name);
+      if (trimmed.length) {
+        optionMap.set(trimmed.toLowerCase(), { value: trimmed, label: trimmed });
       }
     });
+    formData.clusters.forEach((cluster) => {
+      const trimmed = normalize(cluster);
+      if (trimmed.length && !optionMap.has(trimmed.toLowerCase())) {
+        optionMap.set(trimmed.toLowerCase(), { value: trimmed, label: trimmed });
+      }
+    });
+    return Array.from(optionMap.values()).sort((a, b) => a.label.localeCompare(b.label));
+  }, [clusterCatalog, formData.clusters]);
 
-    return Array.from(entries.values()).sort((a, b) => a.label.localeCompare(b.label));
-  }, [clusterCatalog]);
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { id, value } = e.target;
-    setFormData((prev) => ({ ...prev, [id]: value }));
+  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { id, value } = event.target;
+    setFormData((previous) => ({ ...previous, [id]: value }));
   };
 
-  const handleMultiSelectChange = (field: keyof FormData) => (selected: string[]) => {
-    setFormData((prev) => ({ ...prev, [field]: selected }));
+  const handleMultiSelectChange =
+    (field: keyof FormData) =>
+    (selected: string[]): void => {
+      setFormData((previous) => ({ ...previous, [field]: selected }));
+    };
+
+  const handleMainSectorChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const nextSector = event.target.value;
+    setFormData((previous) => ({ ...previous, mainSector: nextSector }));
   };
+
+  useEffect(() => {
+    setFormData((previous) => {
+      if (!selectedMainSector) {
+        return previous.subSectors.length ? { ...previous, subSectors: [] } : previous;
+      }
+      const validNames = new Set(
+        subSectorOptions.map((option) => option.value.toLowerCase())
+      );
+      const filtered = previous.subSectors.filter((name) =>
+        validNames.has(name.trim().toLowerCase())
+      );
+      if (filtered.length === previous.subSectors.length) {
+        return previous;
+      }
+      return { ...previous, subSectors: filtered };
+    });
+  }, [selectedMainSector, subSectorOptions]);
 
   const handleLocationsChange = (locations: ProjectProvinceLocations[]) => {
     setFormData((previous) => ({ ...previous, locations }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     setError(null);
     setNotice(null);
 
-    if (!formData.projectCode.trim()) {
+    const code = normalize(formData.projectCode);
+    if (!code) {
       setError("Project code is required.");
       return;
     }
-    if (!formData.projectName.trim()) {
+
+    const name = normalize(formData.projectName);
+    if (!name) {
       setError("Project name is required.");
       return;
     }
 
+    const mainSectorName = normalize(formData.mainSector);
+    if (!mainSectorName) {
+      setError("Select a main sector for the project.");
+      return;
+    }
+
+    const trimmedSubSectors = Array.from(
+      new Set(formData.subSectors.map((entry) => normalize(entry)).filter(Boolean))
+    );
+    const trimmedClusters = Array.from(
+      new Set(formData.clusters.map((entry) => normalize(entry)).filter(Boolean))
+    );
+
     const locations = encodeProjectLocations(formData.locations);
-    const primarySector = formData.sectors[0]?.trim() ?? undefined;
 
     const payload = {
-      code: formData.projectCode.trim(),
-      name: formData.projectName.trim(),
-      donor: formData.donorName.trim() || undefined,
-      sector: primarySector,
+      code,
+      name,
+      donor: normalize(formData.donorName) || undefined,
+      sector: mainSectorName,
       country: "Afghanistan",
       start: formData.startDate || undefined,
       end: formData.endDate || undefined,
       provinces: locations.provinces,
       districts: locations.districts,
       communities: locations.communities,
-      clusters: formData.clusters,
-      standardSectors: formData.sectors,
+      clusters: trimmedClusters,
+      standardSectors: trimmedSubSectors,
     };
 
     setIsSubmitting(true);
@@ -147,7 +194,8 @@ export default function ProjectForm() {
         projectCode: "",
         projectName: "",
         donorName: "",
-        sectors: [],
+        mainSector: "",
+        subSectors: [],
         clusters: [],
         startDate: "",
         endDate: "",
@@ -189,10 +237,9 @@ export default function ProjectForm() {
             value={formData.projectName}
             onChange={handleInputChange}
             className="input-brand mt-1 block w-full rounded-lg"
-            placeholder="Project Name based on contract given by donor/partner"
+            placeholder="Project name based on donor contract"
           />
         </div>
-
         <div>
           <label htmlFor="donorName" className="block text-sm font-medium text-brand-muted">
             Donor / Partner Name
@@ -209,14 +256,36 @@ export default function ProjectForm() {
       </div>
 
       <div className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-brand-muted">Relevant Sector</label>
-          <MultiSelectDropdown
-            options={sectorOptions}
-            selected={formData.sectors}
-            onChange={handleMultiSelectChange("sectors")}
-            placeholder="Select relevant sectors"
-          />
+        <div className="grid gap-4 md:grid-cols-2">
+          <div>
+            <label htmlFor="main-sector" className="block text-sm font-medium text-brand-muted">
+              Main sector
+            </label>
+            <select
+              id="main-sector"
+              value={formData.mainSector}
+              onChange={handleMainSectorChange}
+              className="input-brand mt-1 block w-full rounded-lg"
+            >
+              <option value="">Select a main sector</option>
+              {mainSectorOptions.map((option) => (
+                <option key={option.id} value={option.name}>
+                  {option.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-brand-muted">Sub-sectors</label>
+            <MultiSelectDropdown
+              options={subSectorOptions}
+              selected={formData.subSectors}
+              onChange={handleMultiSelectChange("subSectors")}
+              placeholder={
+                selectedMainSector ? "Select sub-sectors" : "Choose a main sector first"
+              }
+            />
+          </div>
         </div>
 
         <div>

@@ -255,11 +255,6 @@ export default function Home() {
     }
   }, []);
 
-  const sortedProjects = useMemo(
-    () => [...projects].sort((a, b) => a.name.localeCompare(b.name)),
-    [projects]
-  );
-
   const sortedMainSectors = useMemo(
     () => [...mainSectors].sort((a, b) => a.name.localeCompare(b.name)),
     [mainSectors]
@@ -298,30 +293,42 @@ export default function Home() {
     return fallback ? [fallback] : [];
   }, [selectedMainSectorId, selectedSubSectorName, subSectorsByMain, mainSectors]);
 
+  const sectorFilteredProjects = useMemo(() => {
+    if (selectedSector === ALL_SECTOR_KEY) {
+      return projects;
+    }
+    const normalizedSelection = selectedSector.toLowerCase();
+    return projects.filter((project) => {
+      const primarySector = (project.sector ?? "").toLowerCase();
+      if (primarySector === normalizedSelection) {
+        return true;
+      }
+      return (project.standardSectors ?? []).some(
+        (value) => (value ?? "").toLowerCase() === normalizedSelection
+      );
+    });
+  }, [projects, selectedSector]);
 
   const mainSectorFilteredProjects = useMemo(() => {
+    const baseList = sectorFilteredProjects;
     if (!selectedMainSectorId) {
-      return projects;
+      return baseList;
     }
     if (!activeSubSectorNames.length) {
-      return projects;
+      return baseList;
     }
     const selection = new Set(activeSubSectorNames.map((value) => value.toLowerCase()));
-    return projects.filter((project) =>
+    return baseList.filter((project) =>
       (project.standardSectors ?? []).some((value) => selection.has((value ?? "").toLowerCase()))
     );
-  }, [projects, selectedMainSectorId, activeSubSectorNames]);
+  }, [sectorFilteredProjects, selectedMainSectorId, activeSubSectorNames]);
 
   const filteredProjectOptions = useMemo(() => {
-    if (!selectedMainSectorId) {
-      return sortedProjects;
-    }
-    const selectedList = mainSectorFilteredProjects;
-    if (!selectedList.length) {
-      return sortedProjects;
-    }
-    return selectedList.slice().sort((a, b) => a.name.localeCompare(b.name));
-  }, [selectedMainSectorId, sortedProjects, mainSectorFilteredProjects]);
+    const baseList = selectedMainSectorId ? mainSectorFilteredProjects : sectorFilteredProjects;
+    const fallbackList = sectorFilteredProjects;
+    const source = baseList.length ? baseList : fallbackList;
+    return source.slice().sort((a, b) => a.name.localeCompare(b.name));
+  }, [selectedMainSectorId, sectorFilteredProjects, mainSectorFilteredProjects]);
 
   const handleMainSectorClick = useCallback(
     (mainSectorId: string) => {

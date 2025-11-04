@@ -342,6 +342,8 @@ export default function Home() {
       setSelectedMainSectorId(mainSectorId);
       setSelectedProjectId("all");
       setSelectedSubSectorName(null);
+      // Reset selected sector to ALL_SECTOR_KEY when main sector is clicked
+      setSelectedSector(ALL_SECTOR_KEY);
     },
     [selectedMainSectorId]
   );
@@ -838,6 +840,7 @@ export default function Home() {
     if (selectedProject && sector !== ALL_SECTOR_KEY) {
       return;
     }
+    // Reset main sector and sub sector when clicking on sector buttons
     setSelectedMainSectorId(null);
     setSelectedSubSectorName(null);
     if (sector === ALL_SECTOR_KEY) {

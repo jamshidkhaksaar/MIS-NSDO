@@ -1,12 +1,17 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { requireUserSession, UnauthorizedError } from "@/lib/auth-server";
 import { upsertProjectBeneficiaries } from "@/lib/dashboard-repository";
-import { BENEFICIARY_TYPE_KEYS, type BeneficiaryTypeKey } from "@/lib/dashboard-data";
+import {
+  BENEFICIARY_TYPE_KEYS,
+  BENEFICIARY_TYPE_META,
+  type BeneficiaryTypeKey,
+} from "@/lib/dashboard-data";
 
 type BeneficiaryInput = {
   type: BeneficiaryTypeKey;
   direct: number;
   indirect: number;
+  includeInTotals: boolean;
 };
 
 const isBeneficiaryType = (value: unknown): value is BeneficiaryTypeKey =>
@@ -21,6 +26,13 @@ const normalizeCount = (value: unknown): number => {
     return 0;
   }
   return Math.floor(value);
+};
+
+const normalizeIncludeFlag = (value: unknown, fallback: boolean): boolean => {
+  if (typeof value === "boolean") {
+    return value;
+  }
+  return fallback;
 };
 
 export async function POST(request: NextRequest) {
@@ -51,7 +63,11 @@ export async function POST(request: NextRequest) {
       }
       const direct = normalizeCount((entry as { direct?: unknown }).direct);
       const indirect = normalizeCount((entry as { indirect?: unknown }).indirect);
-      normalized.push({ type, direct, indirect });
+      const includeInTotals = normalizeIncludeFlag(
+        (entry as { includeInTotals?: unknown }).includeInTotals,
+        BENEFICIARY_TYPE_META[type].includeInTotals
+      );
+      normalized.push({ type, direct, indirect, includeInTotals });
     });
 
     if (!normalized.length) {
@@ -67,7 +83,12 @@ export async function POST(request: NextRequest) {
       if (existing) {
         return existing;
       }
-      return { type: key, direct: 0, indirect: 0 };
+      return {
+        type: key,
+        direct: 0,
+        indirect: 0,
+        includeInTotals: BENEFICIARY_TYPE_META[key].includeInTotals,
+      };
     });
 
     await upsertProjectBeneficiaries({
@@ -76,6 +97,7 @@ export async function POST(request: NextRequest) {
         type: entry.type,
         direct: entry.direct,
         indirect: entry.indirect,
+        includeInTotals: entry.includeInTotals,
       })),
     });
 

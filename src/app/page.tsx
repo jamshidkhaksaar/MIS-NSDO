@@ -293,12 +293,34 @@ export default function Home() {
     return fallback ? [fallback] : [];
   }, [selectedMainSectorId, selectedSubSectorName, subSectorsByMain, mainSectors]);
 
+  const yearFilteredProjects = useMemo(() => {
+    return projects.filter((project) => {
+      const startTime = project.start ? Date.parse(project.start) : Number.NaN;
+      const endTime = project.end ? Date.parse(project.end) : Number.NaN;
+      
+      // If project has no dates, include it
+      if (Number.isNaN(startTime) && Number.isNaN(endTime)) {
+        return true;
+      }
+      
+      const yearStart = new Date(selectedYear, 0, 1).getTime();
+      const yearEnd = new Date(selectedYear, 11, 31, 23, 59, 59).getTime();
+      
+      // Project is active during the selected year if:
+      // - It starts before year ends AND ends after year starts (or has no end date)
+      const startsBeforeYearEnd = Number.isNaN(startTime) || startTime <= yearEnd;
+      const endsAfterYearStart = Number.isNaN(endTime) || endTime >= yearStart;
+      
+      return startsBeforeYearEnd && endsAfterYearStart;
+    });
+  }, [projects, selectedYear]);
+
   const sectorFilteredProjects = useMemo(() => {
     if (selectedSector === ALL_SECTOR_KEY) {
-      return projects;
+      return yearFilteredProjects;
     }
     const normalizedSelection = selectedSector.toLowerCase();
-    return projects.filter((project) => {
+    return yearFilteredProjects.filter((project) => {
       const primarySector = (project.sector ?? "").toLowerCase();
       if (primarySector === normalizedSelection) {
         return true;
@@ -307,7 +329,7 @@ export default function Home() {
         (value) => (value ?? "").toLowerCase() === normalizedSelection
       );
     });
-  }, [projects, selectedSector]);
+  }, [yearFilteredProjects, selectedSector]);
 
   const mainSectorFilteredProjects = useMemo(() => {
     const baseList = sectorFilteredProjects;

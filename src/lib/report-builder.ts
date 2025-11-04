@@ -2,7 +2,6 @@ import PDFDocument from "pdfkit";
 import {
   BENEFICIARY_TYPE_KEYS,
   BENEFICIARY_TYPE_META,
-  PRIMARY_BENEFICIARY_TYPE_KEYS,
   type BeneficiaryBreakdown,
   type DashboardProject,
   type MonitoringDashboardData,
@@ -487,7 +486,7 @@ export async function buildDashboardReport(state: DashboardState, filters: Repor
     addSectionTitle(doc, "Portfolio overview", `${reportData.projects.length} project(s) included`);
 
     drawKeyValue(doc, "Total beneficiaries (direct)", formatNumber(
-      PRIMARY_BENEFICIARY_TYPE_KEYS.reduce(
+      BENEFICIARY_TYPE_KEYS.reduce(
         (acc, key) =>
           (reportData.beneficiaries.include?.[key] ?? BENEFICIARY_TYPE_META[key].includeInTotals)
             ? acc + reportData.beneficiaries.direct[key]
@@ -496,7 +495,7 @@ export async function buildDashboardReport(state: DashboardState, filters: Repor
       )
     ));
     drawKeyValue(doc, "Total beneficiaries (indirect)", formatNumber(
-      PRIMARY_BENEFICIARY_TYPE_KEYS.reduce(
+      BENEFICIARY_TYPE_KEYS.reduce(
         (acc, key) =>
           (reportData.beneficiaries.include?.[key] ?? BENEFICIARY_TYPE_META[key].includeInTotals)
             ? acc + reportData.beneficiaries.indirect[key]

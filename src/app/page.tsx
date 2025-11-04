@@ -19,7 +19,6 @@ import {
   ALL_SECTOR_KEY,
   BENEFICIARY_TYPE_KEYS,
   BENEFICIARY_TYPE_META,
-  PRIMARY_BENEFICIARY_TYPE_KEYS,
   PROJECT_PHASES,
 } from "@/lib/dashboard-data";
 import type {
@@ -924,7 +923,7 @@ export default function Home() {
 
   const totalDirect = useMemo(
     () =>
-      PRIMARY_BENEFICIARY_TYPE_KEYS.reduce(
+      BENEFICIARY_TYPE_KEYS.reduce(
         (sum, category) =>
           (activeSnapshot.beneficiaries.include?.[category] ??
           BENEFICIARY_TYPE_META[category].includeInTotals)
@@ -937,7 +936,7 @@ export default function Home() {
 
   const totalIndirect = useMemo(
     () =>
-      PRIMARY_BENEFICIARY_TYPE_KEYS.reduce(
+      BENEFICIARY_TYPE_KEYS.reduce(
         (sum, category) =>
           (activeSnapshot.beneficiaries.include?.[category] ??
           BENEFICIARY_TYPE_META[category].includeInTotals)

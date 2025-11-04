@@ -616,7 +616,10 @@ export default function Home() {
       };
     }
 
-    if (!baseSectorKeys.length) {
+    // Use year-filtered projects to compute dashboard metrics
+    const projectsToAggregate = mainSectorFilteredProjects;
+
+    if (!projectsToAggregate.length) {
       const emptySnapshots: SectorSnapshotMap = {
         [ALL_SECTOR_KEY]: {
           provinces: [],
@@ -682,79 +685,132 @@ export default function Home() {
       };
     }
 
+    // Aggregate metrics from filtered projects
     const provinceSet = new Set<string>();
     const aggregatedBeneficiaries = createEmptyBreakdown();
+    
+    const sectorProjectsMap = new Map<SectorKey, typeof projectsToAggregate>();
+    baseSectorKeys.forEach((key) => sectorProjectsMap.set(key, []));
 
-    let totalProjects = 0;
     let totalStaff = 0;
     let earliestStart = Number.POSITIVE_INFINITY;
     let latestEnd = Number.NEGATIVE_INFINITY;
     let earliestStartLabel = DEFAULT_START_LABEL;
     let latestEndLabel = DEFAULT_END_LABEL;
 
-    const snapshotMap: Partial<SectorSnapshotMap> = {};
-    const detailMap: Partial<SectorDetailMap> = {};
+    projectsToAggregate.forEach((project) => {
+      // Add provinces
+      project.provinces.forEach((province) => provinceSet.add(province));
 
-    baseSectorKeys.forEach((key) => {
-      const sector = sectors[key];
-      sector.provinces.forEach((province) => provinceSet.add(province));
-
+      // Aggregate beneficiaries
       BENEFICIARY_TYPE_KEYS.forEach((category) => {
         const isIncluded =
-          sector.beneficiaries.include?.[category] ?? BENEFICIARY_TYPE_META[category].includeInTotals;
+          project.beneficiaries.include?.[category] ?? BENEFICIARY_TYPE_META[category].includeInTotals;
         if (isIncluded) {
-          aggregatedBeneficiaries.direct[category] += sector.beneficiaries.direct?.[category] ?? 0;
-          aggregatedBeneficiaries.indirect[category] +=
-            sector.beneficiaries.indirect?.[category] ?? 0;
+          aggregatedBeneficiaries.direct[category] += project.beneficiaries.direct?.[category] ?? 0;
+          aggregatedBeneficiaries.indirect[category] += project.beneficiaries.indirect?.[category] ?? 0;
         }
         aggregatedBeneficiaries.include[category] =
           aggregatedBeneficiaries.include[category] || isIncluded;
       });
 
-      totalProjects += sector.projects;
-      totalStaff += sector.staff;
+      // Add staff
+      totalStaff += project.staff ?? 0;
 
-      const startTime = Date.parse(sector.start);
+      // Track dates
+      const startTime = Date.parse(project.start);
       if (!Number.isNaN(startTime) && startTime < earliestStart) {
         earliestStart = startTime;
-        earliestStartLabel = sector.start;
+        earliestStartLabel = project.start;
       }
 
-      const endTime = Date.parse(sector.end);
+      const endTime = Date.parse(project.end);
       if (!Number.isNaN(endTime) && endTime > latestEnd) {
         latestEnd = endTime;
-        latestEndLabel = sector.end;
+        latestEndLabel = project.end;
       }
 
+      // Group by sector
+      const primarySector = (project.sector ?? "").toLowerCase();
+      baseSectorKeys.forEach((key) => {
+        const normalizedKey = key.toLowerCase();
+        if (primarySector === normalizedKey || 
+            (project.standardSectors ?? []).some((s) => (s ?? "").toLowerCase() === normalizedKey)) {
+          sectorProjectsMap.get(key)?.push(project);
+        }
+      });
+    });
+
+    const snapshotMap: Partial<SectorSnapshotMap> = {};
+    const detailMap: Partial<SectorDetailMap> = {};
+
+    // Compute per-sector aggregates
+    baseSectorKeys.forEach((key) => {
+      const sectorProjects = sectorProjectsMap.get(key) ?? [];
+      const sectorProvinces = new Set<string>();
+      const sectorBeneficiaries = createEmptyBreakdown();
+      let sectorStaff = 0;
+      let sectorEarliestStart = Number.POSITIVE_INFINITY;
+      let sectorLatestEnd = Number.NEGATIVE_INFINITY;
+      let sectorEarliestStartLabel = DEFAULT_START_LABEL;
+      let sectorLatestEndLabel = DEFAULT_END_LABEL;
+
+      sectorProjects.forEach((project) => {
+        project.provinces.forEach((province) => sectorProvinces.add(province));
+        
+        BENEFICIARY_TYPE_KEYS.forEach((category) => {
+          const isIncluded =
+            project.beneficiaries.include?.[category] ?? BENEFICIARY_TYPE_META[category].includeInTotals;
+          if (isIncluded) {
+            sectorBeneficiaries.direct[category] += project.beneficiaries.direct?.[category] ?? 0;
+            sectorBeneficiaries.indirect[category] += project.beneficiaries.indirect?.[category] ?? 0;
+          }
+          sectorBeneficiaries.include[category] =
+            sectorBeneficiaries.include[category] || isIncluded;
+        });
+
+        sectorStaff += project.staff ?? 0;
+
+        const startTime = Date.parse(project.start);
+        if (!Number.isNaN(startTime) && startTime < sectorEarliestStart) {
+          sectorEarliestStart = startTime;
+          sectorEarliestStartLabel = project.start;
+        }
+
+        const endTime = Date.parse(project.end);
+        if (!Number.isNaN(endTime) && endTime > sectorLatestEnd) {
+          sectorLatestEnd = endTime;
+          sectorLatestEndLabel = project.end;
+        }
+      });
+
       snapshotMap[key] = {
-        provinces: [...sector.provinces],
-        beneficiaries: cloneBreakdown(sector.beneficiaries),
+        provinces: Array.from(sectorProvinces).sort((a, b) => a.localeCompare(b)),
+        beneficiaries: sectorBeneficiaries,
       };
 
       detailMap[key] = {
-        provinces: [...sector.provinces],
-        beneficiaries: cloneBreakdown(sector.beneficiaries),
-        projects: sector.projects,
-        start: sector.start,
-        end: sector.end,
-        fieldActivity: sector.fieldActivity,
-        staff: sector.staff,
+        provinces: Array.from(sectorProvinces).sort((a, b) => a.localeCompare(b)),
+        beneficiaries: sectorBeneficiaries,
+        projects: sectorProjects.length,
+        start: sectorEarliestStartLabel,
+        end: sectorLatestEndLabel,
+        fieldActivity: sectorProjects.length > 0 ? sectorProjects[0].goal || "" : "",
+        staff: sectorStaff,
       };
     });
 
-    const provinces = Array.from(provinceSet).sort((a, b) =>
-      a.localeCompare(b)
-    );
+    const provinces = Array.from(provinceSet).sort((a, b) => a.localeCompare(b));
 
     snapshotMap[ALL_SECTOR_KEY] = {
       provinces,
-      beneficiaries: cloneBreakdown(aggregatedBeneficiaries),
+      beneficiaries: aggregatedBeneficiaries,
     };
 
     detailMap[ALL_SECTOR_KEY] = {
       provinces,
       beneficiaries: aggregatedBeneficiaries,
-      projects: totalProjects,
+      projects: projectsToAggregate.length,
       start: earliestStartLabel,
       end: latestEndLabel,
       fieldActivity: ALL_SECTOR_FIELD_ACTIVITY,
@@ -766,7 +822,7 @@ export default function Home() {
       sectorSnapshots: snapshotMap as SectorSnapshotMap,
       sectorDetails: detailMap as SectorDetailMap,
     };
-  }, [baseSectorKeys, sectors, selectedProject]);
+  }, [baseSectorKeys, selectedProject, mainSectorFilteredProjects]);
 
   const [focusedProvince, setFocusedProvince] = useState<string | null>(null);
   const [isProjectsMenuOpen, setIsProjectsMenuOpen] = useState(false);

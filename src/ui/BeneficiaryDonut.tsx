@@ -37,7 +37,7 @@ export function BeneficiaryDonut({
       const start = cumulative;
       const ratio = slice.value / safeTotal;
       const dashArray = `${ratio * CIRCUMFERENCE} ${CIRCUMFERENCE}`;
-      const dashOffset = CIRCUMFERENCE - (start / safeTotal) * CIRCUMFERENCE;
+      const dashOffset = -(start / safeTotal) * CIRCUMFERENCE;
       cumulative += slice.value;
 
       return {

@@ -147,3 +147,7 @@ export function getBrandingAssetPublicUrl(path: string | null | undefined): stri
   const { url } = getSupabaseConfig();
   return buildPublicUrl(url, path);
 }
+
+export function isBrandingStorageConfigured(): boolean {
+  return Boolean(process.env.SUPABASE_URL?.trim() && process.env.SUPABASE_SERVICE_ROLE_KEY?.trim());
+}

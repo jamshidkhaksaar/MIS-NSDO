@@ -61,7 +61,12 @@ import {
 } from "@/lib/dashboard-data";
 import { withConnection } from "@/lib/db";
 import { decodeLocationToken, mergeProjectLocations } from "@/lib/project-locations";
-import { deleteBrandingAsset, getBrandingAssetPublicUrl, uploadBrandingAsset } from "@/lib/storage";
+import {
+  deleteBrandingAsset,
+  getBrandingAssetPublicUrl,
+  isBrandingStorageConfigured,
+  uploadBrandingAsset,
+} from "@/lib/storage";
 
 type SectorRow = {
   id: number;
@@ -3436,7 +3441,9 @@ export async function updateBranding(payload: {
 }): Promise<void> {
   const { companyName, logoDataUrl, faviconDataUrl } = payload;
 
-  const parseDataUrl = (value: string | null | undefined) => {
+  const parseDataUrl = (
+    value: string | null | undefined
+  ): { buffer: Buffer; mime: string } | null => {
     if (value === null || value === undefined) {
       return null;
     }
@@ -3451,8 +3458,7 @@ export async function updateBranding(payload: {
     return { buffer, mime: match[1].trim() || "application/octet-stream" };
   };
 
-  const logoPayload = parseDataUrl(logoDataUrl);
-  const faviconPayload = parseDataUrl(faviconDataUrl);
+  const storageConfigured = isBrandingStorageConfigured();
 
   await withConnection(async (connection) => {
     await connection.beginTransaction();
@@ -3482,7 +3488,10 @@ export async function updateBranding(payload: {
 
       let nextLogoPath = existing?.logo_storage_path ?? null;
       let nextLogoUrl = existing?.logo_url ?? null;
-      if (nextLogoPath && !nextLogoUrl) {
+      let nextLogoData = existing?.logo_data ?? null;
+      let nextLogoMime = existing?.logo_mime ?? null;
+
+      if (storageConfigured && nextLogoPath && !nextLogoUrl) {
         try {
           nextLogoUrl = getBrandingAssetPublicUrl(nextLogoPath);
         } catch {
@@ -3491,23 +3500,43 @@ export async function updateBranding(payload: {
       }
 
       if (logoDataUrl !== undefined) {
-        if (logoPayload === null) {
-          await deleteBrandingAsset(nextLogoPath);
-          nextLogoPath = null;
-          nextLogoUrl = null;
-        } else {
-          const upload = await uploadBrandingAsset("logo", logoPayload.buffer, logoPayload.mime);
-          if (nextLogoPath && nextLogoPath !== upload.path) {
+        if (logoDataUrl === null) {
+          if (storageConfigured) {
             await deleteBrandingAsset(nextLogoPath);
           }
-          nextLogoPath = upload.path;
-          nextLogoUrl = upload.publicUrl;
+          nextLogoPath = null;
+          nextLogoUrl = null;
+          nextLogoData = null;
+          nextLogoMime = null;
+        } else {
+          const parsedLogo = parseDataUrl(logoDataUrl);
+          if (!parsedLogo) {
+            throw new Error("Branding assets must be provided as base64 data URLs.");
+          }
+          if (storageConfigured) {
+            const upload = await uploadBrandingAsset("logo", parsedLogo.buffer, parsedLogo.mime);
+            if (nextLogoPath && nextLogoPath !== upload.path) {
+              await deleteBrandingAsset(nextLogoPath);
+            }
+            nextLogoPath = upload.path;
+            nextLogoUrl = upload.publicUrl;
+            nextLogoData = null;
+            nextLogoMime = null;
+          } else {
+            nextLogoPath = null;
+            nextLogoUrl = null;
+            nextLogoData = parsedLogo.buffer;
+            nextLogoMime = parsedLogo.mime;
+          }
         }
       }
 
       let nextFaviconPath = existing?.favicon_storage_path ?? null;
       let nextFaviconUrl = existing?.favicon_url ?? null;
-      if (nextFaviconPath && !nextFaviconUrl) {
+      let nextFaviconData = existing?.favicon_data ?? null;
+      let nextFaviconMime = existing?.favicon_mime ?? null;
+
+      if (storageConfigured && nextFaviconPath && !nextFaviconUrl) {
         try {
           nextFaviconUrl = getBrandingAssetPublicUrl(nextFaviconPath);
         } catch {
@@ -3516,17 +3545,34 @@ export async function updateBranding(payload: {
       }
 
       if (faviconDataUrl !== undefined) {
-        if (faviconPayload === null) {
-          await deleteBrandingAsset(nextFaviconPath);
-          nextFaviconPath = null;
-          nextFaviconUrl = null;
-        } else {
-          const upload = await uploadBrandingAsset("favicon", faviconPayload.buffer, faviconPayload.mime);
-          if (nextFaviconPath && nextFaviconPath !== upload.path) {
+        if (faviconDataUrl === null) {
+          if (storageConfigured) {
             await deleteBrandingAsset(nextFaviconPath);
           }
-          nextFaviconPath = upload.path;
-          nextFaviconUrl = upload.publicUrl;
+          nextFaviconPath = null;
+          nextFaviconUrl = null;
+          nextFaviconData = null;
+          nextFaviconMime = null;
+        } else {
+          const parsedFavicon = parseDataUrl(faviconDataUrl);
+          if (!parsedFavicon) {
+            throw new Error("Branding assets must be provided as base64 data URLs.");
+          }
+          if (storageConfigured) {
+            const upload = await uploadBrandingAsset("favicon", parsedFavicon.buffer, parsedFavicon.mime);
+            if (nextFaviconPath && nextFaviconPath !== upload.path) {
+              await deleteBrandingAsset(nextFaviconPath);
+            }
+            nextFaviconPath = upload.path;
+            nextFaviconUrl = upload.publicUrl;
+            nextFaviconData = null;
+            nextFaviconMime = null;
+          } else {
+            nextFaviconPath = null;
+            nextFaviconUrl = null;
+            nextFaviconData = parsedFavicon.buffer;
+            nextFaviconMime = parsedFavicon.mime;
+          }
         }
       }
 
@@ -3543,18 +3589,28 @@ export async function updateBranding(payload: {
             favicon_data,
             favicon_mime
          )
-         VALUES (1, ?, ?, ?, ?, ?, NULL, NULL, NULL, NULL)
+         VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT(id) DO UPDATE SET
            company_name = excluded.company_name,
            logo_storage_path = excluded.logo_storage_path,
            logo_url = excluded.logo_url,
            favicon_storage_path = excluded.favicon_storage_path,
            favicon_url = excluded.favicon_url,
-           logo_data = NULL,
-           logo_mime = NULL,
-           favicon_data = NULL,
-           favicon_mime = NULL`,
-        [nextCompanyName, nextLogoPath, nextLogoUrl, nextFaviconPath, nextFaviconUrl]
+           logo_data = excluded.logo_data,
+           logo_mime = excluded.logo_mime,
+           favicon_data = excluded.favicon_data,
+           favicon_mime = excluded.favicon_mime`,
+        [
+          nextCompanyName,
+          nextLogoPath,
+          nextLogoUrl,
+          nextFaviconPath,
+          nextFaviconUrl,
+          nextLogoData,
+          nextLogoMime,
+          nextFaviconData,
+          nextFaviconMime,
+        ]
       );
 
       await connection.commit();

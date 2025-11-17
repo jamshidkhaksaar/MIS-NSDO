@@ -345,12 +345,10 @@ export default function Home() {
     );
   }, [sectorFilteredProjects, selectedMainSectorId, activeSubSectorNames]);
 
-  const filteredProjectOptions = useMemo(() => {
-    const baseList = selectedMainSectorId ? mainSectorFilteredProjects : sectorFilteredProjects;
-    const fallbackList = sectorFilteredProjects;
-    const source = baseList.length ? baseList : fallbackList;
-    return source.slice().sort((a, b) => a.name.localeCompare(b.name));
-  }, [selectedMainSectorId, sectorFilteredProjects, mainSectorFilteredProjects]);
+  const filteredProjectOptions = useMemo(
+    () => projects.slice().sort((a, b) => a.name.localeCompare(b.name)),
+    [projects]
+  );
 
   const handleMainSectorClick = useCallback(
     (mainSectorId: string) => {

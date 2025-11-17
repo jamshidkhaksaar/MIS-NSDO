@@ -19,6 +19,7 @@ import {
   ALL_SECTOR_KEY,
   BENEFICIARY_TYPE_KEYS,
   BENEFICIARY_TYPE_META,
+  resolveBeneficiaryIncludeStates,
   PROJECT_PHASES,
 } from "@/lib/dashboard-data";
 import type {
@@ -884,22 +885,25 @@ export default function Home() {
     [activeSnapshot.provinces]
   );
 
+  const beneficiaryIncludes = useMemo(
+    () => resolveBeneficiaryIncludeStates(activeSnapshot.beneficiaries.include),
+    [activeSnapshot.beneficiaries.include]
+  );
+
   const beneficiaryRows = useMemo(
     () =>
       BENEFICIARY_TYPE_KEYS.map((category) => ({
         key: category,
         label: BENEFICIARY_TYPE_META[category].label,
         color: BENEFICIARY_TYPE_META[category].color,
-        includeInTotals:
-          activeSnapshot.beneficiaries.include?.[category] ??
-          BENEFICIARY_TYPE_META[category].includeInTotals,
+        includeInTotals: beneficiaryIncludes[category],
         direct: activeSnapshot.beneficiaries.direct?.[category] ?? 0,
         indirect: activeSnapshot.beneficiaries.indirect?.[category] ?? 0,
       })),
     [
       activeSnapshot.beneficiaries.direct,
       activeSnapshot.beneficiaries.indirect,
-      activeSnapshot.beneficiaries.include,
+      beneficiaryIncludes,
     ]
   );
 
@@ -925,26 +929,24 @@ export default function Home() {
     () =>
       BENEFICIARY_TYPE_KEYS.reduce(
         (sum, category) =>
-          (activeSnapshot.beneficiaries.include?.[category] ??
-          BENEFICIARY_TYPE_META[category].includeInTotals)
+          beneficiaryIncludes[category]
             ? sum + (activeSnapshot.beneficiaries.direct?.[category] ?? 0)
             : sum,
         0
       ),
-    [activeSnapshot.beneficiaries.direct, activeSnapshot.beneficiaries.include]
+    [activeSnapshot.beneficiaries.direct, beneficiaryIncludes]
   );
 
   const totalIndirect = useMemo(
     () =>
       BENEFICIARY_TYPE_KEYS.reduce(
         (sum, category) =>
-          (activeSnapshot.beneficiaries.include?.[category] ??
-          BENEFICIARY_TYPE_META[category].includeInTotals)
+          beneficiaryIncludes[category]
             ? sum + (activeSnapshot.beneficiaries.indirect?.[category] ?? 0)
             : sum,
         0
       ),
-    [activeSnapshot.beneficiaries.indirect, activeSnapshot.beneficiaries.include]
+    [activeSnapshot.beneficiaries.indirect, beneficiaryIncludes]
   );
 
   const totalBeneficiaries = totalDirect + totalIndirect;

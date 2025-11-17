@@ -102,6 +102,40 @@ export const BENEFICIARY_DETAIL_MAP: Partial<
   returnees: ["returneesWomen", "returneesMen", "returneesChildren"],
 };
 
+export function resolveBeneficiaryIncludeStates(
+  include?: Partial<Record<BeneficiaryTypeKey, boolean>>
+): Record<BeneficiaryTypeKey, boolean> {
+  const resolved = BENEFICIARY_TYPE_KEYS.reduce(
+    (accumulator, key) => {
+      const hasOverride =
+        include && Object.prototype.hasOwnProperty.call(include, key);
+
+      accumulator[key] = hasOverride
+        ? Boolean(include?.[key])
+        : BENEFICIARY_TYPE_META[key].includeInTotals;
+
+      return accumulator;
+    },
+    {} as Record<BeneficiaryTypeKey, boolean>
+  );
+
+  Object.entries(BENEFICIARY_DETAIL_MAP).forEach(([parent, children]) => {
+    if (!children) {
+      return;
+    }
+
+    const includeDetail = children.some(
+      (childKey) => resolved[childKey as BeneficiaryTypeKey]
+    );
+
+    if (includeDetail) {
+      resolved[parent as BeneficiaryTypeKey] = false;
+    }
+  });
+
+  return resolved;
+}
+
 export const BENEFICIARY_GROUPS = [
   { key: "children", label: "Children", members: ["childrenGirls", "childrenBoys"] },
   { key: "adults", label: "Adults", members: ["adultsWomen", "adultsMen"] },

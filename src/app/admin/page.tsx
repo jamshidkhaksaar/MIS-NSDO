@@ -2,6 +2,7 @@
 
 import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   useDashboardData,
 } from "@/context/DashboardDataContext";
@@ -555,9 +556,11 @@ export default function AdminDashboard() {
                   <div className="mt-4 flex flex-col items-center justify-center gap-4">
                     <div className="flex h-20 w-32 items-center justify-center rounded-xl border border-dashed border-brand-soft bg-white p-4">
                       {branding.logoUrl ? (
-                        <img
+                        <Image
                           src={branding.logoUrl}
                           alt={`${branding.companyName} logo`}
+                          width={128}
+                          height={64}
                           className="max-h-16 object-contain"
                         />
                       ) : (
@@ -598,9 +601,11 @@ export default function AdminDashboard() {
                   <div className="mt-4 flex flex-col items-center justify-center gap-4">
                     <div className="flex h-20 w-20 items-center justify-center rounded-xl border border-dashed border-brand-soft bg-white p-4">
                       {branding.faviconUrl ? (
-                        <img
+                        <Image
                           src={branding.faviconUrl}
                           alt={`${branding.companyName} favicon`}
+                          width={40}
+                          height={40}
                           className="h-10 w-10 object-contain"
                         />
                       ) : (
@@ -641,9 +646,11 @@ export default function AdminDashboard() {
                 <div className="flex items-center gap-4">
                   <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-dashed border-brand-soft bg-brand-soft/40">
                     {branding.faviconUrl ? (
-                      <img
+                      <Image
                         src={branding.faviconUrl}
                         alt={`${branding.companyName} favicon preview`}
+                        width={32}
+                        height={32}
                         className="h-8 w-8 object-contain"
                       />
                     ) : (
@@ -663,9 +670,11 @@ export default function AdminDashboard() {
                 </div>
                 <div className="mt-4 flex items-center justify-center rounded-2xl border border-dashed border-brand-soft bg-brand-soft/20 p-4">
                   {branding.logoUrl ? (
-                    <img
+                    <Image
                       src={branding.logoUrl}
                       alt={`${branding.companyName} logo preview`}
+                      width={160}
+                      height={80}
                       className="max-h-16 object-contain"
                     />
                   ) : (

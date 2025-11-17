@@ -1,1 +1,13 @@
 project_id = "ueczlkbzrkzomcyeguaq"
+
+[auth.password]
+min_length = 12
+
+[auth.password.hibp]
+enabled = true
+fail_closed = true
+
+[auth.password.hibp.bloom]
+enabled = true
+items = 100000
+false_positives = 0.0000099

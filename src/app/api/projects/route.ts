@@ -6,10 +6,14 @@ const sanitizeArray = (value: unknown): string[] | undefined => {
   if (!Array.isArray(value)) {
     return undefined;
   }
-  const items = value
-    .map((entry) => (typeof entry === "string" ? entry.trim() : ""))
-    .filter((entry) => entry.length);
-  return items.length ? items : undefined;
+  const items = value.map((entry) => {
+    if (typeof entry !== "string") {
+      throw new Error("Invalid array entry: all entries must be strings.");
+    }
+    return entry.trim();
+  });
+  const filteredItems = items.filter((entry) => entry.length);
+  return filteredItems.length ? filteredItems : undefined;
 };
 
 export async function GET() {

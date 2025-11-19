@@ -12,9 +12,11 @@
   "dependencies": {
     "@types/pg": "^8.15.6",
     "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^12.4.1",
     "next": "16.0.1",
     "pdfkit": "^0.17.2",
     "pg": "^8.16.3",
+    "pg-mem": "^3.0.5",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "supabase": "^2.54.11",

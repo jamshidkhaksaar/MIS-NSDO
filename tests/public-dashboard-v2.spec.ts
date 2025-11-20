@@ -45,7 +45,8 @@ test.describe('Public Dashboard V2', () => {
       });
     });
 
-    await page.goto('/public-dashboard-v2');
+    // Navigate to ROOT now, as we swapped the pages
+    await page.goto('/');
 
     // Check Sidebar
     await expect(page.getByText('NSDO MIS')).toBeVisible();
@@ -71,7 +72,7 @@ test.describe('Public Dashboard V2', () => {
   });
 
   test('should switch sections', async ({ page }) => {
-    await page.goto('/public-dashboard-v2');
+    await page.goto('/');
 
     // Click on Sectors
     await page.getByRole('button', { name: 'Sectors' }).click();

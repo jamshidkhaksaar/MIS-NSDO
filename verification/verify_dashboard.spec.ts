@@ -50,6 +50,9 @@ test('Dashboard Overview Verification', async ({ page }) => {
     await expect(page.getByText('Total Projects')).toBeVisible();
     await expect(page.getByText('5,000')).toBeVisible();
 
+    // Verify Map
+    await expect(page.getByRole('img', { name: 'Map of Afghanistan with provincial boundaries' })).toBeVisible();
+
     // Take screenshot
     await page.screenshot({ path: 'verification/dashboard-overview.png', fullPage: true });
 });

@@ -23,6 +23,7 @@ import {
 
 import { cn } from "@/lib/utils";
 import type { DashboardOverviewStats } from "@/lib/api/dashboard-v2";
+import AfghanistanMap from "@/ui/AfghanistanMap";
 
 const COLORS = ["#059669", "#10b981", "#34d399", "#6ee7b7"];
 
@@ -186,7 +187,7 @@ export default function OverviewSection({ year, province }: OverviewSectionProps
         </div>
       </div>
 
-      {/* Map Section Placeholder */}
+      {/* Map Section */}
       <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
            <div className="mb-4 flex items-center justify-between">
                <h3 className="text-base font-semibold text-gray-900">Geographic Coverage</h3>
@@ -194,9 +195,11 @@ export default function OverviewSection({ year, province }: OverviewSectionProps
                    {data.coveredProvinces.length} Provinces
                </span>
            </div>
-           <div className="flex h-96 items-center justify-center rounded-lg bg-gray-50 text-gray-400">
-               {/* Map Component Integration Here */}
-               <p>Interactive Map Component Placeholder</p>
+           <div className="h-[500px] w-full overflow-hidden rounded-lg border border-gray-100 bg-emerald-50/30">
+               <AfghanistanMap
+                   highlightedProvinces={data.coveredProvinces}
+                   className="h-full w-full"
+               />
            </div>
            <div className="mt-4 flex flex-wrap gap-2">
                {data.coveredProvinces.slice(0, 10).map(p => (

@@ -10,16 +10,22 @@
     "create-admin-user": "node scripts/create-admin-user.js"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.90.10",
     "@types/pg": "^8.15.6",
     "bcryptjs": "^2.4.3",
     "better-sqlite3": "^12.4.1",
+    "clsx": "^2.1.1",
+    "framer-motion": "^12.23.24",
+    "lucide-react": "^0.554.0",
     "next": "16.0.1",
     "pdfkit": "^0.17.2",
     "pg": "^8.16.3",
     "pg-mem": "^3.0.5",
     "react": "19.1.0",
     "react-dom": "19.1.0",
+    "recharts": "^3.4.1",
     "supabase": "^2.54.11",
+    "tailwind-merge": "^3.4.0",
     "vercel": "^48.6.6"
   },
   "devDependencies": {

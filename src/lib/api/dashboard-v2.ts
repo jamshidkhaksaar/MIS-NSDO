@@ -343,3 +343,92 @@ export async function fetchOverviewStats(filters?: DashboardFilters): Promise<Da
     };
   });
 }
+
+export type DashboardProjectSummary = {
+    id: string;
+    code: string;
+    name: string;
+    sector: string;
+    status: "Active" | "Completed" | "Ongoing" | "Planned";
+    provinces: string[];
+    startDate: string;
+    endDate: string;
+};
+
+export async function fetchProjectsList(filters?: DashboardFilters): Promise<DashboardProjectSummary[]> {
+    return withConnection(async (connection) => {
+        // 1. Fetch Projects
+        const [projects] = await connection.query<ProjectRow & { code: string; title: string }>(
+            `SELECT id, code, title, sector, start_date, end_date, staff FROM projects ORDER BY title ASC`
+        );
+        const projectIds = projects.map(p => p.id);
+
+        // 2. Fetch Provinces
+        let projectProvinces: ProjectProvinceRow[] = [];
+        if (projectIds.length > 0) {
+            const placeholders = projectIds.map(() => "?").join(", ");
+            const [provRows] = await connection.query<ProjectProvinceRow>(
+                `SELECT project_id, province FROM project_provinces WHERE project_id IN (${placeholders})`,
+                projectIds
+            );
+            projectProvinces = provRows;
+        }
+
+        // 3. Apply Filters
+        const year = filters?.year;
+        const province = filters?.province;
+
+        const filtered = projects.filter(project => {
+            // Year Filter
+            if (year) {
+                const startTime = project.start_date ? Date.parse(project.start_date) : Number.NaN;
+                const endTime = project.end_date ? Date.parse(project.end_date) : Number.NaN;
+                const yearStart = new Date(year, 0, 1).getTime();
+                const yearEnd = new Date(year, 11, 31, 23, 59, 59).getTime();
+
+                if (Number.isNaN(startTime) && Number.isNaN(endTime)) {
+                    // pass
+                } else {
+                    const startsBeforeYearEnd = Number.isNaN(startTime) || startTime <= yearEnd;
+                    const endsAfterYearStart = Number.isNaN(endTime) || endTime >= yearStart;
+                    if (!startsBeforeYearEnd || !endsAfterYearStart) return false;
+                }
+            }
+
+            // Province Filter
+            if (province) {
+                const pProvinces = projectProvinces.filter(pp => pp.project_id === project.id).map(pp => pp.province);
+                if (!pProvinces.includes(province)) return false;
+            }
+
+            return true;
+        });
+
+        // 4. Map to Summary
+        const nowTime = Date.now();
+        return filtered.map(p => {
+            const startTime = p.start_date ? Date.parse(p.start_date) : Number.NaN;
+            const endTime = p.end_date ? Date.parse(p.end_date) : Number.NaN;
+            let status: "Active" | "Completed" | "Ongoing" | "Planned" = "Active";
+
+            if (!Number.isNaN(endTime) && endTime < nowTime) {
+                status = "Completed";
+            } else if (!Number.isNaN(startTime) && startTime > nowTime) {
+                status = "Planned";
+            } else if (!Number.isNaN(startTime) && startTime <= nowTime && (!Number.isNaN(endTime) && endTime >= nowTime)) {
+                status = "Ongoing";
+            }
+
+            return {
+                id: p.id.toString(),
+                code: p.code,
+                name: p.title,
+                sector: p.sector ?? "Unassigned",
+                status,
+                provinces: projectProvinces.filter(pp => pp.project_id === p.id).map(pp => pp.province),
+                startDate: formatDate(p.start_date),
+                endDate: formatDate(p.end_date)
+            };
+        });
+    });
+}

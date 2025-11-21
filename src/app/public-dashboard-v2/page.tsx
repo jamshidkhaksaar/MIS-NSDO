@@ -4,6 +4,8 @@ import { useState } from "react";
 import Sidebar from "./components/Sidebar";
 import TopBar from "./components/TopBar";
 import OverviewSection from "./components/OverviewSection";
+import ProjectsSection from "./components/ProjectsSection";
+import SectorsSection from "./components/SectorsSection";
 
 export default function PublicDashboardV2() {
   const [activeSection, setActiveSection] = useState("overview");
@@ -38,7 +40,19 @@ export default function PublicDashboardV2() {
                     province={selectedProvince}
                />
            )}
-           {activeSection !== "overview" && (
+           {activeSection === "projects" && (
+               <ProjectsSection
+                    year={selectedYear}
+                    province={selectedProvince}
+               />
+           )}
+           {activeSection === "sectors" && (
+               <SectorsSection
+                    year={selectedYear}
+                    province={selectedProvince}
+               />
+           )}
+           {activeSection !== "overview" && activeSection !== "projects" && activeSection !== "sectors" && (
              <div className="flex h-full items-center justify-center text-gray-500">
                 <div className="text-center">
                    <h3 className="text-lg font-medium text-gray-900">Coming Soon</h3>

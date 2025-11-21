@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import Loading from "@/app/loading";
+import Loading from "@/app/(legacy)/old-dashboard/loading";
 import { useDashboardData } from "@/context/DashboardDataContext";
 
 const NAV_LINKS = [

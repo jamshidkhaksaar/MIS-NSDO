@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useDashboardData } from "@/context/DashboardDataContext";
-import Loading from "@/app/loading";
+import Loading from "@/app/(legacy)/old-dashboard/loading";
 import { ComplaintList } from "./(components)/ComplaintList";
 import { ComplaintDetails } from "./(components)/ComplaintDetails";
 import { ComplaintRecord } from "@/lib/dashboard-data";

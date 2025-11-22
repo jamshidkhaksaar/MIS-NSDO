@@ -578,6 +578,7 @@ export async function fetchProjectsList(filters?: DashboardFilters): Promise<Das
 
         // 2. Fetch Provinces
         let projectProvinces: ProjectProvinceRow[] = [];
+        let projectStandardSectors: ProjectStandardSectorRow[] = [];
         if (projectIds.length > 0) {
             const placeholders = projectIds.map(() => "?").join(", ");
             const [provRows] = await connection.query<ProjectProvinceRow>(
@@ -585,6 +586,12 @@ export async function fetchProjectsList(filters?: DashboardFilters): Promise<Das
                 projectIds
             );
             projectProvinces = provRows;
+
+            const [stdRows] = await connection.query<ProjectStandardSectorRow>(
+                `SELECT project_id, standard_sector FROM project_standard_sectors WHERE project_id IN (${placeholders})`,
+                projectIds
+            );
+            projectStandardSectors = stdRows;
         }
 
         // 3. Apply Filters

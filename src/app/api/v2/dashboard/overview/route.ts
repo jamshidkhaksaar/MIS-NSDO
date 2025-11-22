@@ -5,10 +5,12 @@ export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const year = searchParams.get("year");
   const province = searchParams.get("province");
+  const sector = searchParams.get("sector");
 
   const filters = {
       year: year ? parseInt(year) : undefined,
-      province: province || undefined
+      province: province || undefined,
+      sector: sector || undefined
   };
 
   try {

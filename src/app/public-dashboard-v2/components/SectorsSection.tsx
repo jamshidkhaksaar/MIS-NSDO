@@ -6,14 +6,16 @@ import type { SectorDetails } from "@/lib/dashboard-data";
 type SectorsSectionProps = {
     year?: number;
     province?: string;
+    sector?: string;
 };
 
 type SectorListItem = SectorDetails & { name: string };
 
-function fetchSectors(year?: number, province?: string) {
+function fetchSectors(year?: number, province?: string, sector?: string) {
   const params = new URLSearchParams();
   if (year) params.append("year", year.toString());
   if (province) params.append("province", province);
+  if (sector) params.append("sector", sector);
 
   return fetch(`/api/v2/dashboard/sectors?${params.toString()}`).then((res) => {
     if (!res.ok) throw new Error("Failed to fetch sectors");
@@ -21,10 +23,10 @@ function fetchSectors(year?: number, province?: string) {
   });
 }
 
-export default function SectorsSection({ year, province }: SectorsSectionProps) {
+export default function SectorsSection({ year, province, sector }: SectorsSectionProps) {
   const { data: sectors, isLoading, error } = useQuery({
-    queryKey: ["dashboard", "sectors", year, province],
-    queryFn: () => fetchSectors(year, province),
+    queryKey: ["dashboard", "sectors", year, province, sector],
+    queryFn: () => fetchSectors(year, province, sector),
     placeholderData: keepPreviousData
   });
 

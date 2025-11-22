@@ -6,12 +6,14 @@ import { cn } from "@/lib/utils";
 type ProjectsSectionProps = {
     year?: number;
     province?: string;
+    sector?: string;
 };
 
-function fetchProjects(year?: number, province?: string) {
+function fetchProjects(year?: number, province?: string, sector?: string) {
   const params = new URLSearchParams();
   if (year) params.append("year", year.toString());
   if (province) params.append("province", province);
+  if (sector) params.append("sector", sector);
 
   return fetch(`/api/v2/dashboard/projects?${params.toString()}`).then((res) => {
     if (!res.ok) throw new Error("Failed to fetch projects");
@@ -19,10 +21,10 @@ function fetchProjects(year?: number, province?: string) {
   });
 }
 
-export default function ProjectsSection({ year, province }: ProjectsSectionProps) {
+export default function ProjectsSection({ year, province, sector }: ProjectsSectionProps) {
   const { data: projects, isLoading, error } = useQuery({
-    queryKey: ["dashboard", "projects", year, province],
-    queryFn: () => fetchProjects(year, province),
+    queryKey: ["dashboard", "projects", year, province, sector],
+    queryFn: () => fetchProjects(year, province, sector),
     placeholderData: keepPreviousData
   });
 

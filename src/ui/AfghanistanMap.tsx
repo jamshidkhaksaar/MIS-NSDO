@@ -42,6 +42,7 @@ type MapShape = {
 type AfghanistanMapProps = {
   focusedProvince?: string | null;
   highlightedProvinces?: string[];
+  provinceData?: Record<string, { projects: string[] }>;
   className?: string;
   onProvinceSelect?: (province: string) => void;
 };
@@ -252,6 +253,7 @@ export function AfghanistanMap({
   highlightedProvinces,
   className,
   onProvinceSelect,
+  provinceData,
 }: AfghanistanMapProps) {
   const [features, setFeatures] = useState<GeoFeature[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -425,6 +427,11 @@ export function AfghanistanMap({
   });
   const [isDragging, setIsDragging] = useState(false);
   const [hoveredProvince, setHoveredProvince] = useState<string | null>(null);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+
+  const handleMouseMove = useCallback((event: React.MouseEvent) => {
+    setMousePosition({ x: event.clientX, y: event.clientY });
+  }, []);
 
   const handleWheel = useCallback((event: WheelEvent) => {
     event.preventDefault();
@@ -640,7 +647,31 @@ export function AfghanistanMap({
   );
 
   return (
-    <div className={containerClass}>
+    <div className={containerClass} onMouseMove={handleMouseMove}>
+      {hoveredProvince && provinceData?.[hoveredProvince] && (
+        <div
+            className="pointer-events-none fixed z-50 rounded-lg border border-emerald-100 bg-white p-3 shadow-lg ring-1 ring-black/5"
+            style={{
+                left: mousePosition.x + 16,
+                top: mousePosition.y + 16,
+                maxWidth: '300px'
+            }}
+        >
+            <h4 className="mb-2 text-sm font-bold text-gray-900">{hoveredProvince}</h4>
+            {provinceData[hoveredProvince].projects.length > 0 ? (
+                <ul className="max-h-[200px] overflow-y-auto text-xs text-gray-600 space-y-1">
+                    {provinceData[hoveredProvince].projects.map((p, i) => (
+                        <li key={i} className="flex items-start gap-1.5">
+                            <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" />
+                            <span className="leading-tight">{p}</span>
+                        </li>
+                    ))}
+                </ul>
+            ) : (
+                <p className="text-xs italic text-gray-400">No active projects</p>
+            )}
+        </div>
+      )}
       <svg
         ref={svgRef}
         viewBox={`0 0 ${MAP_WIDTH} ${MAP_HEIGHT}`}

@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { fetchProjectsList } from "@/lib/api/dashboard-v2";
+import { fetchEvaluationOverview } from "@/lib/api/dashboard-v2";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -7,19 +7,17 @@ export async function GET(request: NextRequest) {
   const province = searchParams.get("province");
   const sector = searchParams.get("sector");
 
-  const filters = {
+  try {
+    const data = await fetchEvaluationOverview({
       year: year ? parseInt(year) : undefined,
       province: province || undefined,
-      sector: sector || undefined
-  };
-
-  try {
-    const projects = await fetchProjectsList(filters);
-    return NextResponse.json(projects);
+      sector: sector || undefined,
+    });
+    return NextResponse.json(data);
   } catch (error) {
-    console.error("Failed to load projects list", error);
+    console.error("Failed to load evaluation overview", error);
     return NextResponse.json(
-      { message: "Failed to load projects list" },
+      { message: "Failed to load evaluation overview" },
       { status: 500 }
     );
   }

@@ -14,12 +14,21 @@ export async function GET(request: NextRequest) {
   };
 
   try {
+    // Re-using fetchOverviewStats as it already groups by sector
     const stats = await fetchOverviewStats(filters);
-    return NextResponse.json(stats);
+    // Transform to array list for the table
+    const sectorsList = Object.entries(stats.sectors)
+        .filter(([key, details]) => key !== "All Sectors" && details.projects > 0)
+        .map(([key, details]) => ({
+            name: key,
+            ...details
+        }));
+
+    return NextResponse.json(sectorsList);
   } catch (error) {
-    console.error("Failed to load dashboard overview stats", error);
+    console.error("Failed to load sectors list", error);
     return NextResponse.json(
-      { message: "Failed to load dashboard overview stats" },
+      { message: "Failed to load sectors list" },
       { status: 500 }
     );
   }

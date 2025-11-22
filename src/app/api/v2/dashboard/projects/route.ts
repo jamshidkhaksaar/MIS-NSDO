@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { fetchOverviewStats } from "@/lib/api/dashboard-v2";
+import { fetchProjectsList } from "@/lib/api/dashboard-v2";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -14,12 +14,12 @@ export async function GET(request: NextRequest) {
   };
 
   try {
-    const stats = await fetchOverviewStats(filters);
-    return NextResponse.json(stats);
+    const projects = await fetchProjectsList(filters);
+    return NextResponse.json(projects);
   } catch (error) {
-    console.error("Failed to load dashboard overview stats", error);
+    console.error("Failed to load projects list", error);
     return NextResponse.json(
-      { message: "Failed to load dashboard overview stats" },
+      { message: "Failed to load projects list" },
       { status: 500 }
     );
   }

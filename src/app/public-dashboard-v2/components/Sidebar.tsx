@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils"; // Assuming a utility for class merging exists, or I will create one
 import {
   LayoutDashboard,
@@ -32,6 +32,25 @@ const SECTIONS = [
 ];
 
 export default function Sidebar({ activeSection, onSectionChange, isOpen, onClose }: SidebarProps) {
+  const [branding, setBranding] = useState<{ companyName: string; logoUrl: string | null }>({
+    companyName: "NSDO MIS",
+    logoUrl: null,
+  });
+
+  useEffect(() => {
+    fetch("/api/branding")
+      .then((res) => res.json())
+      .then((data) => {
+        setBranding({
+          companyName: data.companyName ?? "NSDO MIS",
+          logoUrl: data.logoUrl ?? null,
+        });
+      })
+      .catch(() => {
+        // ignore branding fetch errors
+      });
+  }, []);
+
   return (
     <>
       {/* Mobile Backdrop */}
@@ -48,12 +67,30 @@ export default function Sidebar({ activeSection, onSectionChange, isOpen, onClos
           isOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        <div className="flex h-16 items-center justify-between border-b px-6">
-           {/* Logo Placeholder */}
-           <div className="flex items-center gap-2 font-bold text-xl text-emerald-700">
-              <span>NSDO MIS</span>
+        <div className="flex h-20 items-center gap-3 border-b px-6">
+           {branding.logoUrl ? (
+             // eslint-disable-next-line @next/next/no-img-element
+             <img
+               src={branding.logoUrl}
+               alt={`${branding.companyName} logo`}
+               className="h-12 w-auto max-w-[8rem] object-contain"
+             />
+           ) : (
+             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
+               <span className="text-sm font-bold">{branding.companyName.slice(0, 2).toUpperCase()}</span>
+             </div>
+           )}
+           
+           <div className="flex flex-col justify-center">
+             <h2 className="text-base font-bold leading-tight text-gray-900">
+               {branding.companyName}
+             </h2>
+             <p className="text-[10px] font-medium uppercase tracking-wider text-emerald-600">
+               Monitoring System
+             </p>
            </div>
-           <button onClick={onClose} className="md:hidden p-1 rounded-md hover:bg-gray-100">
+
+           <button onClick={onClose} className="ml-auto md:hidden p-1 rounded-md hover:bg-gray-100">
              <X className="h-5 w-5 text-gray-500" />
            </button>
         </div>

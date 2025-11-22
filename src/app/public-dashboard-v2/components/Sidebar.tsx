@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils"; // Assuming a utility for class merging exists, or I will create one
 import {
   LayoutDashboard,
@@ -32,6 +32,25 @@ const SECTIONS = [
 ];
 
 export default function Sidebar({ activeSection, onSectionChange, isOpen, onClose }: SidebarProps) {
+  const [branding, setBranding] = useState<{ companyName: string; logoUrl: string | null }>({
+    companyName: "NSDO MIS",
+    logoUrl: null,
+  });
+
+  useEffect(() => {
+    fetch("/api/branding")
+      .then((res) => res.json())
+      .then((data) => {
+        setBranding({
+          companyName: data.companyName ?? "NSDO MIS",
+          logoUrl: data.logoUrl ?? null,
+        });
+      })
+      .catch(() => {
+        // ignore branding fetch errors
+      });
+  }, []);
+
   return (
     <>
       {/* Mobile Backdrop */}
@@ -49,9 +68,23 @@ export default function Sidebar({ activeSection, onSectionChange, isOpen, onClos
         )}
       >
         <div className="flex h-16 items-center justify-between border-b px-6">
-           {/* Logo Placeholder */}
-           <div className="flex items-center gap-2 font-bold text-xl text-emerald-700">
-              <span>NSDO MIS</span>
+           <div className="flex items-center gap-3">
+              {branding.logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={branding.logoUrl}
+                  alt={`${branding.companyName} logo`}
+                  className="h-10 w-auto object-contain"
+                />
+              ) : (
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-50 text-sm font-semibold text-emerald-700">
+                  {branding.companyName.slice(0, 2).toUpperCase()}
+                </div>
+              )}
+              <div className="flex flex-col leading-tight">
+                <span className="text-sm font-semibold text-gray-900">{branding.companyName}</span>
+                <span className="text-[11px] uppercase tracking-wide text-emerald-700">MEAL MIS</span>
+              </div>
            </div>
            <button onClick={onClose} className="md:hidden p-1 rounded-md hover:bg-gray-100">
              <X className="h-5 w-5 text-gray-500" />

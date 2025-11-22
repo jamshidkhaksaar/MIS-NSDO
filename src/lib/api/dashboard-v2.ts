@@ -618,7 +618,7 @@ export async function fetchProjectsList(filters?: DashboardFilters): Promise<Das
             if (sector) {
                 const normalized = normalizeSector(project.sector);
                 const matchesPrimary = normalized === sector;
-                const matchesStandard = projectStandardSectors
+                const matchesStandard = (projectStandardSectors ?? [])
                   .some(ss => {
                       const std = normalizeSector(ss.standard_sector);
                       return std === sector;

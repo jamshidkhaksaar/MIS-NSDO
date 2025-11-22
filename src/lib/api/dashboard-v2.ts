@@ -1080,13 +1080,15 @@ export async function fetchKnowledgeOverview(filters?: DashboardFilters): Promis
       .map((p) => p.id)
   );
 
-  const filteredLessons = knowledge.lessons.filter(
-    (lesson) => !lesson.projectId || filteredProjects.has(lesson.projectId)
-  );
+  const filteredLessons = knowledge.lessons.filter((lesson) => {
+    const projectId = (lesson as { projectId?: string }).projectId;
+    return !projectId || filteredProjects.has(projectId);
+  });
 
-  const filteredResources = knowledge.resources.filter(
-    (resource) => !resource.projectId || filteredProjects.has(resource.projectId)
-  );
+  const filteredResources = knowledge.resources.filter((resource) => {
+    const projectId = (resource as { projectId?: string }).projectId;
+    return !projectId || filteredProjects.has(projectId);
+  });
 
   const recentLessons = filteredLessons.slice(0, 5).map((lesson) => ({
     id: lesson.id,
